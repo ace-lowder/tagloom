@@ -4,7 +4,10 @@ import Image from "next/image";
 import { useState } from "react";
 
 type TagApiResponse = {
-  tags: string[];
+  tags: {
+    target: string[];
+    discovery: string[];
+  };
   source: "model" | "fallback";
   error?: string;
 };
@@ -12,7 +15,8 @@ type TagApiResponse = {
 export default function HomePage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
+  const [targetTags, setTargetTags] = useState<string[]>([]);
+  const [discoveryTags, setDiscoveryTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [source, setSource] = useState<"model" | "fallback" | null>(null);
@@ -23,11 +27,12 @@ export default function HomePage() {
 
     setError("");
     setLoading(true);
-    setTags([]);
+    setTargetTags([]);
+    setDiscoveryTags([]);
     setSource(null);
 
     try {
-      const response = await fetch("/api/tags", {
+      const response = await fetch("/api/tagsv2", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, description }),
@@ -38,7 +43,8 @@ export default function HomePage() {
         throw new Error(data.error || "Could not generate tags.");
       }
 
-      setTags(data.tags || []);
+      setTargetTags(data.tags?.target || []);
+      setDiscoveryTags(data.tags?.discovery || []);
       setSource(data.source || null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -48,8 +54,9 @@ export default function HomePage() {
   }
 
   async function copyAllTags() {
-    if (!tags.length) return;
-    await navigator.clipboard.writeText(tags.join(", "));
+    const allTags = [...targetTags, ...discoveryTags];
+    if (!allTags.length) return;
+    await navigator.clipboard.writeText(allTags.join(", "));
   }
 
   return (
@@ -190,7 +197,7 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={copyAllTags}
-                disabled={!tags.length}
+                disabled={targetTags.length + discoveryTags.length === 0}
                 className="rounded-md border border-black bg-white px-4 py-2 disabled:opacity-50"
               >
                 Copy all
@@ -202,10 +209,21 @@ export default function HomePage() {
 
           <section className="rounded-xl border border-black bg-white p-4">
             <h3 className="mb-3 text-3xl">Generated tags</h3>
-            {tags.length ? (
+            {targetTags.length || discoveryTags.length ? (
               <>
+                <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-neutral-600">
+                  Target tags
+                </p>
                 <ul className="list-disc space-y-1 pl-6">
-                  {tags.map((tag) => (
+                  {targetTags.map((tag) => (
+                    <li key={tag}>{tag}</li>
+                  ))}
+                </ul>
+                <p className="mb-2 mt-4 text-sm font-semibold uppercase tracking-wide text-neutral-600">
+                  Discovery tags
+                </p>
+                <ul className="list-disc space-y-1 pl-6">
+                  {discoveryTags.map((tag) => (
                     <li key={tag}>{tag}</li>
                   ))}
                 </ul>
