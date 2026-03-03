@@ -1,53 +1,14 @@
-* {
-  box-sizing: border-box;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-html,
 body {
   margin: 0;
-  padding: 0;
-  background: #fff;
-  color: #000;
-  font-family: sans-serif;
+  font-family: var(--font-source-sans-3), sans-serif;
 }
 
-main {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 16px;
-}
-
-.columns {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
-}
-
-section {
-  border: 1px solid #000;
-  padding: 12px;
-}
-
-@media (min-width: 800px) {
-  .columns {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-textarea,
-button {
-  font: inherit;
-  color: #000;
-  background: #fff;
-  border: 1px solid #000;
-}
-
-textarea {
-  width: 100%;
-  min-height: 80px;
-  padding: 8px;
-}
-
-button {
-  padding: 6px 10px;
+h1,
+h2,
+h3 {
+  font-family: var(--font-outfit), sans-serif;
 }
