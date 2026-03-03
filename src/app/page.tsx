@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 type TagApiResponse = {
   tags: string[];
@@ -16,30 +16,30 @@ export default function HomePage() {
   const [error, setError] = useState("");
   const [source, setSource] = useState<"model" | "fallback" | null>(null);
 
-  const canGenerate = useMemo(() => title.trim().length > 0 && !loading, [title, loading]);
-
   async function generateTags() {
+    if (!title.trim()) return;
+
     setError("");
     setLoading(true);
     setTags([]);
     setSource(null);
 
     try {
-      const res = await fetch("/api/tags", {
+      const response = await fetch("/api/tags", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, description }),
       });
 
-      const data = (await res.json()) as TagApiResponse;
-      if (!res.ok) {
+      const data = (await response.json()) as TagApiResponse;
+      if (!response.ok) {
         throw new Error(data.error || "Could not generate tags.");
       }
 
       setTags(data.tags || []);
-      setSource(data.source ?? null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setSource(data.source || null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -48,64 +48,66 @@ export default function HomePage() {
   async function copyAllTags() {
     if (!tags.length) return;
     await navigator.clipboard.writeText(tags.join(", "));
-    await fetch("/api/events", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        event: "copy_tags_clicked",
-        metadata: { tagCount: tags.length },
-      }),
-    }).catch(() => undefined);
   }
 
   return (
     <main>
       <h1>Tagloom</h1>
-      <p>Generate 13 Etsy-ready tags from a listing in under 60 seconds.</p>
+      <p>Generate 13 Etsy-ready tags from a title and description.</p>
+      <div className="columns">
+        <section>
+          <h2>Input</h2>
 
-      <section className="card">
-        <label htmlFor="title">Listing Title</label>
-        <textarea
-          id="title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Example: Personalized Cotton Dad T-Shirt"
-        />
+          <p>
+            <label htmlFor="title">Listing title</label>
+          </p>
+          <textarea
+            id="title"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            placeholder="Personalized cotton dad t-shirt"
+          />
 
-        <label htmlFor="description">Listing Description (Optional)</label>
-        <textarea
-          id="description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Add materials, style, recipient, and occasion."
-        />
+          <p>
+            <label htmlFor="description">Listing description (optional)</label>
+          </p>
+          <textarea
+            id="description"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            placeholder="100% cotton, v neck, short sleeve"
+          />
 
-        <div className="row">
-          <button className="primary" disabled={!canGenerate} onClick={generateTags}>
-            {loading ? "Generating..." : "Generate 13 Tags"}
-          </button>
-          <button className="secondary" disabled={!tags.length} onClick={copyAllTags}>
-            Copy All
-          </button>
-        </div>
+          <p>
+            <button type="button" onClick={generateTags} disabled={loading || !title.trim()}>
+              {loading ? "Generating..." : "Generate tags"}
+            </button>{" "}
+            <button type="button" onClick={copyAllTags} disabled={!tags.length}>
+              Copy all
+            </button>
+          </p>
 
-        {error ? <p className="error">{error}</p> : null}
+          {error ? <p>{error}</p> : null}
+        </section>
 
-        {tags.length > 0 ? (
-          <>
-            <div className="tags">
-              {tags.map((tag) => (
-                <div key={tag} className="tag">
-                  {tag}
-                </div>
-              ))}
-            </div>
-            <p className="meta">
-              Output source: <strong>{source}</strong>
-            </p>
-          </>
-        ) : null}
-      </section>
+        <section>
+          <h2>Generated tags</h2>
+          {tags.length ? (
+            <>
+              <ul>
+                {tags.map((tag) => (
+                  <li key={tag}>{tag}</li>
+                ))}
+              </ul>
+              <p>
+                <span>Source: {source}</span>
+              </p>
+            </>
+          ) : (
+            <p>No tags yet.</p>
+          )}
+        </section>
+      </div>
     </main>
   );
 }

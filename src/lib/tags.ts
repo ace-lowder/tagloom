@@ -1,104 +1,72 @@
-const STOPWORDS = new Set([
-  "a", "an", "the", "and", "or", "for", "to", "of", "in", "on", "with", "from", "by", "at", "is", "it", "this", "that", "your", "you", "our", "my", "me", "we", "they", "them", "as", "be", "are", "was", "were", "can", "will", "new", "best", "gift", "item"
-]);
-
-const MODIFIERS = [
-  "custom",
-  "handmade",
-  "personalized",
-  "minimalist",
-  "small business",
-  "unique",
-  "gift idea",
-  "etsy seller",
-  "shop owner",
-  "listing help",
-  "seo tags",
-  "keyword tags",
-  "long tail"
-];
-
-function normalize(raw: string): string {
-  return raw
+function normalize(text: string): string {
+  return text
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-function shortenToLimit(tag: string, limit = 20): string {
-  if (tag.length <= limit) return tag;
+function clampTag(tag: string): string {
+  if (tag.length <= 20) return tag;
+
   const words = tag.split(" ");
   const out: string[] = [];
-  for (const w of words) {
-    const next = [...out, w].join(" ");
-    if (next.length <= limit) out.push(w);
-    else break;
+
+  for (const word of words) {
+    const next = [...out, word].join(" ");
+    if (next.length > 20) break;
+    out.push(word);
   }
+
   return out.join(" ").trim();
 }
 
-function uniqueTags(candidates: string[]): string[] {
-  const seen = new Set<string>();
+function cleanTags(candidates: string[]): string[] {
   const out: string[] = [];
-  for (const c of candidates) {
-    const clean = shortenToLimit(normalize(c));
-    if (!clean) continue;
-    if (clean.length < 3) continue;
-    if (seen.has(clean)) continue;
-    seen.add(clean);
-    out.push(clean);
+  const seen = new Set<string>();
+
+  for (const candidate of candidates) {
+    const tag = clampTag(normalize(candidate));
+    if (!tag || tag.length < 3) continue;
+    if (seen.has(tag)) continue;
+
+    seen.add(tag);
+    out.push(tag);
+
     if (out.length === 13) break;
   }
+
   return out;
 }
 
-function keywordsFromText(input: string): string[] {
-  return normalize(input)
+function keywords(text: string): string[] {
+  return normalize(text)
     .split(" ")
-    .filter((w) => w.length > 2 && !STOPWORDS.has(w));
+    .filter((word) => word.length > 2);
 }
 
 export function fallbackTags(title: string, description: string): string[] {
-  const titleWords = keywordsFromText(title);
-  const descWords = keywordsFromText(description);
-  const primary = [...new Set([...titleWords.slice(0, 10), ...descWords.slice(0, 10)])];
+  const words = [...new Set([...keywords(title), ...keywords(description)])];
+  const candidates: string[] = [];
 
-  const phrases: string[] = [];
-
-  for (let i = 0; i < primary.length; i += 1) {
-    phrases.push(primary[i]);
-    if (primary[i + 1]) phrases.push(`${primary[i]} ${primary[i + 1]}`);
+  for (let i = 0; i < words.length; i += 1) {
+    candidates.push(words[i]);
+    if (words[i + 1]) candidates.push(`${words[i]} ${words[i + 1]}`);
   }
 
-  for (const p of primary.slice(0, 8)) {
-    phrases.push(`${p} gift`);
-    phrases.push(`${p} handmade`);
-  }
+  candidates.push("etsy tags", "product tags", "listing tags", "seo tags");
 
-  for (const m of MODIFIERS) {
-    if (primary[0]) phrases.push(`${m} ${primary[0]}`);
-    phrases.push(m);
-  }
-
-  phrases.push("etsy tags");
-  phrases.push("listing seo");
-  phrases.push("product keywords");
-
-  const tags = uniqueTags(phrases);
+  const tags = cleanTags(candidates);
 
   while (tags.length < 13) {
-    tags.push(`etsy tag ${tags.length + 1}`);
+    tags.push(`tag ${tags.length + 1}`);
   }
 
   return tags.slice(0, 13);
 }
 
 export function sanitizeModelTags(rawTags: string[], title: string, description: string): string[] {
-  const tags = uniqueTags(rawTags);
-  if (tags.length < 13) {
-    const fill = fallbackTags(title, description);
-    return uniqueTags([...tags, ...fill]).slice(0, 13);
-  }
-  return tags.slice(0, 13);
+  const tags = cleanTags(rawTags || []);
+  if (tags.length === 13) return tags;
+  return cleanTags([...tags, ...fallbackTags(title, description)]).slice(0, 13);
 }
