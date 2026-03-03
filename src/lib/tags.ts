@@ -14,7 +14,18 @@ type SelectionOutput = {
   discovery: string[];
 };
 
-const LOW_INTENT = new Set(["idea", "wear", "style", "new", "established"]);
+const LOW_INTENT = new Set([
+  "idea",
+  "wear",
+  "style",
+  "new",
+  "established",
+  "apparel",
+  "clothing",
+  "meaningful",
+  "unique",
+  "comfortable",
+]);
 const STOPWORDS = new Set(["for", "the", "and", "with", "from", "your", "you"]);
 const APPAREL_TYPES = ["shirt", "tee", "t shirt", "v neck", "hoodie", "polo", "pullover", "sweatshirt"];
 
@@ -134,6 +145,18 @@ function cleanAndScore(input: ScoredTag[], title: string, description: string): 
   }
 
   return out;
+}
+
+export function rankCandidateTags(rawTags: string[], title: string, description: string, limit: number): string[] {
+  const cleaned = cleanAndScore(
+    (rawTags || []).map((tag) => ({ tag })),
+    title,
+    description,
+  )
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+    .map((item) => item.tag);
+
+  return cleaned.slice(0, limit);
 }
 
 function keywordPairs(words: string[]): string[] {
