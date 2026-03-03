@@ -148,6 +148,62 @@ function fillDiscoveryFromKeywords(
   return phrases.slice(0, needed);
 }
 
+function prioritizeDiscoveryByUsedKeywords(
+  discoveryPhrases: string[],
+  usedKeywords: string[],
+): string[] {
+  const used = new Set(usedKeywords);
+  const remaining = discoveryPhrases.map((phrase, index) => ({ phrase, index }));
+  const ordered: string[] = [];
+
+  while (remaining.length > 0) {
+    let bestIndex = 0;
+
+    for (let i = 1; i < remaining.length; i += 1) {
+      const current = remaining[i];
+      const best = remaining[bestIndex];
+
+      const currentTokens = uniqueTokens(tokenize(current.phrase));
+      const bestTokens = uniqueTokens(tokenize(best.phrase));
+
+      const currentUnused = currentTokens.filter((token) => !used.has(token));
+      const bestUnused = bestTokens.filter((token) => !used.has(token));
+
+      if (currentUnused.length !== bestUnused.length) {
+        if (currentUnused.length > bestUnused.length) bestIndex = i;
+        continue;
+      }
+
+      const currentUnusedCharTotal = currentUnused.reduce(
+        (sum, token) => sum + token.length,
+        0,
+      );
+      const bestUnusedCharTotal = bestUnused.reduce(
+        (sum, token) => sum + token.length,
+        0,
+      );
+      if (currentUnusedCharTotal !== bestUnusedCharTotal) {
+        if (currentUnusedCharTotal > bestUnusedCharTotal) bestIndex = i;
+        continue;
+      }
+
+      const currentDistanceTo20 = Math.abs(20 - current.phrase.length);
+      const bestDistanceTo20 = Math.abs(20 - best.phrase.length);
+      if (currentDistanceTo20 !== bestDistanceTo20) {
+        if (currentDistanceTo20 < bestDistanceTo20) bestIndex = i;
+      }
+    }
+
+    const [selected] = remaining.splice(bestIndex, 1);
+    ordered.push(selected.phrase);
+    for (const token of uniqueTokens(tokenize(selected.phrase))) {
+      used.add(token);
+    }
+  }
+
+  return ordered;
+}
+
 async function requestOpenAIArray(
   client: OpenAI,
   model: string,
@@ -225,7 +281,7 @@ export async function POST(req: NextRequest) {
     const client = new OpenAI({ apiKey: key });
     const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
-    const firstPrompt = `Imagine you are a real Etsy customer trying to find this exact item. Write the phrases you would type into the Etsy search bar to find it. Return valid JSON only. Each phrase must be <= 20 characters. Phrases should be what an average person is most likely to type off the top of their head. Only phrases a non-technical person, who doesn't know how search engines work, would type. Once you, as an average Etsy user, have to think about the next phrase, it's time to stop. Output: ["phrase 1", "phrase 2"]. Title: ${title}, Description: ${description || "(none)"}`;
+    const firstPrompt = `Imagine you are a real Etsy customer trying to find this exact item. Write the phrases you would type into the Etsy search bar to find it. Return valid JSON only. It's important that each phrase must be <= 20 characters. Phrases should be what an average person is most likely to type off the top of their head. Only phrases a non-technical person, who doesn't know how search engines work, would type. Once you, as an average Etsy user, have to pause and think about the next phrase, it's time to stop. Output: ["phrase 1", "phrase 2"]. Title: ${title}, Description: ${description || "(none)"}`;
 
     const firstResponse = await requestOpenAIArray(client, model, firstPrompt);
     const normalizedTargets = normalizeResponse(firstResponse);
@@ -234,10 +290,9 @@ export async function POST(req: NextRequest) {
     console.log("[tagsv2] first_normalized_response", normalizedTargets);
 
     const keywords = buildKeywords(targetTags, title, description);
-    const secondPrompt = `Imagine you are generating Etsy-style metadata tags for discoverability (coverage and variety), not exact buyer search phrases. Phrases should try to end with noun, if noun has to be reused, use the shorted noun that describes the item. Generate at least 13 phrases <= 20 characters each. Return valid JSON only. Use the following object to help generate ${JSON.stringify(
+    const secondPrompt = `Imagine you are generating Etsy-style metadata tags for discoverability (coverage and variety). Phrases need to be relevant to the item and make sense as a search phrase to find the item. Phrases should try to end with noun that describes the item. If the noun has to be reused, use the shortest item noun. Generate at least 13 phrases <= 20 characters each. Return valid JSON only. Use the following object to help generate ${JSON.stringify(
       keywords,
-    )}. Used should be avoided when possible. Title is your highest-priority keyword pool. Description is your secondary keyword pool. Phrases do not need to be perfect English, but should still be human readable and relevant to the item. Output:
-["phrase 1", "phrase 2"]`;
+    )}. Used should be avoid being used as much as possible. Title is your highest-priority keyword pool. Description is your secondary keyword pool. Output: ["phrase 1", "phrase 2"]`;
 
     const secondResponse = await requestOpenAIArray(
       client,
@@ -249,10 +304,15 @@ export async function POST(req: NextRequest) {
     const normalizedDiscovery = normalizeResponse(secondResponse).filter(
       (tag) => !targetSet.has(tag),
     );
+    const prioritizedDiscovery = prioritizeDiscoveryByUsedKeywords(
+      normalizedDiscovery,
+      keywords.used,
+    );
     console.log("[tagsv2] second_response", secondResponse);
     console.log("[tagsv2] second_normalized_response", normalizedDiscovery);
+    console.log("[tagsv2] second_prioritized_response", prioritizedDiscovery);
 
-    let discoveryTags = normalizedDiscovery.slice(0, discoveryNeeded);
+    let discoveryTags = prioritizedDiscovery.slice(0, discoveryNeeded);
     if (discoveryTags.length < discoveryNeeded) {
       const existing = new Set([...targetTags, ...discoveryTags]);
       const fill = fillDiscoveryFromKeywords(
