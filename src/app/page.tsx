@@ -62,7 +62,7 @@ export default function HomePage() {
   return (
     <main className="mx-auto max-w-[1200px] px-4 pb-10 pt-0 md:pt-6">
       <header>
-        <nav className="-mx-4 grid grid-cols-[1fr_auto] items-center gap-4 bg-white px-4 py-3 text-lg text-neutral-700 md:mx-0 md:grid-cols-3 md:bg-transparent md:px-0 md:py-0">
+        <nav className="-mx-4 grid grid-cols-[1fr_auto] items-center gap-4 bg-white px-4 py-3 h-20 md:h-fit text-neutral-700 md:mx-0 md:grid-cols-3 md:bg-transparent md:px-0 md:py-0">
           <a href="#" aria-label="Tagloom home" className="block">
             <Image
               src="/logo.png"
@@ -90,7 +90,7 @@ export default function HomePage() {
             <a href="#">Login</a>
             <a
               href="#"
-              className="hidden rounded-xl bg-black px-5 py-2.5 text-base text-white md:inline-flex"
+              className="hidden rounded-xl bg-black px-5 py-3 text-sm text-white md:inline-flex font-medium"
             >
               Get Started - Free
             </a>
@@ -116,8 +116,8 @@ export default function HomePage() {
           </div>
         </nav>
         {menuOpen ? (
-          <div className="-mx-4 rounded-b-2xl bg-white px-6 pb-5 pt-2 md:hidden">
-            <ul className="space-y-3 text-lg text-neutral-700">
+          <div className="-mx-4 rounded-xl bg-white px-6 pb-5 pt-2 md:hidden">
+            <ul className="space-y-3 text-neutral-700">
               <li>
                 <a href="#">Features</a>
               </li>
@@ -131,22 +131,19 @@ export default function HomePage() {
           </div>
         ) : null}
 
-        <section className="mx-auto mb-12 mt-20 max-w-4xl text-center">
-          <h1 className="mb-5 text-6xl leading-[0.95] md:text-7xl">
+        <section className="mx-auto mb-12 mt-12 md:mt-20 max-w-xl md:max-w-3xl text-center">
+          <h1 className="mb-7 text-5xl md:text-7xl font-medium">
             Generate Better Etsy Tags with Tagloom AI
           </h1>
-          <p className="mx-auto max-w-2xl text-xl text-neutral-600">
+          <p className="mx-auto max-w-lg md:max-w-xl text-lg text-neutral-600">
             Build 13 optimized tags in seconds using your listing title and
             description with cleaner buyer intent phrasing.
           </p>
-          <div className="mt-7 flex flex-wrap justify-center gap-4">
-            <a
-              href="#"
-              className="rounded-2xl bg-primary px-8 py-3 text-lg text-white"
-            >
+          <div className="mt-7 flex flex-wrap justify-center gap-4 text-sm font-medium">
+            <a href="#" className="rounded-xl bg-primary px-7 py-4 text-white">
               Generate Tags
             </a>
-            <a href="#" className="rounded-2xl border border-black px-8 py-3 text-lg">
+            <a href="#" className="rounded-xl border border-black px-7 py-4">
               See Example
             </a>
           </div>
@@ -163,7 +160,7 @@ export default function HomePage() {
           <section className="rounded-xl border border-black bg-white p-4">
             <h3 className="mb-3 text-3xl">Input</h3>
 
-            <label htmlFor="title" className="mb-1 block text-lg">
+            <label htmlFor="title" className="mb-1 block">
               Listing title
             </label>
             <textarea
@@ -171,10 +168,10 @@ export default function HomePage() {
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               placeholder="Personalized cotton dad t shirt"
-              className="mb-3 min-h-24 w-full rounded-md border border-black p-2"
+              className="mb-3 min-h-24 w-full rounded-xl border border-black p-2"
             />
 
-            <label htmlFor="description" className="mb-1 block text-lg">
+            <label htmlFor="description" className="mb-1 block">
               Listing description (optional)
             </label>
             <textarea
@@ -182,7 +179,7 @@ export default function HomePage() {
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               placeholder="100% cotton, v neck, short sleeve"
-              className="mb-3 min-h-24 w-full rounded-md border border-black p-2"
+              className="mb-3 min-h-24 w-full rounded-xl border border-black p-2"
             />
 
             <div className="flex flex-wrap gap-2">
@@ -190,7 +187,7 @@ export default function HomePage() {
                 type="button"
                 onClick={generateTags}
                 disabled={loading || !title.trim()}
-                className="rounded-md border border-black bg-black px-4 py-2 text-white disabled:opacity-50"
+                className="rounded-xl border border-black bg-black px-3.5 py-1.5 text-white disabled:opacity-50"
               >
                 {loading ? "Generating..." : "Generate tags"}
               </button>
@@ -198,7 +195,7 @@ export default function HomePage() {
                 type="button"
                 onClick={copyAllTags}
                 disabled={targetTags.length + discoveryTags.length === 0}
-                className="rounded-md border border-black bg-white px-4 py-2 disabled:opacity-50"
+                className="rounded-xl border border-black bg-white px-4 py-2 disabled:opacity-50"
               >
                 Copy all
               </button>

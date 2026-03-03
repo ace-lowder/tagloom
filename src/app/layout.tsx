@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Outfit, Source_Sans_3 } from "next/font/google";
+import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -7,7 +7,7 @@ const outfit = Outfit({
   variable: "--font-outfit",
 });
 
-const sourceSans3 = Source_Sans_3({
+const inter = Inter({
   subsets: ["latin"],
   variable: "--font-source-sans-3",
 });
@@ -24,7 +24,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${outfit.variable} ${sourceSans3.variable} bg-[#F7F7F5] text-black`}>
+      <body className={`${outfit.variable} ${inter.variable} bg-[#F7F7F5] text-black`}>
         {children}
       </body>
     </html>
