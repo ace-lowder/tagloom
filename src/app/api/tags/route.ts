@@ -1,27 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
-import { fallbackTags, pickFinalTags, rankCandidateTags, sanitizeModelTags } from "@/lib/tags";
 
-type CoverageMap = {
-  what?: string[];
-  who?: string[];
-  material?: string[];
-  style?: string[];
-  occasion?: string[];
-  use_case?: string[];
-};
-
-type TagResponse = {
-  tags: string[];
-  source: "model" | "fallback";
-  pipeline?: {
-    target: string[];
-    discovery: string[];
-    coverageMap?: CoverageMap;
-  };
-};
-
-type Stage = "generator" | "optimizer" | "auditor";
+const FALLBACK_STOPWORDS = new Set([
+  "for",
+  "the",
+  "and",
+  "with",
+  "from",
+  "your",
+  "you",
+  "a",
+  "an",
+  "to",
+  "of",
+  "in",
+  "this",
+  "that",
+  "is",
+  "it",
+]);
 
 type ModelTagObject = {
   tag?: string;
@@ -30,11 +27,10 @@ type ModelTagObject = {
 type ModelBuckets = {
   target?: string[] | ModelTagObject[];
   discovery?: string[] | ModelTagObject[];
-  coverage_map?: CoverageMap;
 };
 
 async function logOpenAIInteraction(input: {
-  stage: Stage;
+  stage: "generator" | "optimizer";
   model: string;
   prompt: string;
   rawResponse: string;
@@ -50,7 +46,7 @@ async function logOpenAIInteraction(input: {
   });
 }
 
-function normalizeForAudit(raw: string): string {
+function normalizeTags(raw: string): string {
   return raw
     .toLowerCase()
     .replace(/-/g, " ")
@@ -59,15 +55,56 @@ function normalizeForAudit(raw: string): string {
     .trim();
 }
 
-function toTagStrings(input: string[] | ModelTagObject[] | undefined): string[] {
+function normalizeResponseTags(input: string[] | ModelTagObject[] | undefined): string[] {
   if (!Array.isArray(input)) return [];
-
   return input
-    .map((item) => {
-      if (typeof item === "string") return normalizeForAudit(item);
-      return normalizeForAudit(String(item?.tag ?? ""));
-    })
+    .map((item) => (typeof item === "string" ? item : String(item?.tag ?? "")))
+    .map(normalizeTags)
     .filter(Boolean);
+}
+
+function fillTo13(tags: string[], fallback: string[]): string[] {
+  return [...tags, ...fallback].slice(0, 13);
+}
+
+function fallbackKeywords(text: string): string[] {
+  return normalizeTags(text)
+    .split(" ")
+    .filter((word) => word.length > 2 && !FALLBACK_STOPWORDS.has(word));
+}
+
+function fallbackTags(title: string, description: string): string[] {
+  const words = [...new Set([...fallbackKeywords(title), ...fallbackKeywords(description)])];
+  const candidates: string[] = [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+
+  for (let i = 0; i < words.length; i += 1) {
+    candidates.push(words[i]);
+    if (words[i + 1]) candidates.push(`${words[i]} ${words[i + 1]}`);
+    if (words[i + 2]) candidates.push(`${words[i]} ${words[i + 1]} ${words[i + 2]}`);
+  }
+
+  if (words.includes("dad")) {
+    candidates.push("fathers day gift", "dad birthday gift", "gift for father", "custom dad shirt");
+  }
+
+  candidates.push("custom name shirt", "v neck t shirt", "soft cotton tee", "personalized gift");
+
+  for (const candidate of candidates) {
+    const tag = normalizeTags(candidate);
+    if (!tag || tag.length > 20) continue;
+    if (seen.has(tag)) continue;
+    seen.add(tag);
+    out.push(tag);
+    if (out.length === 13) break;
+  }
+
+  while (out.length < 13) {
+    out.push(`tag ${out.length + 1}`);
+  }
+
+  return out;
 }
 
 export async function POST(req: NextRequest) {
@@ -83,14 +120,13 @@ export async function POST(req: NextRequest) {
     const key = process.env.OPENAI_API_KEY;
     if (!key) {
       const fallback = fallbackTags(title, description);
-      const res: TagResponse = { tags: fallback, source: "fallback" };
-      return NextResponse.json(res);
+      return NextResponse.json({ tags: fallback, source: "fallback" });
     }
 
     const client = new OpenAI({ apiKey: key });
     const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
-    const generatorPrompt = `Generate 26 Etsy tags and return JSON only: {"target":[10 strings],"discovery":[16 strings]}. Keep each tag <=20 characters, use spaces not hyphens, and remove punctuation except %. No duplicates or near-duplicates. Prioritize real buyer queries over feature fragments. Target tags should be high-intent and distinct, with occasion or personalization leading intent. Discovery tags should expand vocabulary while staying in the same product type. Avoid low-intent words and generic catalog words. Title: ${title}\nDescription: ${description || "(none)"}`;
+    const generatorPrompt = `Generate 26 Etsy tags. Return JSON only as {"target":[10 strings],"discovery":[16 strings]}. Each tag must be <=20 chars, spaces not hyphens, no punctuation except %, and no duplicate or near-duplicate phrasing. Prioritize buyer query realism. Make target high-intent and distinct, led by occasion or personalization when relevant. Make discovery expand vocabulary without category drift. Avoid low-intent/generic catalog wording. Title: ${title}\nDescription: ${description || "(none)"}`;
 
     const generatorCompletion = await client.chat.completions.create({
       model,
@@ -98,7 +134,6 @@ export async function POST(req: NextRequest) {
       response_format: { type: "json_object" },
       messages: [{ role: "user", content: generatorPrompt }],
     });
-
     const generatorRaw = generatorCompletion.choices[0]?.message?.content || "{}";
     await logOpenAIInteraction({
       stage: "generator",
@@ -109,10 +144,11 @@ export async function POST(req: NextRequest) {
     });
 
     const generatorParsed = JSON.parse(generatorRaw) as ModelBuckets;
-    const rankedTarget = rankCandidateTags(toTagStrings(generatorParsed.target), title, description, 10);
-    const rankedDiscovery = rankCandidateTags(toTagStrings(generatorParsed.discovery), title, description, 16);
+    const generatorTarget = normalizeResponseTags(generatorParsed.target);
+    const generatorDiscovery = normalizeResponseTags(generatorParsed.discovery);
+    const generationFallback = [...generatorTarget, ...generatorDiscovery];
 
-    const optimizerPrompt = `You optimize Etsy tags. Input JSON has candidate arrays target and discovery. Recompose from token-level combinations and return JSON only: {"target":[5 strings],"discovery":[8 strings]}. Keep each tag <=20 characters, spaces not hyphens, no punctuation except %, no duplicates or near-duplicates, no product-type drift, and no low-intent or generic catalog words. Favor high-intent buyer phrasing, distinct purchase intents in target, and wider vocabulary in discovery. Title: ${title}\nDescription: ${description || "(none)"}\nCandidates: ${JSON.stringify({ target: rankedTarget, discovery: rankedDiscovery })}`;
+    const optimizerPrompt = `Optimize Etsy tags from candidate arrays and recompose meaningfully. Return JSON only as {"target":[5 strings],"discovery":[8 strings]}. Rules: <=20 chars; spaces not hyphens; no punctuation except %; no duplicates or near-duplicates; no product-type drift; no low-intent/generic catalog words. Targets must be complete buyer queries with distinct intent. If listing implies occasion/personalization, preserve both strongly. At least 6 of final 13 must be new phrasings not verbatim from candidates. Title: ${title}\nDescription: ${description || "(none)"}\nCandidates: ${JSON.stringify({ target: generatorTarget, discovery: generatorDiscovery })}`;
 
     const optimizerCompletion = await client.chat.completions.create({
       model,
@@ -120,7 +156,6 @@ export async function POST(req: NextRequest) {
       response_format: { type: "json_object" },
       messages: [{ role: "user", content: optimizerPrompt }],
     });
-
     const optimizerRaw = optimizerCompletion.choices[0]?.message?.content || "{}";
     await logOpenAIInteraction({
       stage: "optimizer",
@@ -131,51 +166,25 @@ export async function POST(req: NextRequest) {
     });
 
     const optimizerParsed = JSON.parse(optimizerRaw) as ModelBuckets;
-    const optimizedTarget = toTagStrings(optimizerParsed.target);
-    const optimizedDiscovery = toTagStrings(optimizerParsed.discovery);
 
-    const auditorPrompt = `You audit Etsy tags. Input JSON has optimized target and discovery arrays. Return JSON only: {"target":[5 strings],"discovery":[8 strings],"coverage_map":{"what":[],"who":[],"material":[],"style":[],"occasion":[],"use_case":[]}}. Correct any rule breaks and improve phrasing if needed. Enforce <=20 chars, spaces not hyphens, no punctuation except %, no duplicates, no low-intent/generic catalog words, and no product-type drift. Target must be exact high-intent buyer queries with distinct intent. Discovery must stay relevant and widen vocabulary. Title: ${title}\nDescription: ${description || "(none)"}\nOptimized tags: ${JSON.stringify({ target: optimizedTarget, discovery: optimizedDiscovery })}`;
+    const optimizedTarget = normalizeResponseTags(optimizerParsed.target);
+    const optimizedDiscovery = normalizeResponseTags(optimizerParsed.discovery);
+    const optimizedFinal = [...optimizedTarget, ...optimizedDiscovery].slice(0, 13);
 
-    const auditorCompletion = await client.chat.completions.create({
-      model,
-      temperature: 0.1,
-      response_format: { type: "json_object" },
-      messages: [{ role: "user", content: auditorPrompt }],
-    });
+    let tags = optimizedFinal;
+    if (optimizedFinal.some((tag) => tag.length > 20)) {
+      tags = generationFallback.slice(0, 13);
+    }
 
-    const auditorRaw = auditorCompletion.choices[0]?.message?.content || "{}";
-    await logOpenAIInteraction({
-      stage: "auditor",
-      model,
-      prompt: auditorPrompt,
-      rawResponse: auditorRaw,
-      title,
-    });
+    if (!tags.length) {
+      tags = fallbackTags(title, description);
+    }
 
-    const auditorParsed = JSON.parse(auditorRaw) as ModelBuckets;
+    if (tags.length < 13) {
+      tags = fillTo13(tags, fallbackTags(title, description));
+    }
 
-    const selection = pickFinalTags(
-      {
-        target: toTagStrings(auditorParsed.target).map((tag) => ({ tag })),
-        discovery: toTagStrings(auditorParsed.discovery).map((tag) => ({ tag })),
-      },
-      title,
-      description,
-    );
-
-    const tags = sanitizeModelTags(selection.tags, title, description);
-
-    const res: TagResponse = {
-      tags,
-      source: "model",
-      pipeline: {
-        target: selection.target,
-        discovery: selection.discovery,
-        coverageMap: auditorParsed.coverage_map,
-      },
-    };
-
-    return NextResponse.json(res);
+    return NextResponse.json({ tags, source: "model" });
   } catch {
     return NextResponse.json({ tags: [], source: "fallback", error: "Tag generation failed." }, { status: 500 });
   }
