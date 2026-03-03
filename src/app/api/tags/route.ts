@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
-import { fallbackTags, normalizeTag, pickFinalTags, sanitizeModelTags } from "@/lib/tags";
+import { fallbackTags, pickFinalTags, sanitizeModelTags } from "@/lib/tags";
 
 type TagResponse = {
   tags: string[];
@@ -8,6 +8,7 @@ type TagResponse = {
   pipeline?: {
     target: string[];
     discovery: string[];
+    coverageMap?: CoverageMap;
   };
 };
 
@@ -24,6 +25,16 @@ type GeneratorModelOutput = {
 type AuditorModelOutput = {
   target?: TagScoreObject[] | string[];
   discovery?: TagScoreObject[] | string[];
+  coverage_map?: CoverageMap;
+};
+
+type CoverageMap = {
+  what?: string[];
+  who?: string[];
+  material?: string[];
+  style?: string[];
+  occasion?: string[];
+  use_case?: string[];
 };
 
 async function logOpenAIInteraction(input: {
@@ -43,15 +54,22 @@ async function logOpenAIInteraction(input: {
   });
 }
 
+function normalizeForAudit(raw: string): string {
+  return raw
+    .replace(/-/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function toScoredTags(input: TagScoreObject[] | string[] | undefined): { tag: string; score?: number }[] {
   if (!Array.isArray(input)) return [];
 
   return input
     .map((item) => {
-      if (typeof item === "string") return { tag: normalizeTag(item) };
+      if (typeof item === "string") return { tag: normalizeForAudit(item) };
       const rawTag = typeof item?.tag === "string" ? item.tag : "";
       return {
-        tag: normalizeTag(rawTag),
+        tag: normalizeForAudit(rawTag),
         score: typeof item?.score === "number" ? item.score : undefined,
       };
     })
@@ -78,28 +96,17 @@ export async function POST(req: NextRequest) {
     const client = new OpenAI({ apiKey: key });
     const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
-    const generatorPrompt = [
-      "Generate exactly 26 Etsy tags and output valid JSON only.",
-      "Schema:",
-      "{\"target\":[{\"tag\":\"...\",\"score\":0-100}],\"discovery\":[{\"tag\":\"...\",\"score\":0-100}]}",
-      "Requirements:",
-      "- target length must be exactly 10",
-      "- discovery length must be exactly 16",
-      "- each tag <= 20 chars",
-      "- use spaces not hyphens (t shirt / v neck)",
-      "- keep 100% symbol when relevant (100% cotton)",
-      "- no duplicate or near-identical tags",
-      "- minimize repeated words across all 26",
-      "- target tags are high-intent exact phrases",
-      "- discovery tags expand vocabulary and coverage but remain product-relevant",
-      "- avoid low-intent words: idea, wear, style, new, established",
-      "- do not introduce irrelevant product types",
-      "- score each tag 0-100 by how well it follows these rules",
-      "Title:",
-      title,
-      "Description:",
-      description || "(none)",
-    ].join("\n");
+    const generatorPrompt = `Generate exactly 26 Etsy tags and output valid JSON with keys "target" and "discovery". "target" must contain exactly 10 items and "discovery" must contain exactly 16 items. Output JSON only. Each item must be an object with keys "tag" and "score" where score is 0-100. Each tag must be 20 characters or fewer. Use spaces not hyphens (t shirt / v neck) and keep correct symbols where relevant (100% cotton). Avoid duplicate phrases and minimize repeated words across all tags.
+
+Prioritize buyer search behavior over product-description phrasing. Target tags must be high-intent phrases that mirror real Etsy autocomplete-style searches, natural in wording, complete, commonly typed, and distinct in intent. Avoid semantic overlap (for example, do not include both "gift for dad" and "dad birthday gift"). Use buyer word order. Favor occasion and personalization intent before feature phrasing. Avoid low-intent words (idea, wear, style) and forced modifiers (new, established). Do not add irrelevant product types.
+
+Discovery tags should widen vocabulary coverage while staying fully product-relevant. Prefer 17-20 characters when natural. Maximize unique words, avoid duplicating target intent, avoid filler catalog nouns, and avoid unnatural constructions. Score each tag by how likely a real buyer would type it while still following the constraints.
+
+Title:
+${title}
+
+Description:
+${description || "(none)"}`;
 
     const generatorCompletion = await client.chat.completions.create({
       model,
@@ -121,33 +128,27 @@ export async function POST(req: NextRequest) {
     const generatorTarget = toScoredTags(generatorParsed.target);
     const generatorDiscovery = toScoredTags(generatorParsed.discovery);
 
-    const auditorPrompt = [
-      "You are an Etsy SEO auditor and phrase composer.",
-      "Input is product title/description and generated tags.",
-      "Recompose from scratch using token mix-and-match. Do not preserve original phrasing unless it is best.",
-      "Output valid JSON only with schema:",
-      "{\"target\":[{\"tag\":\"...\",\"score\":0-100}],\"discovery\":[{\"tag\":\"...\",\"score\":0-100}]}",
-      "Requirements:",
-      "- output exactly 5 target and 8 discovery tags",
-      "- each tag <= 20 chars",
-      "- spaces instead of hyphens",
-      "- no duplicate or near-identical phrases",
-      "- no low-intent words: idea, wear, style, new, established",
-      "- stay in product category, no type drift (ex: shirt -> polo/hoodie/pullover)",
-      "- target tags are exact high-intent buyer queries with distinct intent",
-      "- discovery tags maximize vocabulary coverage while staying relevant",
-      "- cover what it is, who it is for, material, style, occasion, use case",
-      "- score each returned tag 0-100",
-      "Title:",
-      title,
-      "Description:",
-      description || "(none)",
-      "Generated candidate tags JSON:",
-      JSON.stringify({
-        target: generatorTarget,
-        discovery: generatorDiscovery,
-      }),
-    ].join("\n");
+    const auditorPrompt = `You are an Etsy SEO auditor and phrase composer. You will receive a product title, product description, and a JSON object with tags split into target and discovery. Recompose tags from scratch using token mix-and-match when helpful; do not preserve original phrasing unless it is actually best.
+
+Return valid JSON only with keys "target", "discovery", and "coverage_map". "target" must contain exactly 5 objects and "discovery" must contain exactly 8 objects. Each object must have keys "tag" and "score" where score is 0-100. "coverage_map" must be an object with keys "what", "who", "material", "style", "occasion", and "use_case", and each value should be an array of the final tags that satisfy that angle.
+
+Each final tag must be 20 characters or fewer. Use spaces instead of hyphens (t shirt / v neck) and correct symbols where relevant (100% cotton). Avoid duplicate or near-identical phrases. Avoid unnatural wording, low-intent words (idea, wear, style), and forced modifiers (new, established). Do not introduce irrelevant product types (for example do not turn shirt into polo, hoodie, or pullover). Penalize generic catalog language such as apparel, clothing, meaningful, unique, and comfortable unless specificity would otherwise be lost.
+
+Prioritize buyer search behavior over product description phrasing. The first 5 tags must be high-intent exact buyer queries with distinct purchase intent and no semantic overlap. Prioritize occasion and personalization intent before style when possible. The remaining 8 tags should widen discovery while staying fully product-relevant, adding new vocabulary and angles without changing category.
+
+Across all 13 final tags, cover: what it is, who it is for, material, style, occasion, and use case. Favor descriptive multi-word phrases and use as much of the 20-character limit as naturally possible. Core nouns like shirt or tee may repeat when necessary, but avoid excessive reuse and minor word swaps that create redundancy.
+
+Title:
+${title}
+
+Description:
+${description || "(none)"}
+
+Generated candidate tags JSON:
+${JSON.stringify({
+  target: generatorTarget,
+  discovery: generatorDiscovery,
+})}`;
 
     const auditorCompletion = await client.chat.completions.create({
       model,
@@ -168,6 +169,7 @@ export async function POST(req: NextRequest) {
     const auditorParsed = JSON.parse(auditorRaw) as AuditorModelOutput;
     const auditorTarget = toScoredTags(auditorParsed.target);
     const auditorDiscovery = toScoredTags(auditorParsed.discovery);
+    const coverageMap = auditorParsed.coverage_map;
 
     const selection = pickFinalTags(
       {
@@ -186,6 +188,7 @@ export async function POST(req: NextRequest) {
       pipeline: {
         target: selection.target,
         discovery: selection.discovery,
+        coverageMap,
       },
     };
     return NextResponse.json(res);
