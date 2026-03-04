@@ -60,7 +60,7 @@ export default function HomePage() {
   }
 
   return (
-    <main className="mx-auto max-w-[1200px] px-4 pb-10 pt-0 md:pt-6">
+    <main className="mx-auto w-full max-w-[1200px] px-4 pb-10 pt-4 md:pt-6">
       <header>
         <nav className="-mx-4 grid grid-cols-[1fr_auto] items-center gap-4 bg-white px-4 py-3 h-20 md:h-fit text-neutral-700 md:mx-0 md:grid-cols-3 md:bg-transparent md:px-0 md:py-0">
           <a href="#" aria-label="Tagloom home" className="block">
@@ -139,16 +139,22 @@ export default function HomePage() {
             Build 13 optimized tags in seconds using your listing title and
             description with cleaner buyer intent phrasing.
           </p>
-          <div className="mt-7 flex flex-wrap justify-center gap-4 text-sm font-medium">
-            <a href="#" className="rounded-xl bg-primary px-7 py-4 text-white">
+          <div className="mt-12 flex flex-wrap justify-center gap-4 text-sm font-medium">
+            <a href="#" className="rounded-xl bg-primary px-6 py-3 text-white">
               Generate Tags
             </a>
-            <a href="#" className="rounded-xl border border-black px-7 py-4">
+            <a href="#" className="rounded-xl border border-black px-6 py-3">
               See Example
             </a>
           </div>
         </section>
       </header>
+
+      <div className="rounded-xl p-4 md:mb-10 md:p-8 bg-orange-200 h-[500px]" />
+
+      <div className="-mt-96 mb-12 p-4 h-[500px] mx-auto max-w-4xl rounded-3xl bg-white/35 shadow-xl">
+        <div className="rounded-2xl bg-neutral-100 h-full" />
+      </div>
 
       <section aria-label="tag generator">
         <h2 className="mb-1 text-4xl">Tag Generator</h2>
