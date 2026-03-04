@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Copy, Sparkles } from "lucide-react";
 import GradientBackground from "./GradientBackground";
@@ -19,30 +19,246 @@ type TagGeneratorProps = {
   glowRef?: RefObject<HTMLDivElement>;
 };
 
+type DemoPhase = "idle" | "typing" | "generating" | "revealing";
+
+type DemoProduct = {
+  title: string;
+  tags: string[];
+};
+
+const DEMO_PRODUCTS: DemoProduct[] = [
+  {
+    title: "Handmade ceramic coffee mug with minimalist design",
+    tags: [
+      "ceramic mug",
+      "handmade pottery",
+      "minimalist cup",
+      "coffee lover gift",
+      "artisan mug",
+      "stoneware cup",
+      "modern ceramic",
+      "pottery gift",
+      "hand thrown mug",
+      "unique coffee mug",
+      "kitchen gift",
+      "home decor",
+      "cozy gift",
+    ],
+  },
+  {
+    title: "Vintage floral pressed flower bookmark set",
+    tags: [
+      "pressed flower",
+      "floral bookmark",
+      "book lover gift",
+      "botanical art",
+      "dried flowers",
+      "vintage bookmark",
+      "gift for reader",
+      "handmade bookmark",
+      "nature art",
+      "wildflower print",
+      "stocking stuffer",
+      "teacher gift",
+      "cottagecore",
+    ],
+  },
+  {
+    title: "Custom engraved wooden cutting board for kitchen",
+    tags: [
+      "custom cutting board",
+      "engraved wood",
+      "personalized gift",
+      "wedding gift",
+      "kitchen decor",
+      "wooden board",
+      "housewarming gift",
+      "custom kitchen",
+      "laser engraved",
+      "anniversary gift",
+      "rustic kitchen",
+      "foodie gift",
+      "bamboo board",
+    ],
+  },
+];
+
 export default function TagGenerator({ onFocus, glowRef }: TagGeneratorProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [showDescription, setShowDescription] = useState(false);
-  const [targetTags, setTargetTags] = useState<string[]>([]);
-  const [discoveryTags, setDiscoveryTags] = useState<string[]>([]);
+
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const [demoPhase, setDemoPhase] = useState<DemoPhase>("idle");
+  const [demoTitle, setDemoTitle] = useState("");
+  const [demoTags, setDemoTags] = useState<string[]>([]);
+
+  const [apiTargetTags, setApiTargetTags] = useState<string[]>([]);
+  const [apiDiscoveryTags, setApiDiscoveryTags] = useState<string[]>([]);
+  const [visibleTargetTags, setVisibleTargetTags] = useState<string[]>([]);
+  const [visibleDiscoveryTags, setVisibleDiscoveryTags] = useState<string[]>([]);
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
   const [source, setSource] = useState<"model" | "fallback" | null>(null);
 
+  const demoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const revealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const demoIndexRef = useRef(0);
+  const hasUserInteractedRef = useRef(false);
+  const requestVersionRef = useRef(0);
+
+  const clearDemoTimer = useCallback(() => {
+    if (demoTimeoutRef.current) {
+      clearTimeout(demoTimeoutRef.current);
+      demoTimeoutRef.current = null;
+    }
+  }, []);
+
+  const clearRevealTimer = useCallback(() => {
+    if (revealTimeoutRef.current) {
+      clearTimeout(revealTimeoutRef.current);
+      revealTimeoutRef.current = null;
+    }
+  }, []);
+
+  const commitUserInteraction = useCallback(() => {
+    if (hasUserInteractedRef.current) return;
+
+    hasUserInteractedRef.current = true;
+    setHasUserInteracted(true);
+    setDemoPhase("idle");
+    setDemoTitle("");
+    setDemoTags([]);
+    clearDemoTimer();
+  }, [clearDemoTimer]);
+
+  const runDemoCycle = useCallback(() => {
+    if (hasUserInteractedRef.current) return;
+
+    clearDemoTimer();
+    const product = DEMO_PRODUCTS[demoIndexRef.current % DEMO_PRODUCTS.length];
+
+    setDemoTags([]);
+    setDemoTitle("");
+    setDemoPhase("typing");
+
+    let charIndex = 0;
+
+    const typeNextChar = () => {
+      if (hasUserInteractedRef.current) return;
+
+      if (charIndex <= product.title.length) {
+        setDemoTitle(product.title.slice(0, charIndex));
+        charIndex += 1;
+        demoTimeoutRef.current = setTimeout(typeNextChar, 45);
+        return;
+      }
+
+      setDemoPhase("generating");
+      demoTimeoutRef.current = setTimeout(() => {
+        if (hasUserInteractedRef.current) return;
+
+        setDemoPhase("revealing");
+        let tagIndex = 0;
+
+        const revealNextTag = () => {
+          if (hasUserInteractedRef.current) return;
+
+          if (tagIndex < product.tags.length) {
+            setDemoTags((prev) => [...prev, product.tags[tagIndex]]);
+            tagIndex += 1;
+            demoTimeoutRef.current = setTimeout(revealNextTag, 120);
+            return;
+          }
+
+          demoTimeoutRef.current = setTimeout(() => {
+            if (hasUserInteractedRef.current) return;
+            demoIndexRef.current += 1;
+            runDemoCycle();
+          }, 2200);
+        };
+
+        revealNextTag();
+      }, 900);
+    };
+
+    typeNextChar();
+  }, [clearDemoTimer]);
+
+  const animateApiTagsIn = useCallback(
+    (target: string[], discovery: string[], requestVersion: number) => {
+      clearRevealTimer();
+      setVisibleTargetTags([]);
+      setVisibleDiscoveryTags([]);
+
+      let targetIndex = 0;
+      let discoveryIndex = 0;
+
+      const revealNext = () => {
+        if (requestVersionRef.current !== requestVersion) return;
+
+        if (targetIndex < target.length) {
+          setVisibleTargetTags((prev) => [...prev, target[targetIndex]]);
+          targetIndex += 1;
+          revealTimeoutRef.current = setTimeout(revealNext, 80);
+          return;
+        }
+
+        if (discoveryIndex < discovery.length) {
+          setVisibleDiscoveryTags((prev) => [...prev, discovery[discoveryIndex]]);
+          discoveryIndex += 1;
+          revealTimeoutRef.current = setTimeout(revealNext, 80);
+        }
+      };
+
+      revealTimeoutRef.current = setTimeout(revealNext, 80);
+    },
+    [clearRevealTimer],
+  );
+
+  useEffect(() => {
+    if (hasUserInteracted) return;
+
+    clearDemoTimer();
+    demoTimeoutRef.current = setTimeout(() => {
+      if (!hasUserInteractedRef.current) runDemoCycle();
+    }, 1000);
+
+    return () => {
+      clearDemoTimer();
+    };
+  }, [hasUserInteracted, runDemoCycle, clearDemoTimer]);
+
+  useEffect(() => {
+    return () => {
+      clearDemoTimer();
+      clearRevealTimer();
+    };
+  }, [clearDemoTimer, clearRevealTimer]);
+
   const handleTitleFocus = () => {
+    commitUserInteraction();
     setShowDescription(true);
     if (onFocus) onFocus();
   };
 
   const handleGenerate = async () => {
+    commitUserInteraction();
     if (!title.trim()) return;
 
+    const requestVersion = requestVersionRef.current + 1;
+    requestVersionRef.current = requestVersion;
+
+    clearRevealTimer();
     setError("");
     setIsGenerating(true);
-    setTargetTags([]);
-    setDiscoveryTags([]);
     setSource(null);
+    setApiTargetTags([]);
+    setApiDiscoveryTags([]);
+    setVisibleTargetTags([]);
+    setVisibleDiscoveryTags([]);
 
     try {
       const response = await fetch("/api/tags", {
@@ -56,25 +272,50 @@ export default function TagGenerator({ onFocus, glowRef }: TagGeneratorProps) {
         throw new Error(data.error || "Could not generate tags.");
       }
 
-      setTargetTags(data.tags?.target || []);
-      setDiscoveryTags(data.tags?.discovery || []);
+      if (requestVersionRef.current !== requestVersion) return;
+
+      const nextTarget = data.tags?.target || [];
+      const nextDiscovery = data.tags?.discovery || [];
+
+      setApiTargetTags(nextTarget);
+      setApiDiscoveryTags(nextDiscovery);
       setSource(data.source || null);
+      animateApiTagsIn(nextTarget, nextDiscovery, requestVersion);
     } catch (err) {
+      if (requestVersionRef.current !== requestVersion) return;
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
-      setIsGenerating(false);
+      if (requestVersionRef.current === requestVersion) {
+        setIsGenerating(false);
+      }
     }
   };
 
   const handleCopyAll = async () => {
-    const allTags = [...targetTags, ...discoveryTags];
+    const allTags = hasUserInteracted
+      ? [...visibleTargetTags, ...visibleDiscoveryTags]
+      : demoTags;
+
     if (!allTags.length) return;
+
     await navigator.clipboard.writeText(allTags.join(", "));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const totalTags = targetTags.length + discoveryTags.length;
+  const inputTitle = hasUserInteracted ? title : demoTitle;
+  const displayTargetTags = hasUserInteracted ? visibleTargetTags : demoTags;
+  const displayDiscoveryTags = hasUserInteracted ? visibleDiscoveryTags : [];
+  const totalTags = displayTargetTags.length + displayDiscoveryTags.length;
+
+  const demoStatusText =
+    demoPhase === "typing"
+      ? "Live demo typing..."
+      : demoPhase === "generating"
+        ? "Live demo generating..."
+        : demoPhase === "revealing"
+          ? "Live demo revealing..."
+          : "Live demo running...";
 
   return (
     <div ref={glowRef} id="generator" className="relative mx-auto max-w-2xl">
@@ -104,7 +345,11 @@ export default function TagGenerator({ onFocus, glowRef }: TagGeneratorProps) {
             <span className="text-sm font-semibold text-stone-700">
               Tagloom Generator
             </span>
-            {source ? (
+            {!hasUserInteracted ? (
+              <span className="ml-auto text-xs italic text-stone-400">
+                {demoStatusText}
+              </span>
+            ) : source ? (
               <span className="ml-auto text-xs italic text-stone-400">
                 Source: {source}
               </span>
@@ -117,9 +362,13 @@ export default function TagGenerator({ onFocus, glowRef }: TagGeneratorProps) {
             </label>
             <input
               type="text"
-              value={title}
+              value={inputTitle}
               onFocus={handleTitleFocus}
-              onChange={(e) => setTitle(e.target.value)}
+              onPaste={() => commitUserInteraction()}
+              onChange={(e) => {
+                commitUserInteraction();
+                setTitle(e.target.value);
+              }}
               placeholder="e.g. Handmade ceramic coffee mug with minimalist design"
               className="w-full rounded-xl border border-stone-200 bg-white/70 px-4 py-3 text-sm text-stone-800 placeholder-stone-400 transition-all focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
             />
@@ -140,7 +389,12 @@ export default function TagGenerator({ onFocus, glowRef }: TagGeneratorProps) {
                 </label>
                 <textarea
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onFocus={() => commitUserInteraction()}
+                  onPaste={() => commitUserInteraction()}
+                  onChange={(e) => {
+                    commitUserInteraction();
+                    setDescription(e.target.value);
+                  }}
                   placeholder="Add more details about your product to get more accurate tags..."
                   rows={3}
                   className="w-full resize-none rounded-xl border border-stone-200 bg-white/70 px-4 py-3 text-sm text-stone-800 placeholder-stone-400 transition-all focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
@@ -179,9 +433,7 @@ export default function TagGenerator({ onFocus, glowRef }: TagGeneratorProps) {
             )}
           </button>
 
-          {error ? (
-            <p className="mt-2 text-sm text-red-700">{error}</p>
-          ) : null}
+          {error ? <p className="mt-2 text-sm text-red-700">{error}</p> : null}
 
           <AnimatePresence>
             {totalTags > 0 && (
@@ -208,10 +460,10 @@ export default function TagGenerator({ onFocus, glowRef }: TagGeneratorProps) {
                 </div>
 
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
-                  Target tags
+                  {hasUserInteracted ? "Target tags" : "Demo preview tags"}
                 </p>
                 <div className="mb-4 flex flex-wrap gap-2">
-                  {targetTags.map((tag, i) => (
+                  {displayTargetTags.map((tag, i) => (
                     <motion.span
                       key={`${tag}-${i}`}
                       initial={{ opacity: 0, scale: 0.8 }}
@@ -229,30 +481,38 @@ export default function TagGenerator({ onFocus, glowRef }: TagGeneratorProps) {
                   ))}
                 </div>
 
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
-                  Discovery tags
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {discoveryTags.map((tag, i) => (
-                    <motion.span
-                      key={`${tag}-${i}`}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{
-                        delay: i * 0.04,
-                        type: "spring",
-                        stiffness: 300,
-                        damping: 20,
-                      }}
-                      className="cursor-default rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm text-stone-700 shadow-sm transition-colors hover:border-orange-300 hover:text-orange-700"
-                    >
-                      {tag}
-                    </motion.span>
-                  ))}
-                </div>
+                {hasUserInteracted ? (
+                  <>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
+                      Discovery tags
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {displayDiscoveryTags.map((tag, i) => (
+                        <motion.span
+                          key={`${tag}-${i}`}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{
+                            delay: i * 0.04,
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 20,
+                          }}
+                          className="cursor-default rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm text-stone-700 shadow-sm transition-colors hover:border-orange-300 hover:text-orange-700"
+                        >
+                          {tag}
+                        </motion.span>
+                      ))}
+                    </div>
+                  </>
+                ) : null}
               </motion.div>
             )}
           </AnimatePresence>
+
+          {hasUserInteracted && (apiTargetTags.length !== visibleTargetTags.length || apiDiscoveryTags.length !== visibleDiscoveryTags.length) ? (
+            <p className="mt-2 text-xs text-stone-500">Animating results...</p>
+          ) : null}
         </div>
       </motion.div>
     </div>
