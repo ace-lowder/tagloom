@@ -12,3 +12,81 @@ h2,
 h3 {
   font-family: var(--font-outfit), sans-serif;
 }
+
+@layer components {
+  .nav-shell {
+    @apply -mx-4 grid h-20 grid-cols-[1fr_auto] items-center gap-4 bg-white px-4 py-3 text-neutral-700 md:mx-0 md:h-auto md:grid-cols-3 md:bg-transparent md:px-0 md:py-0;
+  }
+
+  .nav-links {
+    @apply hidden items-center justify-self-center gap-8 md:flex;
+  }
+
+  .nav-actions {
+    @apply flex items-center justify-self-end gap-4 md:gap-7;
+  }
+
+  .hero {
+    @apply mx-auto mb-12 mt-12 max-w-xl text-center md:mt-20 md:max-w-3xl;
+  }
+
+  .hero-title {
+    @apply mb-7 text-5xl font-medium md:text-7xl;
+  }
+
+  .hero-copy {
+    @apply mx-auto max-w-lg text-lg text-neutral-600 md:max-w-xl;
+  }
+
+  .btn-row {
+    @apply mt-12 flex flex-wrap justify-center gap-4 text-sm font-medium;
+  }
+
+  .btn {
+    @apply rounded-xl border border-black px-6 py-3 disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply border-black bg-black text-white;
+  }
+
+  .btn-secondary {
+    @apply bg-white text-black;
+  }
+
+  .cta-primary {
+    @apply rounded-xl bg-primary px-6 py-3 text-white;
+  }
+
+  .cta-secondary {
+    @apply rounded-xl border border-black px-6 py-3;
+  }
+
+  .section-title {
+    @apply mb-1 text-4xl;
+  }
+
+  .section-copy {
+    @apply mb-4 text-xl text-neutral-700;
+  }
+
+  .card {
+    @apply rounded-xl border border-black bg-white p-4;
+  }
+
+  .card-title {
+    @apply mb-3 text-3xl;
+  }
+
+  .field-label {
+    @apply mb-1 block;
+  }
+
+  .text-input {
+    @apply mb-3 min-h-24 w-full rounded-xl border border-black p-2;
+  }
+
+  .tag-list-label {
+    @apply mb-2 text-sm font-semibold uppercase tracking-wide text-neutral-600;
+  }
+}

@@ -271,7 +271,7 @@ export async function POST(req: NextRequest) {
         target: fallback.targetTags,
         discovery: fallback.discoveryTags,
       };
-      console.log("[tagsv2] final_tags", tags);
+      console.log("[tags] final_tags", tags);
       return NextResponse.json({
         tags,
         source: "fallback",
@@ -286,8 +286,8 @@ export async function POST(req: NextRequest) {
     const firstResponse = await requestOpenAIArray(client, model, firstPrompt);
     const normalizedTargets = normalizeResponse(firstResponse);
     const targetTags = normalizedTargets.slice(0, 8);
-    console.log("[tagsv2] first_response", firstResponse);
-    console.log("[tagsv2] first_normalized_response", normalizedTargets);
+    console.log("[tags] first_response", firstResponse);
+    console.log("[tags] first_normalized_response", normalizedTargets);
 
     const keywords = buildKeywords(targetTags, title, description);
     const secondPrompt = `Imagine you are generating Etsy-style metadata tags for discoverability (coverage and variety). Phrases need to be relevant to the item and make sense as a search phrase to find the item. Phrases should try to end with noun that describes the item. If the noun has to be reused, use the shortest item noun. Generate at least 13 phrases <= 20 characters each. Return valid JSON only. Use the following object to help generate ${JSON.stringify(
@@ -308,9 +308,9 @@ export async function POST(req: NextRequest) {
       normalizedDiscovery,
       keywords.used,
     );
-    console.log("[tagsv2] second_response", secondResponse);
-    console.log("[tagsv2] second_normalized_response", normalizedDiscovery);
-    console.log("[tagsv2] second_prioritized_response", prioritizedDiscovery);
+    console.log("[tags] second_response", secondResponse);
+    console.log("[tags] second_normalized_response", normalizedDiscovery);
+    console.log("[tags] second_prioritized_response", prioritizedDiscovery);
 
     let discoveryTags = prioritizedDiscovery.slice(0, discoveryNeeded);
     if (discoveryTags.length < discoveryNeeded) {
@@ -324,7 +324,7 @@ export async function POST(req: NextRequest) {
     }
 
     const tags = { target: targetTags, discovery: discoveryTags };
-    console.log("[tagsv2] final_tags", tags);
+    console.log("[tags] final_tags", tags);
 
     return NextResponse.json({ tags, source: "model" } satisfies TagResponse);
   } catch {
