@@ -1,11 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, Calendar, User } from "lucide-react";
 import type { BlogPost } from "@/content/blog";
 import Navbar from "@/components/tagsy/Navbar";
-import BrandMark from "@/components/brand/BrandMark";
+import SiteFooter from "@/components/shared/SiteFooter";
 
 const categoryColors: Record<string, string> = {
   SEO: "bg-orange-100 text-orange-700",
@@ -26,12 +27,14 @@ type BlogIndexPageProps = {
 };
 
 export default function BlogIndexPage({ posts }: BlogIndexPageProps) {
+  const [featured, ...rest] = posts;
+
   return (
     <div className="min-h-screen bg-stone-50 font-sans">
       <Navbar />
 
       <section className="border-b border-stone-100 bg-white px-5 pb-16 pt-28">
-        <div className="mx-auto max-w-4xl">
+        <div className="mx-auto max-w-5xl">
           <motion.div initial="hidden" animate="visible" variants={stagger}>
             <motion.p
               variants={fadeInUp}
@@ -49,13 +52,64 @@ export default function BlogIndexPage({ posts }: BlogIndexPageProps) {
               Practical guides on tags, SEO, and growing your Etsy shop with AI.
             </motion.p>
           </motion.div>
+
+          {featured ? (
+            <motion.article variants={fadeInUp} initial="hidden" animate="visible" className="mt-10">
+              <Link
+                href={`/blog/${featured.slug}`}
+                className="group grid overflow-hidden rounded-3xl border border-stone-200 bg-white transition-all hover:-translate-y-1 hover:border-orange-200 hover:shadow-lg lg:grid-cols-[1.2fr_1fr]"
+              >
+                <div className="p-7 sm:p-9">
+                  <div className="mb-3 flex items-center gap-2">
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${categoryColors[featured.category] || "bg-stone-100 text-stone-600"}`}
+                    >
+                      Featured
+                    </span>
+                    <span className="text-xs text-stone-400">{featured.readTime}</span>
+                  </div>
+                  <div className="mb-3 flex items-start justify-between gap-3">
+                    <h2 className="text-2xl font-bold leading-tight text-stone-900 transition-colors group-hover:text-orange-600 sm:text-3xl">
+                      {featured.title}
+                    </h2>
+                    <span className="mt-1 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-stone-100 transition-colors group-hover:bg-orange-100">
+                      <ArrowRight className="h-4 w-4 text-stone-400 transition-colors group-hover:text-orange-600" />
+                    </span>
+                  </div>
+                  <p className="mb-4 text-sm leading-relaxed text-stone-600 sm:text-base">
+                    {featured.excerpt} Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                  </p>
+                  <div className="flex items-center gap-4 text-xs text-stone-400">
+                    <span className="flex items-center gap-1.5">
+                      <User className="h-3.5 w-3.5" />
+                      {featured.author}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5" />
+                      {featured.date}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="relative min-h-[260px] lg:min-h-full">
+                  <Image
+                    src="/blog-feature-placeholder.svg"
+                    alt="Featured article"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 100vw, 40vw"
+                  />
+                </div>
+              </Link>
+            </motion.article>
+          ) : null}
         </div>
       </section>
 
       <section className="px-5 py-16">
         <div className="mx-auto max-w-4xl">
           <motion.div initial="hidden" animate="visible" variants={stagger} className="grid gap-6">
-            {posts.map((post) => (
+            {rest.map((post) => (
               <motion.article key={post.slug} variants={fadeInUp}>
                 <Link
                   href={`/blog/${post.slug}`}
@@ -101,23 +155,7 @@ export default function BlogIndexPage({ posts }: BlogIndexPageProps) {
         </div>
       </section>
 
-      <footer className="border-t border-stone-200 bg-white px-5 py-10">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-5 sm:flex-row">
-          <BrandMark href="/" size="footer" />
-          <div className="flex items-center gap-7 text-sm text-stone-400">
-            <a href="#" className="transition-colors hover:text-stone-700">
-              Privacy
-            </a>
-            <a href="#" className="transition-colors hover:text-stone-700">
-              Terms
-            </a>
-            <a href="/support" className="transition-colors hover:text-stone-700">
-              Support
-            </a>
-          </div>
-          <p className="text-xs text-stone-400">© 2026 Tagloom. All rights reserved.</p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

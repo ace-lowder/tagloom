@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Calendar, User } from "lucide-react";
 import type { BlogPost } from "@/content/blog";
 import Navbar from "@/components/tagsy/Navbar";
-import BrandMark from "@/components/brand/BrandMark";
+import SiteFooter from "@/components/shared/SiteFooter";
 
 function ReadingProgress() {
   const [progress, setProgress] = useState(0);
@@ -155,12 +155,7 @@ export default function BlogPostPage({ post }: BlogPostPageProps) {
         </div>
       </div>
 
-      <footer className="mt-8 border-t border-stone-200 bg-white px-5 py-10">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-5 sm:flex-row">
-          <BrandMark href="/" size="footer" />
-          <p className="text-xs text-stone-400">© 2026 Tagloom. All rights reserved.</p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
