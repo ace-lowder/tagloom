@@ -202,7 +202,7 @@ export default function SupportHubPage({ topics, articles }: SupportHubPageProps
                 <p className="mb-3 text-stone-500">No articles found for that search.</p>
                 <a
                   href="mailto:support@tagloom.app"
-                  className="text-stone-500 hover:underline"
+                  className="font-medium text-orange-600 hover:underline"
                 >
                   Contact support directly
                 </a>
