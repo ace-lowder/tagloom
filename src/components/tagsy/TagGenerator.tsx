@@ -463,12 +463,12 @@ export default function TagGenerator({ onFocus, glowRef }: TagGeneratorProps) {
         transition={{ duration: 0.6 }}
         className="relative overflow-hidden rounded-2xl"
         style={{
-          background: "rgba(255,255,255,0.78)",
+          background: "rgba(255,255,255,0.8)",
           backdropFilter: "blur(30px)",
           WebkitBackdropFilter: "blur(30px)",
           border: "1px solid rgba(255,255,255,0.92)",
           boxShadow:
-            "0 18px 70px rgba(249,115,22,0.18), 0 6px 40px rgba(168,85,247,0.14), 0 1px 0 rgba(255,255,255,0.9) inset",
+            "0 24px 84px rgba(249,115,22,0.24), 0 12px 52px rgba(168,85,247,0.18), 0 1px 0 rgba(255,255,255,0.92) inset",
         }}
       >
         {activeSheenId ? (

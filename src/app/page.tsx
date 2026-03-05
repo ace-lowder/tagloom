@@ -441,19 +441,19 @@ export default function HomePage() {
       <section className="relative overflow-hidden px-5 py-20">
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
           <motion.div
-            animate={{ scale: [1, 1.05, 1], x: [0, 8, 0], y: [0, -6, 0] }}
-            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+            animate={{ scale: [1, 1.07, 1], x: [0, 10, 0], y: [0, -7, 0] }}
+            transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
             className="absolute -left-20 -top-20 h-[320px] w-[500px] rounded-full"
             style={{
               background:
-                "radial-gradient(ellipse, rgba(251,146,60,0.34) 0%, transparent 65%)",
-              filter: "blur(70px)",
+                "radial-gradient(ellipse, rgba(251,146,60,0.42) 0%, transparent 65%)",
+              filter: "blur(64px)",
             }}
           />
           <motion.div
-            animate={{ scale: [1, 1.08, 1], x: [0, -10, 0], y: [0, 8, 0] }}
+            animate={{ scale: [1, 1.08, 1], x: [0, -12, 0], y: [0, 8, 0] }}
             transition={{
-              duration: 12,
+              duration: 11,
               repeat: Infinity,
               ease: "easeInOut",
               delay: 1.2,
@@ -461,8 +461,23 @@ export default function HomePage() {
             className="absolute right-0 top-0 h-[300px] w-[420px] rounded-full"
             style={{
               background:
-                "radial-gradient(ellipse, rgba(251,191,36,0.28) 0%, transparent 65%)",
-              filter: "blur(66px)",
+                "radial-gradient(ellipse, rgba(168,85,247,0.24) 0%, transparent 66%)",
+              filter: "blur(60px)",
+            }}
+          />
+          <motion.div
+            animate={{ scale: [1, 1.05, 1], x: [0, 6, 0], y: [0, 5, 0] }}
+            transition={{
+              duration: 10,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 0.5,
+            }}
+            className="absolute bottom-0 left-1/3 h-[240px] w-[340px] rounded-full"
+            style={{
+              background:
+                "radial-gradient(ellipse, rgba(236,72,153,0.2) 0%, transparent 66%)",
+              filter: "blur(58px)",
             }}
           />
         </div>

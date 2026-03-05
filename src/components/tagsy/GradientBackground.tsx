@@ -18,8 +18,8 @@ export default function GradientBackground() {
         className="absolute -top-16 -left-16 h-[320px] w-[420px] rounded-full"
         style={{
           background:
-            "radial-gradient(ellipse, rgba(251,146,60,0.55) 0%, rgba(249,115,22,0.3) 40%, transparent 70%)",
-          filter: "blur(48px)",
+            "radial-gradient(ellipse, rgba(251,146,60,0.74) 0%, rgba(249,115,22,0.4) 42%, transparent 72%)",
+          filter: "blur(54px)",
         }}
       />
       <motion.div
@@ -37,8 +37,8 @@ export default function GradientBackground() {
         className="absolute -top-8 right-0 h-[300px] w-[380px] rounded-full"
         style={{
           background:
-            "radial-gradient(ellipse, rgba(168,85,247,0.45) 0%, rgba(139,92,246,0.25) 40%, transparent 70%)",
-          filter: "blur(52px)",
+            "radial-gradient(ellipse, rgba(168,85,247,0.58) 0%, rgba(139,92,246,0.3) 40%, transparent 70%)",
+          filter: "blur(56px)",
         }}
       />
       <motion.div
@@ -56,8 +56,8 @@ export default function GradientBackground() {
         className="absolute left-1/4 top-1/4 h-[260px] w-[340px] rounded-full"
         style={{
           background:
-            "radial-gradient(ellipse, rgba(236,72,153,0.38) 0%, rgba(244,114,182,0.2) 40%, transparent 70%)",
-          filter: "blur(44px)",
+            "radial-gradient(ellipse, rgba(236,72,153,0.5) 0%, rgba(244,114,182,0.25) 40%, transparent 70%)",
+          filter: "blur(48px)",
         }}
       />
       <motion.div
@@ -75,8 +75,8 @@ export default function GradientBackground() {
         className="absolute bottom-0 right-0 h-[250px] w-[300px] rounded-full"
         style={{
           background:
-            "radial-gradient(ellipse, rgba(253,186,116,0.45) 0%, rgba(251,146,60,0.25) 40%, transparent 70%)",
-          filter: "blur(40px)",
+            "radial-gradient(ellipse, rgba(253,186,116,0.55) 0%, rgba(251,146,60,0.32) 40%, transparent 72%)",
+          filter: "blur(44px)",
         }}
       />
       <motion.div
@@ -94,8 +94,8 @@ export default function GradientBackground() {
         className="absolute bottom-8 left-4 h-[200px] w-[260px] rounded-full"
         style={{
           background:
-            "radial-gradient(ellipse, rgba(192,132,252,0.4) 0%, rgba(168,85,247,0.2) 40%, transparent 70%)",
-          filter: "blur(40px)",
+            "radial-gradient(ellipse, rgba(192,132,252,0.5) 0%, rgba(168,85,247,0.26) 40%, transparent 70%)",
+          filter: "blur(44px)",
         }}
       />
     </div>
