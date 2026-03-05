@@ -278,7 +278,7 @@ export default function HomePage() {
             {benefits.map((b) => (
               <motion.div key={b.title} variants={fadeInUp}>
                 <Link href={b.href} className="group block h-full">
-                  <Card className="h-full border-stone-100 bg-stone-50 p-6 transition-all group-hover:-translate-y-1 group-hover:shadow-lg">
+                  <Card className="flex h-full flex-col border-stone-100 bg-stone-50 p-6 transition-all group-hover:-translate-y-1 group-hover:shadow-lg">
                     <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-orange-100">
                       <b.icon className="h-5 w-5 text-orange-600" />
                     </div>
@@ -288,7 +288,7 @@ export default function HomePage() {
                     <p className="text-sm leading-relaxed text-stone-600">
                       {b.description}
                     </p>
-                    <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-orange-600">
+                    <span className="mt-auto pt-4 inline-flex items-center gap-1 text-sm font-semibold text-orange-600">
                       Read more
                       <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                     </span>
