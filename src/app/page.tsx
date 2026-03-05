@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -58,8 +59,6 @@ function FAQItem({ question, answer }: FAQItemProps) {
 }
 
 export default function HomePage() {
-  const generatorRef = useRef<HTMLDivElement>(null);
-
   const triggerGeneratorFlow = () => {
     dispatchGeneratorCta({ requestReset: true });
   };
@@ -81,18 +80,21 @@ export default function HomePage() {
       title: "More Views, Less Guesswork",
       description:
         "AI-crafted tags based on what buyers are actually searching for so your listings get found by the right people.",
+      href: "/blog/how-to-rank-higher-on-etsy#why-tags-matter",
     },
     {
       icon: Clock,
       title: "Minutes, Not Hours",
       description:
         "Stop spending hours on keyword research and generate 13 optimized tags in seconds.",
+      href: "/blog/how-to-rank-higher-on-etsy#keyword-research",
     },
     {
       icon: Zap,
       title: "Built for Etsy Search",
       description:
         "Every tag is selected to better align with Etsy search behavior and listing discoverability.",
+      href: "/blog/how-to-rank-higher-on-etsy#ai-approach",
     },
   ];
 
@@ -110,6 +112,7 @@ export default function HomePage() {
       ],
       cta: "Buy Once",
       popular: false,
+      accent: true,
     },
     {
       name: "Monthly",
@@ -125,6 +128,7 @@ export default function HomePage() {
       ],
       cta: "Start Free Trial",
       popular: true,
+      accent: false,
     },
     {
       name: "Yearly",
@@ -139,6 +143,7 @@ export default function HomePage() {
       ],
       cta: "Get Best Value",
       popular: false,
+      accent: true,
     },
   ];
 
@@ -191,7 +196,7 @@ export default function HomePage() {
             initial="hidden"
             animate="visible"
             variants={stagger}
-            className="mb-10 text-center"
+            className="text-center"
           >
             <motion.div
               variants={fadeInUp}
@@ -212,7 +217,7 @@ export default function HomePage() {
             </motion.h1>
             <motion.p
               variants={fadeInUp}
-              className="mx-auto mb-8 max-w-xl text-lg leading-relaxed text-stone-600"
+              className="mx-auto mb-5 max-w-xl text-lg leading-relaxed text-stone-600"
             >
               Describe your Etsy listing and Tagloom instantly generates 13
               optimized tags with cleaner buyer intent phrasing.
@@ -220,7 +225,7 @@ export default function HomePage() {
             <motion.button
               variants={fadeInUp}
               onClick={triggerGeneratorFlow}
-              className="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all"
+              className="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-orange-500/30"
               style={{
                 background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
                 boxShadow: "0 4px 20px rgba(249,115,22,0.35)",
@@ -231,7 +236,9 @@ export default function HomePage() {
             </motion.button>
           </motion.div>
 
-          <TagGenerator glowRef={generatorRef} />
+          <div className="mt-16">
+            <TagGenerator />
+          </div>
         </div>
       </section>
 
@@ -248,7 +255,7 @@ export default function HomePage() {
               variants={fadeInUp}
               className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600"
             >
-              Why Tagloom
+              Features
             </motion.p>
             <motion.h2
               variants={fadeInUp}
@@ -267,17 +274,23 @@ export default function HomePage() {
           >
             {benefits.map((b) => (
               <motion.div key={b.title} variants={fadeInUp}>
-                <Card className="h-full border-stone-100 bg-stone-50 p-6 transition-all hover:shadow-md">
-                  <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-orange-100">
-                    <b.icon className="h-5 w-5 text-orange-600" />
-                  </div>
-                  <h3 className="mb-2 text-lg font-semibold text-stone-900">
-                    {b.title}
-                  </h3>
-                  <p className="text-sm leading-relaxed text-stone-600">
-                    {b.description}
-                  </p>
-                </Card>
+                <Link href={b.href} className="group block h-full">
+                  <Card className="h-full border-stone-100 bg-stone-50 p-6 transition-all group-hover:-translate-y-1 group-hover:shadow-lg">
+                    <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-orange-100">
+                      <b.icon className="h-5 w-5 text-orange-600" />
+                    </div>
+                    <h3 className="mb-2 text-lg font-semibold text-stone-900">
+                      {b.title}
+                    </h3>
+                    <p className="text-sm leading-relaxed text-stone-600">
+                      {b.description}
+                    </p>
+                    <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-orange-600">
+                      Read more
+                      <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    </span>
+                  </Card>
+                </Link>
               </motion.div>
             ))}
           </motion.div>
@@ -323,14 +336,21 @@ export default function HomePage() {
             {pricing.map((plan) => (
               <motion.div key={plan.name} variants={fadeInUp}>
                 <Card
-                  className={`relative h-full p-7 ${plan.popular ? "border-2 border-orange-400 shadow-xl shadow-orange-500/10" : "border-stone-100"}`}
+                  className={`group relative flex h-full flex-col p-7 transition-all hover:-translate-y-1 hover:shadow-xl ${
+                    plan.popular
+                      ? "overflow-hidden border-2 border-orange-400 shadow-xl shadow-orange-500/10"
+                      : "border-stone-100 hover:border-orange-200"
+                  }`}
                 >
                   {plan.popular ? (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <span className="rounded-full bg-gradient-to-r from-orange-500 to-orange-600 px-3 py-1 text-xs font-semibold text-white shadow">
-                        Most Popular
-                      </span>
-                    </div>
+                    <>
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <span className="rounded-full bg-gradient-to-r from-orange-500 to-orange-600 px-3 py-1 text-xs font-semibold text-white shadow">
+                          Most Popular
+                        </span>
+                      </div>
+                      <span className="pointer-events-none absolute -left-1/4 top-0 h-full w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/45 to-transparent opacity-0 transition-all duration-700 group-hover:left-[105%] group-hover:opacity-100" />
+                    </>
                   ) : null}
                   <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-stone-400">
                     {plan.name}
@@ -354,10 +374,12 @@ export default function HomePage() {
                   </ul>
                   <button
                     onClick={triggerGeneratorFlow}
-                    className={`w-full rounded-xl py-3 text-sm font-semibold transition-all ${
+                    className={`relative mt-auto w-full rounded-xl py-3 text-sm font-semibold transition-all ${
                       plan.popular
-                        ? "text-white shadow-lg shadow-orange-500/20"
-                        : "bg-stone-100 text-stone-800 hover:bg-stone-200"
+                        ? "text-white shadow-lg shadow-orange-500/20 hover:-translate-y-0.5"
+                        : plan.accent
+                          ? "border border-orange-300 bg-orange-50 text-orange-700 hover:-translate-y-0.5 hover:border-orange-400 hover:shadow-lg hover:shadow-orange-100"
+                          : "bg-stone-100 text-stone-800 hover:bg-stone-200"
                     }`}
                     style={
                       plan.popular
@@ -416,43 +438,28 @@ export default function HomePage() {
       <section className="relative overflow-hidden px-5 py-20">
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
           <motion.div
-            animate={{ scale: [1, 1.08, 1], x: [0, 10, 0] }}
-            transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute -left-20 -top-20 h-[360px] w-[500px] rounded-full"
+            animate={{ scale: [1, 1.05, 1], x: [0, 8, 0], y: [0, -6, 0] }}
+            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute -left-20 -top-20 h-[320px] w-[500px] rounded-full"
             style={{
               background:
-                "radial-gradient(ellipse, rgba(251,146,60,0.45) 0%, transparent 65%)",
-              filter: "blur(60px)",
+                "radial-gradient(ellipse, rgba(251,146,60,0.34) 0%, transparent 65%)",
+              filter: "blur(70px)",
             }}
           />
           <motion.div
-            animate={{ scale: [1, 1.1, 1], x: [0, -12, 0] }}
+            animate={{ scale: [1, 1.08, 1], x: [0, -10, 0], y: [0, 8, 0] }}
             transition={{
-              duration: 11,
+              duration: 12,
               repeat: Infinity,
               ease: "easeInOut",
-              delay: 1.5,
+              delay: 1.2,
             }}
-            className="absolute right-0 top-0 h-[320px] w-[420px] rounded-full"
+            className="absolute right-0 top-0 h-[300px] w-[420px] rounded-full"
             style={{
               background:
-                "radial-gradient(ellipse, rgba(168,85,247,0.38) 0%, transparent 65%)",
-              filter: "blur(60px)",
-            }}
-          />
-          <motion.div
-            animate={{ scale: [1, 1.06, 1] }}
-            transition={{
-              duration: 8,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 0.5,
-            }}
-            className="absolute bottom-0 left-1/3 h-[260px] w-[360px] rounded-full"
-            style={{
-              background:
-                "radial-gradient(ellipse, rgba(236,72,153,0.3) 0%, transparent 65%)",
-              filter: "blur(56px)",
+                "radial-gradient(ellipse, rgba(251,191,36,0.28) 0%, transparent 65%)",
+              filter: "blur(66px)",
             }}
           />
         </div>
@@ -468,12 +475,12 @@ export default function HomePage() {
               variants={fadeInUp}
               className="rounded-3xl px-8 py-14 sm:px-14"
               style={{
-                background: "rgba(255,255,255,0.68)",
-                backdropFilter: "blur(28px)",
-                WebkitBackdropFilter: "blur(28px)",
-                border: "1px solid rgba(255,255,255,0.85)",
+                background: "rgba(255,255,255,0.7)",
+                backdropFilter: "blur(24px)",
+                WebkitBackdropFilter: "blur(24px)",
+                border: "1px solid rgba(255,255,255,0.88)",
                 boxShadow:
-                  "0 8px 48px rgba(249,115,22,0.12), 0 2px 24px rgba(168,85,247,0.1)",
+                  "0 8px 44px rgba(249,115,22,0.1), 0 2px 22px rgba(251,191,36,0.08)",
               }}
             >
               <motion.h2
@@ -492,11 +499,11 @@ export default function HomePage() {
               <motion.button
                 variants={fadeInUp}
                 onClick={triggerGeneratorFlow}
-                className="inline-flex items-center gap-2 rounded-xl px-8 py-4 text-base font-semibold text-white transition-all"
+                className="inline-flex items-center gap-2 rounded-xl px-8 py-4 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-orange-500/30"
                 style={{
                   background:
                     "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
-                  boxShadow: "0 6px 28px rgba(249,115,22,0.4)",
+                  boxShadow: "0 6px 28px rgba(249,115,22,0.32)",
                 }}
               >
                 Generate Tags Free
