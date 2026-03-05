@@ -144,7 +144,7 @@ export default function SupportHubPage({ topics, articles }: SupportHubPageProps
                 <motion.div key={article.slug} variants={fadeInUp}>
                   <Link
                     href={`/support/${article.topic}/${article.slug}`}
-                    className="group flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-stone-50"
+                    className="group flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-stone-50/60"
                   >
                     <span className="text-sm text-stone-700 transition-colors group-hover:text-orange-600">
                       {article.title}
@@ -185,7 +185,7 @@ export default function SupportHubPage({ topics, articles }: SupportHubPageProps
                   >
                     <Link
                       href={`/support/${article.topic}/${article.slug}`}
-                      className="group flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-stone-50"
+                      className="group flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-stone-50/60"
                     >
                       <span className="text-sm text-stone-700 transition-colors group-hover:text-orange-600">
                         {article.title}
