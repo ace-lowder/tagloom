@@ -171,12 +171,12 @@ export default function TagGenerator({ onFocus, glowRef }: TagGeneratorProps) {
     clearCtaResetTimer();
     setDemoPhase("resetting");
 
-    let tags = [...demoTagsRef.current];
+    let removeIndex = demoTagsRef.current.length - 1;
 
     const removeTag = () => {
-      if (tags.length > 0) {
-        tags = tags.slice(0, -1);
-        setDemoTags([...tags]);
+      if (removeIndex >= 0) {
+        setDemoTags((prev) => prev.slice(0, removeIndex));
+        removeIndex -= 1;
         ctaResetTimeoutRef.current = setTimeout(removeTag, 28);
         return;
       }
@@ -259,13 +259,13 @@ export default function TagGenerator({ onFocus, glowRef }: TagGeneratorProps) {
 
             setDemoPhase("resetting");
 
-            let tagsSnapshot = [...product.tags];
+            let removeIndex = product.tags.length - 1;
             const removeNextTag = () => {
               if (hasUserInteractedRef.current) return;
 
-              if (tagsSnapshot.length > 0) {
-                tagsSnapshot = tagsSnapshot.slice(0, -1);
-                setDemoTags([...tagsSnapshot]);
+              if (removeIndex >= 0) {
+                setDemoTags((prev) => prev.slice(0, removeIndex));
+                removeIndex -= 1;
                 demoTimeoutRef.current = setTimeout(removeNextTag, 30);
                 return;
               }
