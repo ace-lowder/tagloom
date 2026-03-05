@@ -60,7 +60,7 @@ function FAQItem({ question, answer }: FAQItemProps) {
 
 export default function HomePage() {
   const triggerGeneratorFlow = () => {
-    dispatchGeneratorCta({ requestReset: true });
+    dispatchGeneratorCta({ requestReset: true }, { smoothScroll: true });
   };
 
   useEffect(() => {
@@ -68,7 +68,10 @@ export default function HomePage() {
     if (!pending) return;
 
     const timeout = window.setTimeout(() => {
-      dispatchGeneratorCta({ requestReset: pending.requestReset });
+      dispatchGeneratorCta(
+        { requestReset: pending.requestReset },
+        { smoothScroll: true },
+      );
     }, 220);
 
     return () => window.clearTimeout(timeout);

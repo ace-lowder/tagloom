@@ -11,9 +11,31 @@ type TriggerGeneratorCtaOptions = {
   requestReset?: boolean;
 };
 
-export function dispatchGeneratorCta(detail: GeneratorCtaDetail = { requestReset: true }) {
+type DispatchGeneratorCtaOptions = {
+  smoothScroll?: boolean;
+};
+
+function dispatchCtaEvent(detail: GeneratorCtaDetail) {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent<GeneratorCtaDetail>(GENERATOR_CTA_EVENT, { detail }));
+}
+
+export function dispatchGeneratorCta(
+  detail: GeneratorCtaDetail = { requestReset: true },
+  options: DispatchGeneratorCtaOptions = {},
+) {
+  if (typeof window === "undefined") return;
+
+  if (!options.smoothScroll) {
+    dispatchCtaEvent(detail);
+    return;
+  }
+
+  document
+    .getElementById("generator")
+    ?.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  window.setTimeout(() => dispatchCtaEvent(detail), 420);
 }
 
 export function triggerGeneratorCta({
@@ -24,7 +46,7 @@ export function triggerGeneratorCta({
   if (typeof window === "undefined") return;
 
   if (isHomePage) {
-    dispatchGeneratorCta({ requestReset });
+    dispatchGeneratorCta({ requestReset }, { smoothScroll: true });
     return;
   }
 
