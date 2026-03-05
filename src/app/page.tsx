@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -15,7 +15,8 @@ import {
 import Navbar from "@/components/tagsy/Navbar";
 import TagGenerator from "@/components/tagsy/TagGenerator";
 import { Card } from "@/components/ui/card";
-import BrandMark from "@/components/brand/BrandMark";
+import SiteFooter from "@/components/shared/SiteFooter";
+import { consumePendingGeneratorCta, dispatchGeneratorCta } from "@/lib/generatorCta";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 22 },
@@ -56,14 +57,23 @@ function FAQItem({ question, answer }: FAQItemProps) {
   );
 }
 
-function scrollToGenerator() {
-  document
-    .getElementById("generator")
-    ?.scrollIntoView({ behavior: "smooth", block: "center" });
-}
-
 export default function HomePage() {
   const generatorRef = useRef<HTMLDivElement>(null);
+
+  const triggerGeneratorFlow = () => {
+    dispatchGeneratorCta({ requestReset: true });
+  };
+
+  useEffect(() => {
+    const pending = consumePendingGeneratorCta();
+    if (!pending) return;
+
+    const timeout = window.setTimeout(() => {
+      dispatchGeneratorCta({ requestReset: pending.requestReset });
+    }, 220);
+
+    return () => window.clearTimeout(timeout);
+  }, []);
 
   const benefits = [
     {
@@ -209,7 +219,7 @@ export default function HomePage() {
             </motion.p>
             <motion.button
               variants={fadeInUp}
-              onClick={scrollToGenerator}
+              onClick={triggerGeneratorFlow}
               className="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all"
               style={{
                 background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
@@ -343,7 +353,7 @@ export default function HomePage() {
                     ))}
                   </ul>
                   <button
-                    onClick={plan.popular ? scrollToGenerator : undefined}
+                    onClick={triggerGeneratorFlow}
                     className={`w-full rounded-xl py-3 text-sm font-semibold transition-all ${
                       plan.popular
                         ? "text-white shadow-lg shadow-orange-500/20"
@@ -481,7 +491,7 @@ export default function HomePage() {
               </motion.p>
               <motion.button
                 variants={fadeInUp}
-                onClick={scrollToGenerator}
+                onClick={triggerGeneratorFlow}
                 className="inline-flex items-center gap-2 rounded-xl px-8 py-4 text-base font-semibold text-white transition-all"
                 style={{
                   background:
@@ -497,23 +507,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <footer className="border-t border-stone-200 bg-white px-5 py-10">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-5 sm:flex-row">
-          <BrandMark href="/" size="footer" />
-          <div className="flex items-center gap-7 text-sm text-stone-400">
-            <a href="#" className="transition-colors hover:text-stone-700">
-              Privacy
-            </a>
-            <a href="#" className="transition-colors hover:text-stone-700">
-              Terms
-            </a>
-            <a href="#" className="transition-colors hover:text-stone-700">
-              Support
-            </a>
-          </div>
-          <p className="text-xs text-stone-400">© 2026 Tagloom. All rights reserved.</p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

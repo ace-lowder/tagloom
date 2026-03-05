@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Copy, Sparkles } from "lucide-react";
+import { GENERATOR_CTA_EVENT } from "@/lib/generatorCta";
 import GradientBackground from "./GradientBackground";
 
 type TagApiResponse = {
@@ -19,7 +20,7 @@ type TagGeneratorProps = {
   glowRef?: RefObject<HTMLDivElement>;
 };
 
-type DemoPhase = "idle" | "typing" | "generating" | "revealing";
+type DemoPhase = "idle" | "typing" | "generating" | "revealing" | "resetting";
 
 type DemoProduct = {
   title: string;
@@ -102,12 +103,17 @@ export default function TagGenerator({ onFocus, glowRef }: TagGeneratorProps) {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
   const [source, setSource] = useState<"model" | "fallback" | null>(null);
+  const [activeSheenId, setActiveSheenId] = useState<number | null>(null);
 
   const demoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const revealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const ctaResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
   const demoIndexRef = useRef(0);
   const hasUserInteractedRef = useRef(false);
   const requestVersionRef = useRef(0);
+  const demoTitleRef = useRef("");
+  const demoTagsRef = useRef<string[]>([]);
 
   const clearDemoTimer = useCallback(() => {
     if (demoTimeoutRef.current) {
@@ -123,6 +129,24 @@ export default function TagGenerator({ onFocus, glowRef }: TagGeneratorProps) {
     }
   }, []);
 
+  const clearCtaResetTimer = useCallback(() => {
+    if (ctaResetTimeoutRef.current) {
+      clearTimeout(ctaResetTimeoutRef.current);
+      ctaResetTimeoutRef.current = null;
+    }
+  }, []);
+
+  const playSheen = useCallback(() => {
+    setActiveSheenId(Date.now());
+  }, []);
+
+  const focusTitleInput = useCallback(() => {
+    window.setTimeout(() => {
+      titleInputRef.current?.focus();
+      titleInputRef.current?.select();
+    }, 20);
+  }, []);
+
   const commitUserInteraction = useCallback(() => {
     if (hasUserInteractedRef.current) return;
 
@@ -132,7 +156,64 @@ export default function TagGenerator({ onFocus, glowRef }: TagGeneratorProps) {
     setDemoTitle("");
     setDemoTags([]);
     clearDemoTimer();
-  }, [clearDemoTimer]);
+    clearCtaResetTimer();
+  }, [clearCtaResetTimer, clearDemoTimer]);
+
+  const startDemoResetThenFocus = useCallback(() => {
+    if (hasUserInteractedRef.current) {
+      setShowDescription(true);
+      focusTitleInput();
+      playSheen();
+      return;
+    }
+
+    clearDemoTimer();
+    clearCtaResetTimer();
+    setDemoPhase("resetting");
+
+    let tags = [...demoTagsRef.current];
+
+    const removeTag = () => {
+      if (tags.length > 0) {
+        tags = tags.slice(0, -1);
+        setDemoTags([...tags]);
+        ctaResetTimeoutRef.current = setTimeout(removeTag, 28);
+        return;
+      }
+
+      let titleText = demoTitleRef.current;
+
+      const backspaceTitle = () => {
+        if (titleText.length > 0) {
+          titleText = titleText.slice(0, -1);
+          setDemoTitle(titleText);
+          ctaResetTimeoutRef.current = setTimeout(backspaceTitle, 14);
+          return;
+        }
+
+        hasUserInteractedRef.current = true;
+        setHasUserInteracted(true);
+        setDemoPhase("idle");
+        setDemoTitle("");
+        setDemoTags([]);
+        setShowDescription(true);
+        focusTitleInput();
+        playSheen();
+      };
+
+      ctaResetTimeoutRef.current = setTimeout(backspaceTitle, 60);
+    };
+
+    ctaResetTimeoutRef.current = setTimeout(removeTag, 20);
+  }, [clearCtaResetTimer, clearDemoTimer, focusTitleInput, playSheen]);
+
+  useEffect(() => {
+    demoTitleRef.current = demoTitle;
+  }, [demoTitle]);
+
+  useEffect(() => {
+    demoTagsRef.current = demoTags;
+  }, [demoTags]);
 
   const runDemoCycle = useCallback(() => {
     if (hasUserInteractedRef.current) return;
@@ -175,8 +256,39 @@ export default function TagGenerator({ onFocus, glowRef }: TagGeneratorProps) {
 
           demoTimeoutRef.current = setTimeout(() => {
             if (hasUserInteractedRef.current) return;
-            demoIndexRef.current += 1;
-            runDemoCycle();
+
+            setDemoPhase("resetting");
+
+            let tagsSnapshot = [...product.tags];
+            const removeNextTag = () => {
+              if (hasUserInteractedRef.current) return;
+
+              if (tagsSnapshot.length > 0) {
+                tagsSnapshot = tagsSnapshot.slice(0, -1);
+                setDemoTags([...tagsSnapshot]);
+                demoTimeoutRef.current = setTimeout(removeNextTag, 30);
+                return;
+              }
+
+              let titleLength = product.title.length;
+              const backspaceTitle = () => {
+                if (hasUserInteractedRef.current) return;
+
+                if (titleLength > 0) {
+                  titleLength -= 1;
+                  setDemoTitle(product.title.slice(0, titleLength));
+                  demoTimeoutRef.current = setTimeout(backspaceTitle, 18);
+                  return;
+                }
+
+                demoIndexRef.current += 1;
+                demoTimeoutRef.current = setTimeout(runDemoCycle, 500);
+              };
+
+              demoTimeoutRef.current = setTimeout(backspaceTitle, 80);
+            };
+
+            demoTimeoutRef.current = setTimeout(removeNextTag, 80);
           }, 2200);
         };
 
@@ -219,6 +331,25 @@ export default function TagGenerator({ onFocus, glowRef }: TagGeneratorProps) {
   );
 
   useEffect(() => {
+    const onCta = (event: Event) => {
+      const detail = (event as CustomEvent<{ requestReset?: boolean }>).detail;
+      const shouldReset = detail?.requestReset !== false;
+
+      if (shouldReset && !hasUserInteractedRef.current) {
+        startDemoResetThenFocus();
+        return;
+      }
+
+      setShowDescription(true);
+      focusTitleInput();
+      playSheen();
+    };
+
+    window.addEventListener(GENERATOR_CTA_EVENT, onCta as EventListener);
+    return () => window.removeEventListener(GENERATOR_CTA_EVENT, onCta as EventListener);
+  }, [focusTitleInput, playSheen, startDemoResetThenFocus]);
+
+  useEffect(() => {
     if (hasUserInteracted) return;
 
     clearDemoTimer();
@@ -235,8 +366,9 @@ export default function TagGenerator({ onFocus, glowRef }: TagGeneratorProps) {
     return () => {
       clearDemoTimer();
       clearRevealTimer();
+      clearCtaResetTimer();
     };
-  }, [clearDemoTimer, clearRevealTimer]);
+  }, [clearCtaResetTimer, clearDemoTimer, clearRevealTimer]);
 
   const handleTitleFocus = () => {
     commitUserInteraction();
@@ -315,7 +447,9 @@ export default function TagGenerator({ onFocus, glowRef }: TagGeneratorProps) {
         ? "Live demo generating..."
         : demoPhase === "revealing"
           ? "Live demo revealing..."
-          : "Live demo running...";
+          : demoPhase === "resetting"
+            ? "Live demo resetting..."
+            : "Live demo running...";
 
   return (
     <div ref={glowRef} id="generator" className="relative mx-auto max-w-2xl">
@@ -329,15 +463,30 @@ export default function TagGenerator({ onFocus, glowRef }: TagGeneratorProps) {
         transition={{ duration: 0.6 }}
         className="relative overflow-hidden rounded-2xl"
         style={{
-          background: "rgba(255,255,255,0.72)",
-          backdropFilter: "blur(28px)",
-          WebkitBackdropFilter: "blur(28px)",
-          border: "1px solid rgba(255,255,255,0.85)",
+          background: "rgba(255,255,255,0.78)",
+          backdropFilter: "blur(30px)",
+          WebkitBackdropFilter: "blur(30px)",
+          border: "1px solid rgba(255,255,255,0.92)",
           boxShadow:
-            "0 8px 48px rgba(249,115,22,0.12), 0 2px 24px rgba(168,85,247,0.1), 0 1px 0 rgba(255,255,255,0.8) inset",
+            "0 18px 70px rgba(249,115,22,0.18), 0 6px 40px rgba(168,85,247,0.14), 0 1px 0 rgba(255,255,255,0.9) inset",
         }}
       >
-        <div className="p-6 sm:p-8">
+        {activeSheenId ? (
+          <motion.div
+            key={activeSheenId}
+            initial={{ x: "-120%", opacity: 0 }}
+            animate={{ x: "170%", opacity: [0, 0.9, 0] }}
+            transition={{ duration: 0.95, ease: "easeInOut" }}
+            onAnimationComplete={() => setActiveSheenId(null)}
+            className="pointer-events-none absolute inset-y-0 left-0 z-20 w-2/5 -skew-x-12"
+            style={{
+              background:
+                "linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.78) 45%, rgba(255,255,255,0) 100%)",
+            }}
+          />
+        ) : null}
+
+        <div className="relative z-10 p-6 sm:p-8">
           <div className="mb-6 flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/30">
               <Sparkles className="h-4 w-4 text-white" />
@@ -361,6 +510,7 @@ export default function TagGenerator({ onFocus, glowRef }: TagGeneratorProps) {
               Listing Title <span className="text-orange-500">*</span>
             </label>
             <input
+              ref={titleInputRef}
               type="text"
               value={inputTitle}
               onFocus={handleTitleFocus}
@@ -406,7 +556,7 @@ export default function TagGenerator({ onFocus, glowRef }: TagGeneratorProps) {
           <button
             onClick={handleGenerate}
             disabled={isGenerating || !title.trim()}
-            className="mt-1 flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-semibold text-white transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-1 flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-orange-500/25 disabled:cursor-not-allowed disabled:opacity-50"
             style={{
               background: title.trim()
                 ? "linear-gradient(135deg, #f97316 0%, #ea580c 100%)"

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import BrandMark from "@/components/brand/BrandMark";
+import { triggerGeneratorCta } from "@/lib/generatorCta";
 
 type NavLink = {
   label: string;
@@ -21,12 +22,6 @@ const navLinks: NavLink[] = [
   { label: "FAQ", href: "faq", type: "section" },
 ];
 
-function scrollToGenerator() {
-  document
-    .getElementById("generator")
-    ?.scrollIntoView({ behavior: "smooth", block: "center" });
-}
-
 function dispatchSupportReset() {
   window.dispatchEvent(new CustomEvent("tagloom:support-reset"));
 }
@@ -35,6 +30,13 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+
+  const startGeneratorFlow = () => {
+    triggerGeneratorCta({
+      isHomePage: pathname === "/",
+      navigateHome: () => router.push("/"),
+    });
+  };
 
   const goToSection = (sectionId: string) => {
     setMobileOpen(false);
@@ -123,8 +125,8 @@ export default function Navbar() {
             Log in
           </button>
           <button
-            onClick={scrollToGenerator}
-            className="rounded-lg px-4 py-2 text-sm font-semibold text-white transition-all"
+            onClick={startGeneratorFlow}
+            className="rounded-lg px-4 py-2 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-orange-500/25"
             style={{
               background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
               boxShadow: "0 3px 14px rgba(249,115,22,0.3)",
@@ -162,10 +164,10 @@ export default function Navbar() {
               </button>
               <button
                 onClick={() => {
-                  scrollToGenerator();
+                  startGeneratorFlow();
                   setMobileOpen(false);
                 }}
-                className="w-full rounded-lg py-2.5 text-sm font-semibold text-white"
+                className="w-full rounded-lg py-2.5 text-sm font-semibold text-white transition-all hover:-translate-y-0.5"
                 style={{
                   background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
                 }}
