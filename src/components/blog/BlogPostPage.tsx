@@ -42,10 +42,16 @@ type TableOfContentsProps = {
   activeId: string;
 };
 
+const BLOG_TOC_SCROLL_OFFSET = 104;
+
 function TableOfContents({ sections, activeId }: TableOfContentsProps) {
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (!el) return;
+
+    const top =
+      el.getBoundingClientRect().top + window.scrollY - BLOG_TOC_SCROLL_OFFSET;
+    window.scrollTo({ top, behavior: "smooth" });
   };
 
   return (
@@ -79,19 +85,37 @@ export default function BlogPostPage({ post }: BlogPostPageProps) {
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const headings = contentRef.current?.querySelectorAll("h2, h3") || [];
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries.filter((entry) => entry.isIntersecting);
-        if (visible.length > 0) {
-          setActiveId((visible[0].target as HTMLElement).id);
-        }
-      },
-      { rootMargin: "-80px 0px -60% 0px", threshold: 0 },
+    const headings = Array.from(
+      contentRef.current?.querySelectorAll<HTMLElement>("h2[id], h3[id]") || [],
     );
+    if (!headings.length) return;
 
-    headings.forEach((heading) => observer.observe(heading));
-    return () => observer.disconnect();
+    const updateActiveHeading = () => {
+      const scrollMarker = BLOG_TOC_SCROLL_OFFSET + 8;
+      const passedHeadings = headings.filter(
+        (heading) => heading.getBoundingClientRect().top <= scrollMarker,
+      );
+
+      if (passedHeadings.length > 0) {
+        setActiveId(passedHeadings[passedHeadings.length - 1].id);
+        return;
+      }
+
+      const firstVisible = headings.find(
+        (heading) => heading.getBoundingClientRect().top > scrollMarker,
+      );
+
+      setActiveId(firstVisible?.id || headings[0].id);
+    };
+
+    updateActiveHeading();
+    window.addEventListener("scroll", updateActiveHeading, { passive: true });
+    window.addEventListener("resize", updateActiveHeading);
+
+    return () => {
+      window.removeEventListener("scroll", updateActiveHeading);
+      window.removeEventListener("resize", updateActiveHeading);
+    };
   }, [post.slug]);
 
   return (
