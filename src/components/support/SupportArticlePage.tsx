@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import type { SupportArticle, SupportTopic } from "@/content/support";
 import Navbar from "@/components/tagsy/Navbar";
-import BrandMark from "@/components/brand/BrandMark";
+import SiteFooter from "@/components/shared/SiteFooter";
 
 type SupportArticlePageProps = {
   article: SupportArticle;
@@ -116,7 +116,9 @@ export default function SupportArticlePage({
                       <span className="text-sm text-stone-700 transition-colors group-hover:text-orange-600">
                         {related.title}
                       </span>
-                      <ChevronRight className="h-4 w-4 flex-shrink-0 text-stone-300 transition-colors group-hover:text-orange-500" />
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-transparent transition-colors group-hover:bg-orange-100">
+                        <ChevronRight className="h-4 w-4 flex-shrink-0 text-stone-400 transition-colors group-hover:text-orange-600" />
+                      </span>
                     </Link>
                   ))}
                 </div>
@@ -155,7 +157,7 @@ export default function SupportArticlePage({
                 </p>
                 <a
                   href="mailto:support@tagloom.app"
-                  className="block rounded-lg py-2.5 text-center text-xs font-semibold text-white transition-all"
+                  className="block rounded-lg py-2.5 text-center text-xs font-semibold text-white transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-orange-500/25"
                   style={{ background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)" }}
                 >
                   Email Support
@@ -166,12 +168,7 @@ export default function SupportArticlePage({
         </div>
       </div>
 
-      <footer className="mt-8 border-t border-stone-200 bg-white px-5 py-10">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-5 sm:flex-row">
-          <BrandMark href="/" size="footer" />
-          <p className="text-xs text-stone-400">© 2026 Tagloom. All rights reserved.</p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

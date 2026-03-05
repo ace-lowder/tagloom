@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ChevronRight,
   CreditCard,
@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import type { SupportArticle, SupportTopic } from "@/content/support";
 import Navbar from "@/components/tagsy/Navbar";
-import BrandMark from "@/components/brand/BrandMark";
+import SiteFooter from "@/components/shared/SiteFooter";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 18 },
@@ -114,7 +114,7 @@ export default function SupportHubPage({ topics, articles }: SupportHubPageProps
                   <motion.div key={topic.slug} variants={fadeInUp}>
                     <Link
                       href={`/support/${topic.slug}`}
-                      className="group block rounded-2xl border border-stone-100 bg-white p-5 text-left transition-all hover:border-orange-200 hover:shadow-md"
+                      className="group block rounded-2xl border border-stone-100 bg-white p-5 text-left transition-all hover:-translate-y-1 hover:border-orange-200 hover:shadow-md"
                     >
                       <div
                         className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl ${topic.color}`}
@@ -149,7 +149,9 @@ export default function SupportHubPage({ topics, articles }: SupportHubPageProps
                     <span className="text-sm text-stone-700 transition-colors group-hover:text-orange-600">
                       {article.title}
                     </span>
-                    <ChevronRight className="h-4 w-4 flex-shrink-0 text-stone-300 transition-colors group-hover:text-orange-500" />
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-transparent transition-colors group-hover:bg-orange-100">
+                      <ChevronRight className="h-4 w-4 flex-shrink-0 text-stone-400 transition-colors group-hover:text-orange-600" />
+                    </span>
                   </Link>
                 </motion.div>
               ))}
@@ -162,25 +164,42 @@ export default function SupportHubPage({ topics, articles }: SupportHubPageProps
               {" "}for <span className="font-medium text-stone-800">&quot;{search}&quot;</span>
             </p>
             {filteredArticles.length > 0 ? (
-              <div className="divide-y divide-stone-100 rounded-2xl border border-stone-100 bg-white">
-                {filteredArticles.map((article) => (
-                  <Link
-                    key={article.slug}
-                    href={`/support/${article.topic}/${article.slug}`}
-                    className="group flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-stone-50"
-                  >
-                    <span className="text-sm text-stone-700 transition-colors group-hover:text-orange-600">
-                      {article.title}
-                    </span>
-                    <ChevronRight className="h-4 w-4 flex-shrink-0 text-stone-300 transition-colors group-hover:text-orange-500" />
-                  </Link>
-                ))}
-              </div>
+              <motion.div
+                key={search}
+                initial="hidden"
+                animate="visible"
+                variants={{ visible: { transition: { staggerChildren: 0.035 } } }}
+                className="divide-y divide-stone-100 rounded-2xl border border-stone-100 bg-white"
+              >
+                <AnimatePresence initial={false}>
+                  {filteredArticles.map((article) => (
+                    <motion.div
+                      key={article.slug}
+                      variants={{
+                        hidden: { opacity: 0, y: 6 },
+                        visible: { opacity: 1, y: 0, transition: { duration: 0.16 } },
+                      }}
+                    >
+                      <Link
+                        href={`/support/${article.topic}/${article.slug}`}
+                        className="group flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-stone-50"
+                      >
+                        <span className="text-sm text-stone-700 transition-colors group-hover:text-orange-600">
+                          {article.title}
+                        </span>
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-transparent transition-colors group-hover:bg-orange-100">
+                          <ChevronRight className="h-4 w-4 flex-shrink-0 text-stone-400 transition-colors group-hover:text-orange-600" />
+                        </span>
+                      </Link>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </motion.div>
             ) : (
               <div className="py-14 text-center">
                 <p className="mb-3 text-stone-500">No articles found for that search.</p>
-                <a href="mailto:support@tagloom.app" className="text-sm font-medium text-orange-600 hover:underline">
-                  Contact support directly 2192
+                <a href="mailto:support@tagloom.app" className="text-stone-500 hover:underline">
+                  Contact support directly
                 </a>
               </div>
             )}
@@ -201,7 +220,7 @@ export default function SupportHubPage({ topics, articles }: SupportHubPageProps
           </div>
           <a
             href="mailto:support@tagloom.app"
-            className="flex-shrink-0 rounded-xl px-5 py-3 text-sm font-semibold text-white transition-all"
+            className="flex-shrink-0 rounded-xl px-5 py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-orange-500/25"
             style={{
               background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
               boxShadow: "0 3px 14px rgba(249,115,22,0.3)",
@@ -212,20 +231,7 @@ export default function SupportHubPage({ topics, articles }: SupportHubPageProps
         </div>
       </div>
 
-      <footer className="mt-8 border-t border-stone-200 bg-white px-5 py-10">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-5 sm:flex-row">
-          <BrandMark href="/" size="footer" />
-          <div className="flex items-center gap-7 text-sm text-stone-400">
-            <a href="#" className="transition-colors hover:text-stone-700">
-              Privacy
-            </a>
-            <a href="#" className="transition-colors hover:text-stone-700">
-              Terms
-            </a>
-          </div>
-          <p className="text-xs text-stone-400">© 2026 Tagloom. All rights reserved.</p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
