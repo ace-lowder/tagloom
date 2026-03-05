@@ -10,7 +10,6 @@ import {
   ThumbsUp,
 } from "lucide-react";
 import type { SupportArticle, SupportTopic } from "@/content/support";
-import Navbar from "@/components/tagsy/Navbar";
 import SiteFooter from "@/components/shared/SiteFooter";
 
 type SupportArticlePageProps = {
@@ -38,8 +37,6 @@ export default function SupportArticlePage({
 
   return (
     <div className="min-h-screen bg-stone-50 font-sans">
-      <Navbar />
-
       <div className="mx-auto max-w-5xl px-5 py-12 pt-24">
         <Link
           href="/support"

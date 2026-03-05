@@ -5,7 +5,6 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, Calendar, User } from "lucide-react";
 import type { BlogPost } from "@/content/blog";
-import Navbar from "@/components/tagsy/Navbar";
 import SiteFooter from "@/components/shared/SiteFooter";
 
 const categoryColors: Record<string, string> = {
@@ -31,8 +30,6 @@ export default function BlogIndexPage({ posts }: BlogIndexPageProps) {
 
   return (
     <div className="min-h-screen bg-stone-50 font-sans">
-      <Navbar />
-
       <section className="border-b border-stone-100 bg-white px-5 pb-16 pt-28">
         <div className="mx-auto max-w-5xl">
           <motion.div initial="hidden" animate="visible" variants={stagger}>

@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Calendar, User } from "lucide-react";
 import type { BlogPost } from "@/content/blog";
-import Navbar from "@/components/tagsy/Navbar";
 import SiteFooter from "@/components/shared/SiteFooter";
 
 function ReadingProgress() {
@@ -121,7 +120,6 @@ export default function BlogPostPage({ post }: BlogPostPageProps) {
   return (
     <div className="min-h-screen bg-stone-50 font-sans">
       <ReadingProgress />
-      <Navbar />
 
       <div className="mx-auto max-w-6xl px-5 py-12 pt-24">
         <Link

@@ -13,7 +13,6 @@ import {
   Zap,
 } from "lucide-react";
 
-import Navbar from "@/components/tagsy/Navbar";
 import TagGenerator from "@/components/tagsy/TagGenerator";
 import { Card } from "@/components/ui/card";
 import SiteFooter from "@/components/shared/SiteFooter";
@@ -180,8 +179,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-stone-50 font-sans">
-      <Navbar />
-
       <section className="relative overflow-hidden px-5 pb-24 pt-28">
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
           <div

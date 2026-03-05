@@ -7,6 +7,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import BrandMark from "@/components/brand/BrandMark";
 import { triggerGeneratorCta } from "@/lib/generatorCta";
+import type { CurrentUser } from "@/lib/auth";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type NavLink = {
   label: string;
@@ -26,10 +28,16 @@ function dispatchSupportReset() {
   window.dispatchEvent(new CustomEvent("tagloom:support-reset"));
 }
 
-export default function Navbar() {
+type NavbarProps = {
+  currentUser: CurrentUser | null;
+};
+
+export default function Navbar({ currentUser }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+  const supabase = createSupabaseBrowserClient();
 
   const startGeneratorFlow = () => {
     triggerGeneratorCta({
@@ -60,6 +68,25 @@ export default function Navbar() {
     }
 
     router.push("/support");
+  };
+
+  const loginHref =
+    pathname && pathname !== "/" && pathname !== "/login"
+      ? `/login?next=${encodeURIComponent(pathname)}`
+      : "/login";
+
+  const onSignOut = async () => {
+    if (!supabase) {
+      router.push("/login");
+      return;
+    }
+
+    setIsLoggingOut(true);
+    await supabase.auth.signOut();
+    setMobileOpen(false);
+    router.push("/");
+    router.refresh();
+    setIsLoggingOut(false);
   };
 
   const renderSectionLink = (label: string, sectionId: string, mobile = false) => {
@@ -121,9 +148,24 @@ export default function Navbar() {
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
-          <button className="text-sm font-medium text-stone-600 transition-colors hover:text-stone-900">
-            Log in
-          </button>
+          {currentUser ? (
+            <>
+              <span className="text-sm font-medium text-stone-600">
+                {currentUser.fullName || currentUser.email || "Account"}
+              </span>
+              <button
+                onClick={onSignOut}
+                disabled={isLoggingOut}
+                className="text-sm font-medium text-stone-600 transition-colors hover:text-stone-900 disabled:opacity-60"
+              >
+                {isLoggingOut ? "Logging out..." : "Log out"}
+              </button>
+            </>
+          ) : (
+            <Link href={loginHref} className="text-sm font-medium text-stone-600 transition-colors hover:text-stone-900">
+              Log in
+            </Link>
+          )}
           <button
             onClick={startGeneratorFlow}
             className="rounded-lg px-4 py-2 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-orange-500/25"
@@ -159,9 +201,23 @@ export default function Navbar() {
           >
             {navLinks.map((link) => renderNavLink(link, true))}
             <div className="flex flex-col gap-2 pt-3">
-              <button className="w-full rounded-lg border border-stone-200 py-2.5 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50">
-                Log in
-              </button>
+              {currentUser ? (
+                <button
+                  onClick={onSignOut}
+                  disabled={isLoggingOut}
+                  className="w-full rounded-lg border border-stone-200 py-2.5 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50 disabled:opacity-60"
+                >
+                  {isLoggingOut ? "Logging out..." : "Log out"}
+                </button>
+              ) : (
+                <Link
+                  href={loginHref}
+                  onClick={() => setMobileOpen(false)}
+                  className="block w-full rounded-lg border border-stone-200 py-2.5 text-center text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50"
+                >
+                  Log in
+                </Link>
+              )}
               <button
                 onClick={() => {
                   startGeneratorFlow();

@@ -15,7 +15,6 @@ import {
   User,
 } from "lucide-react";
 import type { SupportArticle, SupportTopic } from "@/content/support";
-import Navbar from "@/components/tagsy/Navbar";
 import SiteFooter from "@/components/shared/SiteFooter";
 
 const fadeInUp = {
@@ -61,8 +60,6 @@ export default function SupportHubPage({ topics, articles }: SupportHubPageProps
 
   return (
     <div className="min-h-screen bg-stone-50 font-sans">
-      <Navbar />
-
       <section className="border-b border-stone-100 bg-white px-5 pb-16 pt-28">
         <div className="mx-auto max-w-2xl text-center">
           <motion.div initial="hidden" animate="visible" variants={stagger}>

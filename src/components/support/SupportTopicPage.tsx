@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { ArrowLeft, ChevronRight, Mail } from "lucide-react";
 import type { SupportArticle, SupportTopic } from "@/content/support";
-import Navbar from "@/components/tagsy/Navbar";
 import SiteFooter from "@/components/shared/SiteFooter";
 
 type SupportTopicPageProps = {
@@ -14,8 +13,6 @@ type SupportTopicPageProps = {
 export default function SupportTopicPage({ topic, articles }: SupportTopicPageProps) {
   return (
     <div className="min-h-screen bg-stone-50 font-sans">
-      <Navbar />
-
       <div className="mx-auto max-w-3xl px-5 py-12 pt-24">
         <Link
           href="/support"
