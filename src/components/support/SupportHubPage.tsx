@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ChevronRight,
@@ -42,6 +42,15 @@ type SupportHubPageProps = {
 export default function SupportHubPage({ topics, articles }: SupportHubPageProps) {
   const [search, setSearch] = useState("");
 
+  useEffect(() => {
+    const resetSupport = () => {
+      setSearch("");
+    };
+
+    window.addEventListener("tagloom:support-reset", resetSupport);
+    return () => window.removeEventListener("tagloom:support-reset", resetSupport);
+  }, []);
+
   const filteredArticles = useMemo(
     () =>
       articles.filter((article) =>
@@ -61,7 +70,16 @@ export default function SupportHubPage({ topics, articles }: SupportHubPageProps
               variants={fadeInUp}
               className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600"
             >
-              Help Center
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch("");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="transition-colors hover:text-orange-700"
+              >
+                Help Center
+              </button>
             </motion.p>
             <motion.h1
               variants={fadeInUp}

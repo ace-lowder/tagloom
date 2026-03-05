@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type MouseEvent } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import BrandMark from "@/components/brand/BrandMark";
@@ -9,14 +10,15 @@ import BrandMark from "@/components/brand/BrandMark";
 type NavLink = {
   label: string;
   href: string;
+  type: "section" | "route";
 };
 
 const navLinks: NavLink[] = [
-  { label: "Features", href: "#features" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "Blog", href: "/blog" },
-  { label: "Support", href: "/support" },
-  { label: "FAQ", href: "#faq" },
+  { label: "Features", href: "features", type: "section" },
+  { label: "Pricing", href: "pricing", type: "section" },
+  { label: "Blog", href: "/blog", type: "route" },
+  { label: "Support", href: "/support", type: "route" },
+  { label: "FAQ", href: "faq", type: "section" },
 ];
 
 function scrollToGenerator() {
@@ -25,47 +27,86 @@ function scrollToGenerator() {
     ?.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
+function dispatchSupportReset() {
+  window.dispatchEvent(new CustomEvent("tagloom:support-reset"));
+}
+
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
 
-  const handleNavClick = (e: MouseEvent<HTMLAnchorElement>, href: string) => {
-    if (href.startsWith("#")) {
-      e.preventDefault();
-      const el = document.querySelector(href);
+  const goToSection = (sectionId: string) => {
+    setMobileOpen(false);
+
+    if (pathname === "/") {
+      const el = document.getElementById(sectionId);
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
     }
 
-    setMobileOpen(false);
+    router.push(`/#${sectionId}`);
   };
 
-  const renderNavLink = (link: NavLink, mobile = false) => {
+  const goToSupport = () => {
+    setMobileOpen(false);
+
+    if (pathname === "/support") {
+      dispatchSupportReset();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    router.push("/support");
+  };
+
+  const renderSectionLink = (label: string, sectionId: string, mobile = false) => {
     const classes = mobile
       ? "block rounded-lg px-3 py-2.5 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50"
-      : "text-sm font-medium text-stone-600 transition-colors hover:text-stone-900";
+      : "relative pb-0.5 text-sm font-medium text-stone-600 transition-colors hover:text-stone-900 after:absolute after:bottom-[-4px] after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-orange-500 after:transition-transform after:duration-250 hover:after:scale-x-100";
 
-    if (link.href.startsWith("#")) {
+    return (
+      <button
+        key={label}
+        type="button"
+        onClick={() => goToSection(sectionId)}
+        className={classes}
+      >
+        {label}
+      </button>
+    );
+  };
+
+  const renderRouteLink = (label: string, href: string, mobile = false) => {
+    const classes = mobile
+      ? "block rounded-lg px-3 py-2.5 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50"
+      : "relative pb-0.5 text-sm font-medium text-stone-600 transition-colors hover:text-stone-900 after:absolute after:bottom-[-4px] after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-orange-500 after:transition-transform after:duration-250 hover:after:scale-x-100";
+
+    if (href === "/support") {
       return (
-        <a
-          key={link.label}
-          href={link.href}
-          onClick={(e) => handleNavClick(e, link.href)}
+        <button
+          key={label}
+          type="button"
+          onClick={goToSupport}
           className={classes}
         >
-          {link.label}
-        </a>
+          {label}
+        </button>
       );
     }
 
     return (
-      <Link
-        key={link.label}
-        href={link.href}
-        onClick={() => setMobileOpen(false)}
-        className={classes}
-      >
-        {link.label}
+      <Link key={label} href={href} onClick={() => setMobileOpen(false)} className={classes}>
+        {label}
       </Link>
     );
+  };
+
+  const renderNavLink = (link: NavLink, mobile = false) => {
+    if (link.type === "section") {
+      return renderSectionLink(link.label, link.href, mobile);
+    }
+    return renderRouteLink(link.label, link.href, mobile);
   };
 
   return (
