@@ -15,6 +15,7 @@ import {
 import Navbar from "@/components/tagsy/Navbar";
 import TagGenerator from "@/components/tagsy/TagGenerator";
 import { Card } from "@/components/ui/card";
+import BrandMark from "@/components/brand/BrandMark";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 22 },
@@ -498,12 +499,7 @@ export default function HomePage() {
 
       <footer className="border-t border-stone-200 bg-white px-5 py-10">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-5 sm:flex-row">
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-orange-600">
-              <Tag className="h-3.5 w-3.5 text-white" />
-            </div>
-            <span className="font-bold text-stone-800">Tagloom</span>
-          </div>
+          <BrandMark href="/" size="footer" />
           <div className="flex items-center gap-7 text-sm text-stone-400">
             <a href="#" className="transition-colors hover:text-stone-700">
               Privacy
