@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   ChevronRight,
   CreditCard,
@@ -165,40 +165,45 @@ export default function SupportHubPage({ topics, articles }: SupportHubPageProps
             </p>
             {filteredArticles.length > 0 ? (
               <motion.div
-                key={search}
+                key={`${search}-${filteredArticles.map((article) => article.slug).join("|")}`}
                 initial="hidden"
                 animate="visible"
                 variants={{ visible: { transition: { staggerChildren: 0.035 } } }}
                 className="divide-y divide-stone-100 rounded-2xl border border-stone-100 bg-white"
               >
-                <AnimatePresence initial={false}>
-                  {filteredArticles.map((article) => (
-                    <motion.div
-                      key={article.slug}
-                      variants={{
-                        hidden: { opacity: 0, y: 6 },
-                        visible: { opacity: 1, y: 0, transition: { duration: 0.16 } },
-                      }}
+                {filteredArticles.map((article, index) => (
+                  <motion.div
+                    key={article.slug}
+                    variants={{
+                      hidden: { opacity: 0, y: 8 },
+                      visible: {
+                        opacity: 1,
+                        y: 0,
+                        transition: { duration: 0.16, delay: index * 0.03 },
+                      },
+                    }}
+                  >
+                    <Link
+                      href={`/support/${article.topic}/${article.slug}`}
+                      className="group flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-stone-50"
                     >
-                      <Link
-                        href={`/support/${article.topic}/${article.slug}`}
-                        className="group flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-stone-50"
-                      >
-                        <span className="text-sm text-stone-700 transition-colors group-hover:text-orange-600">
-                          {article.title}
-                        </span>
-                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-transparent transition-colors group-hover:bg-orange-100">
-                          <ChevronRight className="h-4 w-4 flex-shrink-0 text-stone-400 transition-colors group-hover:text-orange-600" />
-                        </span>
-                      </Link>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
+                      <span className="text-sm text-stone-700 transition-colors group-hover:text-orange-600">
+                        {article.title}
+                      </span>
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-transparent transition-colors group-hover:bg-orange-100">
+                        <ChevronRight className="h-4 w-4 flex-shrink-0 text-stone-400 transition-colors group-hover:text-orange-600" />
+                      </span>
+                    </Link>
+                  </motion.div>
+                ))}
               </motion.div>
             ) : (
               <div className="py-14 text-center">
                 <p className="mb-3 text-stone-500">No articles found for that search.</p>
-                <a href="mailto:support@tagloom.app" className="text-stone-500 hover:underline">
+                <a
+                  href="mailto:support@tagloom.app"
+                  className="text-stone-500 hover:underline"
+                >
                   Contact support directly
                 </a>
               </div>
