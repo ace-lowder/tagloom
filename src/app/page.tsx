@@ -341,19 +341,19 @@ export default function HomePage() {
                 <Card
                   className={`group relative flex h-full flex-col p-7 transition-all hover:-translate-y-1 hover:shadow-xl ${
                     plan.popular
-                      ? "overflow-hidden border-2 border-orange-400 shadow-xl shadow-orange-500/10"
+                      ? "border-2 border-orange-400 shadow-xl shadow-orange-500/10"
                       : "border-stone-100 hover:border-orange-200"
                   }`}
                 >
                   {plan.popular ? (
-                    <>
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                        <span className="rounded-full bg-gradient-to-r from-orange-500 to-orange-600 px-3 py-1 text-xs font-semibold text-white shadow">
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <span className="relative overflow-hidden rounded-full bg-gradient-to-r from-orange-500 to-orange-600 px-3 py-1 text-xs font-semibold text-white shadow">
+                        <span className="pointer-events-none absolute -left-1/3 top-0 h-full w-1/2 -skew-x-12 bg-gradient-to-r from-transparent via-white/55 to-transparent opacity-0 transition-all duration-700 group-hover:left-[110%] group-hover:opacity-100" />
+                        <span className="relative z-10">
                           Most Popular
                         </span>
-                      </div>
-                      <span className="pointer-events-none absolute -left-1/4 top-0 h-full w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/45 to-transparent opacity-0 transition-all duration-700 group-hover:left-[105%] group-hover:opacity-100" />
-                    </>
+                      </span>
+                    </div>
                   ) : null}
                   <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-stone-400">
                     {plan.name}
