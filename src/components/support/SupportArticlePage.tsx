@@ -89,9 +89,9 @@ export default function SupportArticlePage({
                     ) : (
                       <>
                         Still stuck?{" "}
-                        <a href="mailto:support@tagloom.app" className="text-orange-600 hover:underline">
+                        <Link href="/support/contact" className="text-orange-600 hover:underline">
                           Contact support
-                        </a>
+                        </Link>
                         .
                       </>
                     )}
@@ -152,13 +152,13 @@ export default function SupportArticlePage({
                 <p className="mb-3 text-xs leading-relaxed text-stone-500">
                   Our team replies within a few hours.
                 </p>
-                <a
-                  href="mailto:support@tagloom.app"
+                <Link
+                  href="/support/contact"
                   className="block rounded-lg py-2.5 text-center text-xs font-semibold text-white transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-orange-500/25"
                   style={{ background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)" }}
                 >
                   Email Support
-                </a>
+                </Link>
               </div>
             </div>
           </aside>

@@ -197,12 +197,12 @@ export default function SupportHubPage({ topics, articles }: SupportHubPageProps
             ) : (
               <div className="py-14 text-center">
                 <p className="mb-3 text-stone-500">No articles found for that search.</p>
-                <a
-                  href="mailto:support@tagloom.app"
+                <Link
+                  href="/support/contact"
                   className="font-medium text-orange-600 hover:underline"
                 >
                   Contact support directly
-                </a>
+                </Link>
               </div>
             )}
           </div>
@@ -220,8 +220,8 @@ export default function SupportHubPage({ topics, articles }: SupportHubPageProps
               </p>
             </div>
           </div>
-          <a
-            href="mailto:support@tagloom.app"
+          <Link
+            href="/support/contact"
             className="flex-shrink-0 rounded-xl px-5 py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-orange-500/25"
             style={{
               background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
@@ -229,7 +229,7 @@ export default function SupportHubPage({ topics, articles }: SupportHubPageProps
             }}
           >
             Email Support
-          </a>
+          </Link>
         </div>
       </div>
 

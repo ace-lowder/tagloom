@@ -45,9 +45,9 @@ export default function SupportTopicPage({ topic, articles }: SupportTopicPagePr
         ) : (
           <div className="rounded-2xl border border-stone-100 bg-white p-10 text-center">
             <p className="mb-2 text-stone-400">No articles yet for this topic.</p>
-            <a href="mailto:support@tagloom.app" className="text-sm font-medium text-orange-600 hover:underline">
+            <Link href="/support/contact" className="text-sm font-medium text-orange-600 hover:underline">
               Ask us directly
-            </a>
+            </Link>
           </div>
         )}
 
@@ -61,8 +61,8 @@ export default function SupportTopicPage({ topic, articles }: SupportTopicPagePr
               <p className="text-sm text-stone-500">We typically reply within a few hours on weekdays.</p>
             </div>
           </div>
-          <a
-            href="mailto:support@tagloom.app"
+          <Link
+            href="/support/contact"
             className="flex-shrink-0 rounded-xl px-5 py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-orange-500/25"
             style={{
               background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
@@ -70,7 +70,7 @@ export default function SupportTopicPage({ topic, articles }: SupportTopicPagePr
             }}
           >
             Email Support
-          </a>
+          </Link>
         </div>
       </div>
 
