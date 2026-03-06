@@ -102,8 +102,8 @@ export default function LoginPage() {
         </h1>
         <p className="mb-6 text-sm text-stone-500">
           {isSignUp
-            ? "Use email and password to create your account."
-            : "Sign in with email/password or continue with Google."}
+            ? "Use email and password to create your account and unlock 1 free generation."
+            : "Sign in with email/password or continue with Google to unlock your saved generation."}
         </p>
 
         <form onSubmit={onEmailAuth} className="space-y-4">
@@ -182,7 +182,7 @@ export default function LoginPage() {
         </p>
 
         <p className="mt-3 text-xs text-stone-500">
-          By continuing, you agree to use Tagloom responsibly.{" "}
+          New accounts receive 1 free generation credit.{" "}
           <Link href="/support" className="text-orange-600 hover:text-orange-700">
             Need help?
           </Link>

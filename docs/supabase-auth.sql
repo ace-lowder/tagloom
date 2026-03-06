@@ -61,3 +61,40 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+alter table public.profiles
+  add column if not exists free_generation_credits int not null default 1,
+  add column if not exists single_use_credits int not null default 0,
+  add column if not exists stripe_customer_id text,
+  add column if not exists subscription_tier text,
+  add column if not exists subscription_active boolean not null default false,
+  add column if not exists subscription_period_start timestamptz,
+  add column if not exists subscription_period_end timestamptz,
+  add column if not exists monthly_generation_count int not null default 0,
+  add column if not exists monthly_count_period_start timestamptz;
+
+create table if not exists public.generations (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  title text not null,
+  description text not null default '',
+  target_tags jsonb not null,
+  discovery_tags jsonb not null,
+  source text not null,
+  entitlement_used text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.generations enable row level security;
+
+drop policy if exists "generations_select_own" on public.generations;
+create policy "generations_select_own"
+  on public.generations
+  for select
+  using (auth.uid() = user_id);
+
+drop policy if exists "generations_insert_own" on public.generations;
+create policy "generations_insert_own"
+  on public.generations
+  for insert
+  with check (auth.uid() = user_id);
