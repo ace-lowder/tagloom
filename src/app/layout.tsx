@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/tagsy/Navbar";
+import AppShell from "@/components/auth/AppShell";
 import { toCurrentUser } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -44,8 +44,7 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={`${outfit.variable} ${inter.variable} bg-[#F7F7F5] text-black`}>
-        <Navbar currentUser={currentUser} />
-        {children}
+        <AppShell currentUser={currentUser}>{children}</AppShell>
       </body>
     </html>
   );

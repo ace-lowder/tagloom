@@ -6,6 +6,7 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import BrandMark from "@/components/brand/BrandMark";
+import { useAuthController } from "@/components/auth/AuthController";
 import { triggerGeneratorCta } from "@/lib/generatorCta";
 import type { CurrentUser } from "@/lib/auth";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -37,6 +38,7 @@ export default function Navbar({ currentUser }: NavbarProps) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+  const { openAuthModal } = useAuthController();
   const supabase = createSupabaseBrowserClient();
 
   const startGeneratorFlow = () => {
@@ -69,11 +71,6 @@ export default function Navbar({ currentUser }: NavbarProps) {
 
     router.push("/support");
   };
-
-  const loginHref =
-    pathname && pathname !== "/" && pathname !== "/login"
-      ? `/login?next=${encodeURIComponent(pathname)}`
-      : "/login";
 
   const onSignOut = async () => {
     if (!supabase) {
@@ -162,9 +159,19 @@ export default function Navbar({ currentUser }: NavbarProps) {
               </button>
             </>
           ) : (
-            <Link href={loginHref} className="text-sm font-medium text-stone-600 transition-colors hover:text-stone-900">
+            <button
+              type="button"
+              onClick={() =>
+                openAuthModal({
+                  mode: "login",
+                  source: "navbar",
+                  next: pathname || "/",
+                })
+              }
+              className="text-sm font-medium text-stone-600 transition-colors hover:text-stone-900"
+            >
               Log in
-            </Link>
+            </button>
           )}
           <button
             onClick={startGeneratorFlow}
@@ -206,13 +213,20 @@ export default function Navbar({ currentUser }: NavbarProps) {
                   {isLoggingOut ? "Logging out..." : "Log out"}
                 </button>
               ) : (
-                <Link
-                  href={loginHref}
-                  onClick={() => setMobileOpen(false)}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    openAuthModal({
+                      mode: "login",
+                      source: "navbar_mobile",
+                      next: pathname || "/",
+                    });
+                  }}
                   className="block w-full rounded-lg border border-stone-200 py-2.5 text-center text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50"
                 >
                   Log in
-                </Link>
+                </button>
               )}
               <button
                 onClick={() => {

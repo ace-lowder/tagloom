@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Copy, Sparkles } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useAuthController } from "@/components/auth/AuthController";
+import { AUTH_SUCCESS_EVENT } from "@/lib/authModal";
 import { GENERATOR_CTA_EVENT } from "@/lib/generatorCta";
 import GradientBackground from "./GradientBackground";
 
@@ -87,7 +88,7 @@ function clearPendingContext(id: string) {
 }
 
 export default function TagGenerator({ onFocus, glowRef }: TagGeneratorProps) {
-  const router = useRouter();
+  const { openAuthModal } = useAuthController();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -284,8 +285,11 @@ export default function TagGenerator({ onFocus, glowRef }: TagGeneratorProps) {
       description,
     });
 
-    const next = `/?gen_ctx=${encodeURIComponent(contextId)}`;
-    router.push(`/login?next=${encodeURIComponent(next)}`);
+    openAuthModal({
+      mode: "login",
+      source: "generator_paywall",
+      next: `/?gen_ctx=${encodeURIComponent(contextId)}`,
+    });
   };
 
   const startCheckout = async (purchaseType: "single_use" | "monthly" | "yearly") => {
@@ -346,6 +350,25 @@ export default function TagGenerator({ onFocus, glowRef }: TagGeneratorProps) {
       });
     }, 120);
   }, [runGeneration]);
+
+  useEffect(() => {
+    const onAuthSuccess = () => {
+      if (!paywall || paywall.reason !== "auth_required") return;
+      if (!generationContextId) return;
+
+      const context = loadPendingContext(generationContextId);
+      if (!context) return;
+
+      setError("");
+      setPaywall(null);
+      runGeneration(context.title, context.description, context.id).catch((err) => {
+        setError(err instanceof Error ? err.message : "Could not resume generation.");
+      });
+    };
+
+    window.addEventListener(AUTH_SUCCESS_EVENT, onAuthSuccess);
+    return () => window.removeEventListener(AUTH_SUCCESS_EVENT, onAuthSuccess);
+  }, [generationContextId, paywall, runGeneration]);
 
   const handleCopyAll = async () => {
     const allTags = [...visibleTargetTags, ...visibleDiscoveryTags];
