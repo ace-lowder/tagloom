@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import AuthForm from "@/components/auth/AuthForm";
 import {
@@ -80,13 +81,24 @@ export function AuthControllerProvider({ children }: AuthControllerProviderProps
       {children}
       {isOpen ? (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-5">
-          <button
+          <motion.button
             type="button"
             aria-label="Close auth modal backdrop"
-            className="absolute inset-0 bg-black/45 backdrop-blur-[1px]"
+            className="absolute inset-0 bg-black/45"
             onClick={closeAuthModal}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.12, ease: "linear" }}
           />
-          <div className="relative z-10 w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl sm:p-8">
+          <motion.div
+            className="relative z-10 w-full max-w-sm rounded-2xl border border-stone-200 bg-white px-6 pb-6 pt-12 shadow-2xl sm:px-7 sm:pb-7 sm:pt-12"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{
+              opacity: { duration: 0.09, ease: "linear", delay: 0.1 },
+              scale: { duration: 0.16, ease: "easeOut", delay: 0.1 },
+            }}
+          >
             <button
               type="button"
               onClick={closeAuthModal}
@@ -101,10 +113,10 @@ export function AuthControllerProvider({ children }: AuthControllerProviderProps
               next={next}
               preferGooglePopup
               onAuthSuccess={onAuthSuccess}
-              showHeading
+              showHeading={false}
               compact
             />
-          </div>
+          </motion.div>
         </div>
       ) : null}
     </AuthControllerContext.Provider>
