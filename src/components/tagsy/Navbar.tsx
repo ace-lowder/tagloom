@@ -147,7 +147,7 @@ export default function Navbar({ currentUser }: NavbarProps) {
           {navLinks.map((link) => renderNavLink(link))}
         </div>
 
-        <div className="hidden items-center gap-3 md:flex">
+        <div className="hidden items-center gap-4 md:flex">
           {currentUser ? (
             <>
               <span className="text-sm font-medium text-stone-600">
@@ -168,13 +168,9 @@ export default function Navbar({ currentUser }: NavbarProps) {
           )}
           <button
             onClick={startGeneratorFlow}
-            className="rounded-lg px-4 py-2 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-orange-500/25"
-            style={{
-              background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
-              boxShadow: "0 3px 14px rgba(249,115,22,0.3)",
-            }}
+            className="rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700"
           >
-            Try Free
+            Get Tags
           </button>
         </div>
 
@@ -223,12 +219,9 @@ export default function Navbar({ currentUser }: NavbarProps) {
                   startGeneratorFlow();
                   setMobileOpen(false);
                 }}
-                className="w-full rounded-lg py-2.5 text-sm font-semibold text-white transition-all hover:-translate-y-0.5"
-                style={{
-                  background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
-                }}
+                className="w-full rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 py-2.5 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700"
               >
-                Try Free
+                Get Tags
               </button>
             </div>
           </motion.div>
