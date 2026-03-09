@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Menu, X } from "lucide-react";
+import { CreditCard, LogOut, Menu, ShieldAlert, User, X } from "lucide-react";
 import BrandMark from "@/components/brand/BrandMark";
 import { useAuthController } from "@/components/auth/AuthController";
 import { triggerGeneratorCta } from "@/lib/generatorCta";
@@ -33,19 +33,74 @@ type NavbarProps = {
   currentUser: CurrentUser | null;
 };
 
+type AccountType = "unverified" | "verified" | "monthly" | "yearly";
+
+const accountTypeLabels: Record<AccountType, string> = {
+  unverified: "Unverified",
+  verified: "Verified",
+  monthly: "Monthly",
+  yearly: "Yearly",
+};
+
+const accountTypeStyles: Record<AccountType, string> = {
+  unverified: "bg-amber-100 text-amber-800 ring-amber-200",
+  verified: "bg-emerald-100 text-emerald-800 ring-emerald-200",
+  monthly: "bg-sky-100 text-sky-800 ring-sky-200",
+  yearly: "bg-violet-100 text-violet-800 ring-violet-200",
+};
+
+function resolveAccountType(currentUser: CurrentUser): AccountType {
+  if (currentUser.subscriptionActive && currentUser.subscriptionTier === "yearly") {
+    return "yearly";
+  }
+  if (currentUser.subscriptionActive && currentUser.subscriptionTier === "monthly") {
+    return "monthly";
+  }
+  if (!currentUser.emailVerified) {
+    return "unverified";
+  }
+  return "verified";
+}
+
+function getAvatarInitials(email: string | null) {
+  const initials = (email ?? "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .slice(0, 2)
+    .toUpperCase();
+  return initials || "AC";
+}
+
 export default function Navbar({ currentUser }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { openAuthModal } = useAuthController();
   const supabase = createSupabaseBrowserClient();
+  const profileMenuRef = useRef<HTMLDivElement>(null);
 
   const startGeneratorFlow = () => {
+    setProfileOpen(false);
     triggerGeneratorCta({
       isHomePage: pathname === "/",
       navigateHome: () => router.push("/"),
     });
+  };
+
+  const goToPricing = () => {
+    setProfileOpen(false);
+    setMobileOpen(false);
+
+    if (pathname === "/") {
+      const el = document.getElementById("pricing");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+    }
+
+    router.push("/#pricing");
   };
 
   const goToSection = (sectionId: string) => {
@@ -79,11 +134,107 @@ export default function Navbar({ currentUser }: NavbarProps) {
     }
 
     setIsLoggingOut(true);
+    setProfileOpen(false);
     await supabase.auth.signOut();
     setMobileOpen(false);
     router.push("/");
     router.refresh();
     setIsLoggingOut(false);
+  };
+
+  useEffect(() => {
+    if (!profileOpen) return;
+
+    const onMouseDown = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (!profileMenuRef.current?.contains(target)) {
+        setProfileOpen(false);
+      }
+    };
+
+    window.addEventListener("mousedown", onMouseDown);
+    return () => window.removeEventListener("mousedown", onMouseDown);
+  }, [profileOpen]);
+
+  const accountType = currentUser ? resolveAccountType(currentUser) : null;
+  const displayEmail = currentUser?.email || "Account";
+  const avatarInitials = getAvatarInitials(currentUser?.email ?? null);
+
+  const primaryAction =
+    accountType === "unverified"
+      ? {
+          label: "Verify",
+          icon: ShieldAlert,
+          onClick: () => {
+            setProfileOpen(false);
+            setMobileOpen(false);
+            openAuthModal({
+              mode: "login",
+              source: "profile_verify",
+              next: pathname || "/",
+            });
+          },
+        }
+      : accountType === "verified"
+        ? {
+            label: "View Plans",
+            icon: CreditCard,
+            onClick: goToPricing,
+          }
+        : {
+            label: "View Plan",
+            icon: CreditCard,
+            onClick: goToPricing,
+          };
+
+  const renderProfileCard = (mobile = false) => {
+    if (!currentUser || !accountType) return null;
+    const PrimaryIcon = primaryAction.icon;
+
+    return (
+      <div
+        className={
+          mobile
+            ? "p-0"
+            : "rounded-2xl border border-stone-200 bg-white p-4 shadow-xl"
+        }
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-stone-200 to-stone-300 text-sm font-semibold text-stone-700">
+            {avatarInitials}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-stone-900">{displayEmail}</p>
+            <span
+              className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${accountTypeStyles[accountType]}`}
+            >
+              <span className="relative top-px">{accountTypeLabels[accountType]}</span>
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-[1fr_auto] gap-2">
+          <button
+            type="button"
+            onClick={primaryAction.onClick}
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-stone-400/90 bg-white px-3 py-2 text-sm font-semibold text-stone-700 transition-colors hover:border-stone-900 hover:text-stone-900"
+          >
+            <PrimaryIcon className="h-3.5 w-3.5" />
+            <span className="relative top-px">{primaryAction.label}</span>
+          </button>
+          <button
+            type="button"
+            onClick={onSignOut}
+            disabled={isLoggingOut}
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-stone-400/90 bg-white px-3 py-2 text-sm font-semibold text-stone-700 transition-colors hover:border-stone-900 hover:text-stone-900 disabled:opacity-60"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            <span className="relative top-px">{isLoggingOut ? "Logging out..." : "Log out"}</span>
+          </button>
+        </div>
+      </div>
+    );
   };
 
   const renderSectionLink = (label: string, sectionId: string, mobile = false) => {
@@ -146,18 +297,32 @@ export default function Navbar({ currentUser }: NavbarProps) {
 
         <div className="hidden items-center gap-4 md:flex">
           {currentUser ? (
-            <>
-              <span className="text-sm font-medium text-stone-600">
-                {currentUser.fullName || currentUser.email || "Account"}
-              </span>
+            <div className="relative" ref={profileMenuRef}>
               <button
-                onClick={onSignOut}
-                disabled={isLoggingOut}
-                className="text-sm font-medium text-stone-600 transition-colors hover:text-stone-900 disabled:opacity-60"
+                type="button"
+                aria-label="Open profile menu"
+                aria-expanded={profileOpen}
+                aria-controls="navbar-profile-menu"
+                onClick={() => setProfileOpen((open) => !open)}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-700 shadow-sm transition-colors hover:border-orange-300 hover:text-orange-600"
               >
-                {isLoggingOut ? "Logging out..." : "Log out"}
+                <User className="h-4 w-4" />
               </button>
-            </>
+              <AnimatePresence>
+                {profileOpen ? (
+                  <motion.div
+                    id="navbar-profile-menu"
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.14, ease: "easeOut" }}
+                    className="absolute right-0 top-[calc(100%+10px)] z-[70] w-72"
+                  >
+                    {renderProfileCard()}
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </div>
           ) : (
             <button
               type="button"
@@ -200,18 +365,23 @@ export default function Navbar({ currentUser }: NavbarProps) {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="space-y-1 border-b border-stone-100 bg-white px-5 pb-5 pt-2 md:hidden"
+            className="flex h-[calc(100dvh-73px)] flex-col border-b border-stone-100 bg-white px-5 pb-5 pt-2 md:hidden"
           >
-            {navLinks.map((link) => renderNavLink(link, true))}
-            <div className="flex flex-col gap-2 pt-3">
+            <div className="space-y-1">
+              {navLinks.map((link) => renderNavLink(link, true))}
+              <button
+                onClick={() => {
+                  startGeneratorFlow();
+                  setMobileOpen(false);
+                }}
+                className="mt-3 w-full rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 py-2.5 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700"
+              >
+                Get Tags
+              </button>
+            </div>
+            <div className="mt-auto flex flex-col gap-3 pt-5">
               {currentUser ? (
-                <button
-                  onClick={onSignOut}
-                  disabled={isLoggingOut}
-                  className="w-full rounded-lg border border-stone-200 py-2.5 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50 disabled:opacity-60"
-                >
-                  {isLoggingOut ? "Logging out..." : "Log out"}
-                </button>
+                renderProfileCard(true)
               ) : (
                 <button
                   type="button"
@@ -228,15 +398,6 @@ export default function Navbar({ currentUser }: NavbarProps) {
                   Log in
                 </button>
               )}
-              <button
-                onClick={() => {
-                  startGeneratorFlow();
-                  setMobileOpen(false);
-                }}
-                className="w-full rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 py-2.5 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700"
-              >
-                Get Tags
-              </button>
             </div>
           </motion.div>
         )}

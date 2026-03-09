@@ -188,9 +188,7 @@ export default function AuthForm({
     setNotice("");
 
     if (!supabase) {
-      setError(
-        "Auth is not configured yet. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.",
-      );
+      setError("Auth is not configured.");
       return;
     }
 
@@ -230,11 +228,7 @@ export default function AuthForm({
           return;
         }
       } catch (checkError) {
-        setError(
-          checkError instanceof Error
-            ? checkError.message
-            : "Could not check account.",
-        );
+        console.error("/api/auth/email-exists lookup failed", checkError);
         return;
       }
       setSignupStep("password");
@@ -370,9 +364,7 @@ export default function AuthForm({
 
     try {
       if (!supabase) {
-        throw new Error(
-          "Auth is not configured yet. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.",
-        );
+        throw new Error("Auth is not configured.");
       }
 
       if (preferGooglePopup) {
@@ -406,9 +398,7 @@ export default function AuthForm({
 
     try {
       if (!supabase) {
-        throw new Error(
-          "Auth is not configured yet. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.",
-        );
+        throw new Error("Auth is not configured.");
       }
 
       if (!emailIsValid) {

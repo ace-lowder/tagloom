@@ -1,13 +1,24 @@
 import type { User } from "@supabase/supabase-js";
 
+export type CurrentUserProfile = {
+  subscriptionTier: "monthly" | "yearly" | null;
+  subscriptionActive: boolean;
+};
+
 export type CurrentUser = {
   id: string;
   email: string | null;
   fullName?: string | null;
   avatarUrl?: string | null;
+  emailVerified: boolean;
+  subscriptionTier: "monthly" | "yearly" | null;
+  subscriptionActive: boolean;
 };
 
-export function toCurrentUser(user: User | null): CurrentUser | null {
+export function toCurrentUser(
+  user: User | null,
+  profile?: CurrentUserProfile | null,
+): CurrentUser | null {
   if (!user) return null;
 
   const metadata = user.user_metadata ?? {};
@@ -20,5 +31,8 @@ export function toCurrentUser(user: User | null): CurrentUser | null {
     email: user.email ?? null,
     fullName,
     avatarUrl,
+    emailVerified: Boolean(user.email_confirmed_at),
+    subscriptionTier: profile?.subscriptionTier ?? null,
+    subscriptionActive: profile?.subscriptionActive ?? false,
   };
 }

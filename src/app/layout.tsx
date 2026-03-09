@@ -5,6 +5,11 @@ import AppShell from "@/components/auth/AppShell";
 import { toCurrentUser } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+type ProfileSummary = {
+  subscription_tier: "monthly" | "yearly" | null;
+  subscription_active: boolean;
+};
+
 const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-outfit",
@@ -35,7 +40,26 @@ export default async function RootLayout({
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      currentUser = toCurrentUser(user);
+
+      let profile: ProfileSummary | null = null;
+      if (user) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("subscription_tier, subscription_active")
+          .eq("id", user.id)
+          .maybeSingle<ProfileSummary>();
+        profile = data ?? null;
+      }
+
+      currentUser = toCurrentUser(
+        user,
+        profile
+          ? {
+              subscriptionTier: profile.subscription_tier,
+              subscriptionActive: profile.subscription_active,
+            }
+          : null,
+      );
     }
   } catch {
     currentUser = null;
