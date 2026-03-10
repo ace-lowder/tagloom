@@ -15,7 +15,6 @@ import {
 type AuthControllerContextValue = {
   isOpen: boolean;
   mode: AuthMode;
-  source?: string;
   next?: string;
   openAuthModal: (options?: OpenAuthModalOptions) => void;
   closeAuthModal: () => void;
@@ -31,7 +30,6 @@ export function AuthControllerProvider({ children }: AuthControllerProviderProps
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<AuthMode>("login");
-  const [source, setSource] = useState<string | undefined>(undefined);
   const [next, setNext] = useState<string | undefined>(undefined);
 
   const closeAuthModal = useCallback(() => {
@@ -40,7 +38,6 @@ export function AuthControllerProvider({ children }: AuthControllerProviderProps
 
   const openAuthModal = useCallback((options?: OpenAuthModalOptions) => {
     setMode(options?.mode ?? "login");
-    setSource(options?.source);
     setNext(options?.next ? sanitizeNextPath(options.next) : undefined);
     setIsOpen(true);
   }, []);
@@ -68,12 +65,11 @@ export function AuthControllerProvider({ children }: AuthControllerProviderProps
     () => ({
       isOpen,
       mode,
-      source,
       next,
       openAuthModal,
       closeAuthModal,
     }),
-    [isOpen, mode, source, next, openAuthModal, closeAuthModal],
+    [isOpen, mode, next, openAuthModal, closeAuthModal],
   );
 
   return (

@@ -4,7 +4,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { CreditCard, LogOut, Menu, ShieldAlert, User, X } from "lucide-react";
+import {
+  CreditCard,
+  LogOut,
+  Menu,
+  ShieldAlert,
+  User,
+  X,
+} from "lucide-react";
 import BrandMark from "@/components/brand/BrandMark";
 import { useAuthController } from "@/components/auth/AuthController";
 import { triggerGeneratorCta } from "@/lib/generatorCta";
@@ -17,7 +24,13 @@ type NavLink = {
   type: "section" | "route";
 };
 
-const navLinks: NavLink[] = [
+type NavbarProps = {
+  currentUser: CurrentUser | null;
+};
+
+type AccountType = "unverified" | "verified" | "monthly" | "yearly";
+
+const NAV_LINKS: NavLink[] = [
   { label: "Features", href: "features", type: "section" },
   { label: "Pricing", href: "pricing", type: "section" },
   { label: "Blog", href: "/blog", type: "route" },
@@ -25,50 +38,26 @@ const navLinks: NavLink[] = [
   { label: "FAQ", href: "faq", type: "section" },
 ];
 
-function dispatchSupportReset() {
-  window.dispatchEvent(new CustomEvent("tagloom:support-reset"));
-}
+const DESKTOP_NAV_LINK_CLASS =
+  "relative pb-0.5 text-sm font-medium text-stone-600 transition-colors hover:text-stone-900 after:absolute after:bottom-[-4px] after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-orange-500 after:transition-transform after:duration-250 hover:after:scale-x-100";
+const MOBILE_NAV_LINK_CLASS =
+  "block rounded-lg px-3 py-2.5 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50";
+const PROFILE_ACTION_BUTTON_CLASS =
+  "inline-flex items-center justify-center gap-1.5 rounded-lg border border-stone-400/90 bg-white px-3 py-2 text-sm font-semibold text-stone-700 transition-colors hover:border-stone-900 hover:text-stone-900";
 
-type NavbarProps = {
-  currentUser: CurrentUser | null;
-};
-
-type AccountType = "unverified" | "verified" | "monthly" | "yearly";
-
-const accountTypeLabels: Record<AccountType, string> = {
+const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   unverified: "Unverified",
   verified: "Verified",
   monthly: "Monthly",
   yearly: "Yearly",
 };
 
-const accountTypeStyles: Record<AccountType, string> = {
+const ACCOUNT_TYPE_STYLES: Record<AccountType, string> = {
   unverified: "bg-amber-100 text-amber-800 ring-amber-200",
   verified: "bg-emerald-100 text-emerald-800 ring-emerald-200",
   monthly: "bg-sky-100 text-sky-800 ring-sky-200",
   yearly: "bg-violet-100 text-violet-800 ring-violet-200",
 };
-
-function resolveAccountType(currentUser: CurrentUser): AccountType {
-  if (currentUser.subscriptionActive && currentUser.subscriptionTier === "yearly") {
-    return "yearly";
-  }
-  if (currentUser.subscriptionActive && currentUser.subscriptionTier === "monthly") {
-    return "monthly";
-  }
-  if (!currentUser.emailVerified) {
-    return "unverified";
-  }
-  return "verified";
-}
-
-function getAvatarInitials(email: string | null) {
-  const initials = (email ?? "")
-    .replace(/[^a-zA-Z0-9]/g, "")
-    .slice(0, 2)
-    .toUpperCase();
-  return initials || "AC";
-}
 
 export default function Navbar({ currentUser }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -80,6 +69,11 @@ export default function Navbar({ currentUser }: NavbarProps) {
   const supabase = createSupabaseBrowserClient();
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
+  const closeAllMenus = () => {
+    setMobileOpen(false);
+    setProfileOpen(false);
+  };
+
   const startGeneratorFlow = () => {
     setProfileOpen(false);
     triggerGeneratorCta({
@@ -88,9 +82,20 @@ export default function Navbar({ currentUser }: NavbarProps) {
     });
   };
 
+  const goToSection = (sectionId: string) => {
+    closeAllMenus();
+
+    if (pathname === "/") {
+      const el = document.getElementById(sectionId);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
+    router.push(`/#${sectionId}`);
+  };
+
   const goToPricing = () => {
-    setProfileOpen(false);
-    setMobileOpen(false);
+    closeAllMenus();
 
     if (pathname === "/") {
       const el = document.getElementById("pricing");
@@ -104,25 +109,12 @@ export default function Navbar({ currentUser }: NavbarProps) {
   };
 
   const goToBilling = () => {
-    setProfileOpen(false);
-    setMobileOpen(false);
+    closeAllMenus();
     router.push("/billing");
   };
 
-  const goToSection = (sectionId: string) => {
-    setMobileOpen(false);
-
-    if (pathname === "/") {
-      const el = document.getElementById(sectionId);
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-      return;
-    }
-
-    router.push(`/#${sectionId}`);
-  };
-
   const goToSupport = () => {
-    setMobileOpen(false);
+    closeAllMenus();
 
     if (pathname === "/support") {
       dispatchSupportReset();
@@ -140,9 +132,8 @@ export default function Navbar({ currentUser }: NavbarProps) {
     }
 
     setIsLoggingOut(true);
-    setProfileOpen(false);
+    closeAllMenus();
     await supabase.auth.signOut();
-    setMobileOpen(false);
     router.push("/");
     router.refresh();
     setIsLoggingOut(false);
@@ -167,14 +158,14 @@ export default function Navbar({ currentUser }: NavbarProps) {
   const displayEmail = currentUser?.email || "Account";
   const avatarInitials = getAvatarInitials(currentUser?.email ?? null);
 
-  const primaryAction =
-    accountType === "unverified"
+  const primaryAction = !accountType
+    ? null
+    : accountType === "unverified"
       ? {
           label: "Verify",
           icon: ShieldAlert,
           onClick: () => {
-            setProfileOpen(false);
-            setMobileOpen(false);
+            closeAllMenus();
             openAuthModal({
               mode: "login",
               source: "profile_verify",
@@ -182,20 +173,15 @@ export default function Navbar({ currentUser }: NavbarProps) {
             });
           },
         }
-      : accountType === "verified"
-        ? {
-            label: "View Plans",
-            icon: CreditCard,
-            onClick: goToPricing,
-          }
-        : {
-            label: "Manage Plan",
-            icon: CreditCard,
-            onClick: goToBilling,
-          };
+      : {
+          label: accountType === "verified" ? "View Plans" : "Manage Plan",
+          icon: CreditCard,
+          onClick: accountType === "verified" ? goToPricing : goToBilling,
+        };
+  const hasProfileMenu = Boolean(currentUser && accountType && primaryAction);
 
   const renderProfileCard = (mobile = false) => {
-    if (!currentUser || !accountType) return null;
+    if (!currentUser || !accountType || !primaryAction) return null;
     const PrimaryIcon = primaryAction.icon;
 
     return (
@@ -211,11 +197,15 @@ export default function Navbar({ currentUser }: NavbarProps) {
             {avatarInitials}
           </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-stone-900">{displayEmail}</p>
+            <p className="truncate text-sm font-semibold text-stone-900">
+              {displayEmail}
+            </p>
             <span
-              className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${accountTypeStyles[accountType]}`}
+              className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${ACCOUNT_TYPE_STYLES[accountType]}`}
             >
-              <span className="relative top-px">{accountTypeLabels[accountType]}</span>
+              <span className="relative top-px">
+                {ACCOUNT_TYPE_LABELS[accountType]}
+              </span>
             </span>
           </div>
         </div>
@@ -224,7 +214,7 @@ export default function Navbar({ currentUser }: NavbarProps) {
           <button
             type="button"
             onClick={primaryAction.onClick}
-            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-stone-400/90 bg-white px-3 py-2 text-sm font-semibold text-stone-700 transition-colors hover:border-stone-900 hover:text-stone-900"
+            className={PROFILE_ACTION_BUTTON_CLASS}
           >
             <PrimaryIcon className="h-3.5 w-3.5" />
             <span className="relative top-px">{primaryAction.label}</span>
@@ -233,63 +223,57 @@ export default function Navbar({ currentUser }: NavbarProps) {
             type="button"
             onClick={onSignOut}
             disabled={isLoggingOut}
-            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-stone-400/90 bg-white px-3 py-2 text-sm font-semibold text-stone-700 transition-colors hover:border-stone-900 hover:text-stone-900 disabled:opacity-60"
+            className={`${PROFILE_ACTION_BUTTON_CLASS} disabled:opacity-60`}
           >
             <LogOut className="h-3.5 w-3.5" />
-            <span className="relative top-px">{isLoggingOut ? "Logging out..." : "Log out"}</span>
+            <span className="relative top-px">
+              {isLoggingOut ? "Logging out..." : "Log out"}
+            </span>
           </button>
         </div>
       </div>
     );
   };
 
-  const renderSectionLink = (label: string, sectionId: string, mobile = false) => {
-    const classes = mobile
-      ? "block rounded-lg px-3 py-2.5 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50"
-      : "relative pb-0.5 text-sm font-medium text-stone-600 transition-colors hover:text-stone-900 after:absolute after:bottom-[-4px] after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-orange-500 after:transition-transform after:duration-250 hover:after:scale-x-100";
+  const renderNavLink = (link: NavLink, mobile = false) => {
+    const className = mobile ? MOBILE_NAV_LINK_CLASS : DESKTOP_NAV_LINK_CLASS;
 
-    return (
-      <button
-        key={label}
-        type="button"
-        onClick={() => goToSection(sectionId)}
-        className={classes}
-      >
-        {label}
-      </button>
-    );
-  };
-
-  const renderRouteLink = (label: string, href: string, mobile = false) => {
-    const classes = mobile
-      ? "block rounded-lg px-3 py-2.5 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50"
-      : "relative pb-0.5 text-sm font-medium text-stone-600 transition-colors hover:text-stone-900 after:absolute after:bottom-[-4px] after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-orange-500 after:transition-transform after:duration-250 hover:after:scale-x-100";
-
-    if (href === "/support") {
+    if (link.type === "section") {
       return (
         <button
-          key={label}
+          key={link.label}
+          type="button"
+          onClick={() => goToSection(link.href)}
+          className={className}
+        >
+          {link.label}
+        </button>
+      );
+    }
+
+    if (link.href === "/support") {
+      return (
+        <button
+          key={link.label}
           type="button"
           onClick={goToSupport}
-          className={classes}
+          className={className}
         >
-          {label}
+          {link.label}
         </button>
       );
     }
 
     return (
-      <Link key={label} href={href} onClick={() => setMobileOpen(false)} className={classes}>
-        {label}
+      <Link
+        key={link.label}
+        href={link.href}
+        onClick={closeAllMenus}
+        className={className}
+      >
+        {link.label}
       </Link>
     );
-  };
-
-  const renderNavLink = (link: NavLink, mobile = false) => {
-    if (link.type === "section") {
-      return renderSectionLink(link.label, link.href, mobile);
-    }
-    return renderRouteLink(link.label, link.href, mobile);
   };
 
   return (
@@ -298,11 +282,11 @@ export default function Navbar({ currentUser }: NavbarProps) {
         <BrandMark href="/" size="nav" className="flex-shrink-0" />
 
         <div className="hidden items-center gap-7 md:flex">
-          {navLinks.map((link) => renderNavLink(link))}
+          {NAV_LINKS.map((link) => renderNavLink(link))}
         </div>
 
         <div className="hidden items-center gap-4 md:flex">
-          {currentUser ? (
+          {hasProfileMenu ? (
             <div className="relative" ref={profileMenuRef}>
               <button
                 type="button"
@@ -366,7 +350,7 @@ export default function Navbar({ currentUser }: NavbarProps) {
       </div>
 
       <AnimatePresence>
-        {mobileOpen && (
+        {mobileOpen ? (
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -374,7 +358,7 @@ export default function Navbar({ currentUser }: NavbarProps) {
             className="flex h-[calc(100dvh-73px)] flex-col border-b border-stone-100 bg-white px-5 pb-5 pt-2 md:hidden"
           >
             <div className="space-y-1">
-              {navLinks.map((link) => renderNavLink(link, true))}
+              {NAV_LINKS.map((link) => renderNavLink(link, true))}
               <button
                 onClick={() => {
                   startGeneratorFlow();
@@ -385,8 +369,9 @@ export default function Navbar({ currentUser }: NavbarProps) {
                 Get Tags
               </button>
             </div>
+
             <div className="mt-auto flex flex-col gap-3 pt-5">
-              {currentUser ? (
+              {hasProfileMenu ? (
                 renderProfileCard(true)
               ) : (
                 <button
@@ -406,8 +391,39 @@ export default function Navbar({ currentUser }: NavbarProps) {
               )}
             </div>
           </motion.div>
-        )}
+        ) : null}
       </AnimatePresence>
     </nav>
   );
+}
+
+function dispatchSupportReset() {
+  window.dispatchEvent(new CustomEvent("tagloom:support-reset"));
+}
+
+function resolveAccountType(currentUser: CurrentUser): AccountType {
+  if (
+    currentUser.subscriptionActive &&
+    currentUser.subscriptionTier === "yearly"
+  ) {
+    return "yearly";
+  }
+  if (
+    currentUser.subscriptionActive &&
+    currentUser.subscriptionTier === "monthly"
+  ) {
+    return "monthly";
+  }
+  if (!currentUser.emailVerified) {
+    return "unverified";
+  }
+  return "verified";
+}
+
+function getAvatarInitials(email: string | null) {
+  const initials = (email ?? "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .slice(0, 2)
+    .toUpperCase();
+  return initials || "AC";
 }

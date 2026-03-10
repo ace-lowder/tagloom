@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { AUTH_POPUP_MESSAGE_SOURCE } from "@/lib/authModal";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -87,15 +87,8 @@ export default function AuthForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [signupEmailCheckStatus, setSignupEmailCheckStatus] = useState<
-    "idle" | "checking" | "exists" | "available" | "error"
-  >("idle");
 
   const emailExistsCacheRef = useRef<Map<string, boolean>>(new Map());
-  const signupCheckTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
-  const signupCheckRequestRef = useRef(0);
 
   useEffect(() => {
     if (mode === "login") {
@@ -110,67 +103,12 @@ export default function AuthForm({
 
   const heading = mode === "signup" ? "Create your account" : "Log in";
 
-  const description = useMemo(() => {
-    if (mode === "signup") {
-      return "Create an account to unlock your first free generation.";
-    }
-    return "Sign in with email/password or continue with Google.";
-  }, [mode]);
-
-  const normalizedEmail = useMemo(() => normalizeEmail(email), [email]);
-  const emailIsValid = useMemo(() => isValidEmail(normalizedEmail), [normalizedEmail]);
-
-  useEffect(() => {
-    return () => {
-      if (signupCheckTimeoutRef.current) {
-        clearTimeout(signupCheckTimeoutRef.current);
-        signupCheckTimeoutRef.current = null;
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (
-      view !== "auth" ||
-      mode !== "signup" ||
-      signupStep !== "email" ||
-      !emailIsValid
-    ) {
-      setSignupEmailCheckStatus("idle");
-      if (signupCheckTimeoutRef.current) {
-        clearTimeout(signupCheckTimeoutRef.current);
-        signupCheckTimeoutRef.current = null;
-      }
-      return;
-    }
-
-    const cached = emailExistsCacheRef.current.get(normalizedEmail);
-    if (typeof cached === "boolean") {
-      setSignupEmailCheckStatus(cached ? "exists" : "available");
-      return;
-    }
-
-    setSignupEmailCheckStatus("checking");
-    if (signupCheckTimeoutRef.current) {
-      clearTimeout(signupCheckTimeoutRef.current);
-      signupCheckTimeoutRef.current = null;
-    }
-
-    const requestId = signupCheckRequestRef.current + 1;
-    signupCheckRequestRef.current = requestId;
-
-    signupCheckTimeoutRef.current = setTimeout(async () => {
-      try {
-        const exists = await checkEmailExists(normalizedEmail);
-        emailExistsCacheRef.current.set(normalizedEmail, exists);
-        if (signupCheckRequestRef.current !== requestId) return;
-        setSignupEmailCheckStatus(exists ? "exists" : "available");
-      } catch {
-        if (signupCheckRequestRef.current !== requestId) return;
-        setSignupEmailCheckStatus("error");
-      }
-    }, 220);
-  }, [view, mode, signupStep, normalizedEmail, emailIsValid]);
+  const description =
+    mode === "signup"
+      ? "Create an account to unlock your first free generation."
+      : "Sign in with email/password or continue with Google.";
+  const normalizedEmail = normalizeEmail(email);
+  const emailIsValid = isValidEmail(normalizedEmail);
 
   const completeSuccess = () => {
     if (onAuthSuccess) {
@@ -198,30 +136,13 @@ export default function AuthForm({
         return;
       }
 
-      const cached = emailExistsCacheRef.current.get(normalizedEmail);
-      if (typeof cached === "boolean") {
-        if (cached) {
-          onModeChange("login");
-          setNotice("");
-          return;
-        }
-        setSignupStep("password");
-        return;
-      }
-
-      if (signupEmailCheckStatus === "exists") {
-        onModeChange("login");
-        setNotice("");
-        return;
-      }
-      if (signupEmailCheckStatus === "available") {
-        setSignupStep("password");
-        return;
-      }
-
       try {
-        const exists = await checkEmailExists(normalizedEmail);
-        emailExistsCacheRef.current.set(normalizedEmail, exists);
+        let exists = emailExistsCacheRef.current.get(normalizedEmail);
+        if (typeof exists !== "boolean") {
+          exists = await checkEmailExists(normalizedEmail);
+          emailExistsCacheRef.current.set(normalizedEmail, exists);
+        }
+
         if (exists) {
           onModeChange("login");
           setNotice("");
@@ -229,8 +150,10 @@ export default function AuthForm({
         }
       } catch (checkError) {
         console.error("/api/auth/email-exists lookup failed", checkError);
+        setError("Could not check account right now.");
         return;
       }
+
       setSignupStep("password");
       return;
     }
@@ -493,7 +416,7 @@ export default function AuthForm({
       <div>
         <p className="text-center text-sm font-semibold leading-relaxed text-stone-900 w-72 mx-auto">
           If an account exists for
-          {" " + email.trim() || "your email"}, you will get an email with
+          {" " + (email.trim() || "your email")}, you will get an email with
           instructions on resetting your password. If it doesn&apos;t arrive, be
           sure to check your spam folder.
         </p>
