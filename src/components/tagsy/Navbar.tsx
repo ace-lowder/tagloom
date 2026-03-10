@@ -103,6 +103,12 @@ export default function Navbar({ currentUser }: NavbarProps) {
     router.push("/#pricing");
   };
 
+  const goToBilling = () => {
+    setProfileOpen(false);
+    setMobileOpen(false);
+    router.push("/billing");
+  };
+
   const goToSection = (sectionId: string) => {
     setMobileOpen(false);
 
@@ -183,9 +189,9 @@ export default function Navbar({ currentUser }: NavbarProps) {
             onClick: goToPricing,
           }
         : {
-            label: "View Plan",
+            label: "Manage Plan",
             icon: CreditCard,
-            onClick: goToPricing,
+            onClick: goToBilling,
           };
 
   const renderProfileCard = (mobile = false) => {
