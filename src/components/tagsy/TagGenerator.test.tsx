@@ -1,20 +1,45 @@
 import React from "react";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import TagGenerator from "./TagGenerator";
 
 vi.mock("framer-motion", async () => {
   const ReactModule = await import("react");
+  const stripMotionProps = (props: ReactModule.HTMLAttributes<HTMLElement> & Record<string, unknown>) => {
+    const {
+      animate,
+      initial,
+      exit,
+      transition,
+      whileHover,
+      whileTap,
+      layout,
+      layoutId,
+      onAnimationComplete,
+      ...rest
+    } = props;
+    void animate;
+    void initial;
+    void exit;
+    void transition;
+    void whileHover;
+    void whileTap;
+    void layout;
+    void layoutId;
+    void onAnimationComplete;
+    return rest;
+  };
+
   const MotionDiv = ReactModule.forwardRef<HTMLDivElement, ReactModule.HTMLAttributes<HTMLDivElement>>(
     ({ children, ...props }, ref) => (
-      <div ref={ref} {...props}>
+      <div ref={ref} {...stripMotionProps(props)}>
         {children}
       </div>
     ),
   );
   const MotionSpan = ReactModule.forwardRef<HTMLSpanElement, ReactModule.HTMLAttributes<HTMLSpanElement>>(
     ({ children, ...props }, ref) => (
-      <span ref={ref} {...props}>
+      <span ref={ref} {...stripMotionProps(props)}>
         {children}
       </span>
     ),
@@ -43,9 +68,17 @@ const TEST_TIMINGS = {
   revealStepMs: 1,
   revealTailMs: 1,
   showDwellMs: 5000,
-  clearingStartDelayMs: 1,
+  clearFadeMs: 1,
+  clearCollapseMs: 1,
   backspaceCharMs: 1,
   cyclePauseMs: 1,
+};
+
+const CLEAR_TEST_TIMINGS = {
+  ...TEST_TIMINGS,
+  showDwellMs: 10,
+  clearFadeMs: 80,
+  clearCollapseMs: 80,
 };
 
 function sanitizeExpectedTags(target: string[], discovery: string[]) {
@@ -89,10 +122,13 @@ describe("TagGenerator demo chips", () => {
     await advanceToReveal(fixture.title, expected.length);
 
     const chips = screen.getAllByTestId("generated-tag-chip");
+    const shell = screen.getByTestId("generator-shell");
     expect(chips).toHaveLength(expected.length);
     expect(chips.every((chip) => chip.textContent?.trim().length)).toBe(true);
     expect(chips.some((chip) => chip.textContent === "undefined" || chip.textContent === "null")).toBe(false);
     expect(screen.getByTestId("generated-tag-count")).toHaveTextContent(`${expected.length} tags generated`);
+    expect(shell).toHaveAttribute("data-clear-phase", "idle");
+    expect(shell).toHaveAttribute("data-height-locked", "false");
   });
 
   it("sanitizes empty, whitespace, and duplicate tags before rendering", async () => {
@@ -147,5 +183,48 @@ describe("TagGenerator demo chips", () => {
     fireEvent.click(screen.getByRole("button", { name: "Copy All" }));
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(expected.join(", "));
+  });
+
+  it("fades full results together, then collapses height, then resumes backspace", async () => {
+    const fixture = {
+      title: "Clear sequence fixture",
+      tags: {
+        target: ["alpha", "beta", "gamma"],
+        discovery: ["delta", "epsilon", "zeta"],
+      },
+    };
+    const expected = sanitizeExpectedTags(fixture.tags.target, fixture.tags.discovery);
+
+    render(
+      <TagGenerator
+        demoConfig={{
+          timings: CLEAR_TEST_TIMINGS,
+          fixtures: [fixture],
+        }}
+      />,
+    );
+
+    await advanceToReveal(fixture.title, expected.length);
+
+    const shell = screen.getByTestId("generator-shell");
+    expect(shell).toHaveAttribute("data-height-locked", "false");
+    expect(screen.getByTestId("results-block")).toBeInTheDocument();
+
+    await waitFor(() => expect(shell).toHaveAttribute("data-clear-phase", "fading"));
+    expect(screen.getByTestId("results-block")).toBeInTheDocument();
+    expect(screen.getByTestId("generated-tag-count")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Copy All" })).toBeInTheDocument();
+
+    await waitFor(() => expect(shell).toHaveAttribute("data-clear-phase", "collapsing"));
+    expect(shell).toHaveAttribute("data-height-locked", "true");
+    expect(screen.queryByTestId("results-block")).not.toBeInTheDocument();
+
+    await waitFor(() => expect(shell).toHaveAttribute("data-clear-phase", "idle"));
+    expect(shell).toHaveAttribute("data-height-locked", "false");
+
+    const titleInput = screen.getByPlaceholderText(
+      "e.g. Handmade ceramic coffee mug with minimalist design",
+    ) as HTMLInputElement;
+    await waitFor(() => expect(titleInput.value.length).toBeLessThan(fixture.title.length));
   });
 });
