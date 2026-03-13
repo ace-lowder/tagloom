@@ -82,6 +82,13 @@ type DemoTimings = {
   cyclePauseMs: number;
 };
 
+type TimerMeta = {
+  callback: (() => void) | null;
+  delayMs: number;
+  remainingMs: number;
+  startedAtMs: number;
+};
+
 const DEMO_FIXTURES: DemoFixture[] = [
   {
     title: "Handmade ceramic coffee mug with minimalist design",
@@ -237,14 +244,12 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   const [generationContextId, setGenerationContextId] = useState<string | null>(null);
   const [isDemoActive, setIsDemoActive] = useState(true);
   const [demoPhase, setDemoPhase] = useState<DemoPhase>("typing");
-  const [demoRunKey, setDemoRunKey] = useState(0);
   const [clearPhase, setClearPhase] = useState<ClearPhase>("idle");
   const [shellHeightPx, setShellHeightPx] = useState<number | null>(null);
   const [shellHeightTransitionMs, setShellHeightTransitionMs] = useState(0);
 
   const revealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const demoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const collapseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const collapseRafRef = useRef<number | null>(null);
   const shellRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -253,23 +258,115 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   const demoFixtureIndexRef = useRef(0);
   const demoCharIndexRef = useRef(0);
   const shouldSkipDemoRef = useRef(false);
+  const isDemoPausedRef = useRef(false);
+  const demoTimerMetaRef = useRef<TimerMeta>({
+    callback: null,
+    delayMs: 0,
+    remainingMs: 0,
+    startedAtMs: 0,
+  });
+  const revealTimerMetaRef = useRef<TimerMeta>({
+    callback: null,
+    delayMs: 0,
+    remainingMs: 0,
+    startedAtMs: 0,
+  });
+
+  const setRevealTimer = useCallback((callback: () => void, delayMs: number) => {
+    if (revealTimeoutRef.current) {
+      clearTimeout(revealTimeoutRef.current);
+      revealTimeoutRef.current = null;
+    }
+    revealTimerMetaRef.current = {
+      callback,
+      delayMs,
+      remainingMs: delayMs,
+      startedAtMs: Date.now(),
+    };
+    revealTimeoutRef.current = setTimeout(() => {
+      revealTimeoutRef.current = null;
+      const cb = revealTimerMetaRef.current.callback;
+      revealTimerMetaRef.current = { callback: null, delayMs: 0, remainingMs: 0, startedAtMs: 0 };
+      if (cb) cb();
+    }, delayMs);
+  }, []);
+
+  const pauseRevealTimer = useCallback(() => {
+    if (!revealTimeoutRef.current || !revealTimerMetaRef.current.callback) return;
+    clearTimeout(revealTimeoutRef.current);
+    revealTimeoutRef.current = null;
+    const elapsed = Date.now() - revealTimerMetaRef.current.startedAtMs;
+    revealTimerMetaRef.current.remainingMs = Math.max(revealTimerMetaRef.current.delayMs - elapsed, 0);
+  }, []);
+
+  const resumeRevealTimer = useCallback(() => {
+    if (revealTimeoutRef.current || !revealTimerMetaRef.current.callback) return;
+    const delayMs = revealTimerMetaRef.current.remainingMs;
+    revealTimerMetaRef.current.delayMs = delayMs;
+    revealTimerMetaRef.current.startedAtMs = Date.now();
+    revealTimeoutRef.current = setTimeout(() => {
+      revealTimeoutRef.current = null;
+      const cb = revealTimerMetaRef.current.callback;
+      revealTimerMetaRef.current = { callback: null, delayMs: 0, remainingMs: 0, startedAtMs: 0 };
+      if (cb) cb();
+    }, delayMs);
+  }, []);
 
   const clearRevealTimer = useCallback(() => {
     if (revealTimeoutRef.current) {
       clearTimeout(revealTimeoutRef.current);
       revealTimeoutRef.current = null;
     }
+    revealTimerMetaRef.current = { callback: null, delayMs: 0, remainingMs: 0, startedAtMs: 0 };
   }, []);
 
-  const clearDemoTimer = useCallback(() => {
+  const setDemoTimer = useCallback((callback: () => void, delayMs: number) => {
     if (demoTimeoutRef.current) {
       clearTimeout(demoTimeoutRef.current);
       demoTimeoutRef.current = null;
     }
-    if (collapseTimeoutRef.current) {
-      clearTimeout(collapseTimeoutRef.current);
-      collapseTimeoutRef.current = null;
+    demoTimerMetaRef.current = {
+      callback,
+      delayMs,
+      remainingMs: delayMs,
+      startedAtMs: Date.now(),
+    };
+    demoTimeoutRef.current = setTimeout(() => {
+      demoTimeoutRef.current = null;
+      const cb = demoTimerMetaRef.current.callback;
+      demoTimerMetaRef.current = { callback: null, delayMs: 0, remainingMs: 0, startedAtMs: 0 };
+      if (cb) cb();
+    }, delayMs);
+  }, []);
+
+  const pauseDemoTimer = useCallback(() => {
+    if (!demoTimeoutRef.current || !demoTimerMetaRef.current.callback) return;
+    clearTimeout(demoTimeoutRef.current);
+    demoTimeoutRef.current = null;
+    const elapsed = Date.now() - demoTimerMetaRef.current.startedAtMs;
+    demoTimerMetaRef.current.remainingMs = Math.max(demoTimerMetaRef.current.delayMs - elapsed, 0);
+  }, []);
+
+  const resumeDemoTimer = useCallback(() => {
+    if (demoTimeoutRef.current || !demoTimerMetaRef.current.callback) return;
+    const delayMs = demoTimerMetaRef.current.remainingMs;
+    demoTimerMetaRef.current.delayMs = delayMs;
+    demoTimerMetaRef.current.startedAtMs = Date.now();
+    demoTimeoutRef.current = setTimeout(() => {
+      demoTimeoutRef.current = null;
+      const cb = demoTimerMetaRef.current.callback;
+      demoTimerMetaRef.current = { callback: null, delayMs: 0, remainingMs: 0, startedAtMs: 0 };
+      if (cb) cb();
+    }, delayMs);
+  }, []);
+
+  const clearDemoTimer = useCallback(() => {
+    isDemoPausedRef.current = false;
+    if (demoTimeoutRef.current) {
+      clearTimeout(demoTimeoutRef.current);
+      demoTimeoutRef.current = null;
     }
+    demoTimerMetaRef.current = { callback: null, delayMs: 0, remainingMs: 0, startedAtMs: 0 };
     if (collapseRafRef.current) {
       cancelAnimationFrame(collapseRafRef.current);
       collapseRafRef.current = null;
@@ -318,13 +415,13 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
           const nextTag = tags[tagIndex];
           tagIndex += 1;
           setVisibleTags((prev) => [...prev, nextTag]);
-          revealTimeoutRef.current = setTimeout(revealNext, demoTimings.revealStepMs);
+          setRevealTimer(revealNext, demoTimings.revealStepMs);
         }
       };
 
-      revealTimeoutRef.current = setTimeout(revealNext, demoTimings.revealStepMs);
+      setRevealTimer(revealNext, demoTimings.revealStepMs);
     },
-    [clearRevealTimer, demoTimings.revealStepMs],
+    [clearRevealTimer, demoTimings.revealStepMs, setRevealTimer],
   );
 
   useEffect(() => {
@@ -388,16 +485,16 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
         demoCharIndexRef.current += 1;
         setTitle(fixture.title.slice(0, demoCharIndexRef.current));
         if (demoCharIndexRef.current < fixture.title.length) {
-          demoTimeoutRef.current = setTimeout(runTyping, demoTimings.typingCharMs);
+          setDemoTimer(runTyping, demoTimings.typingCharMs);
           return;
         }
 
-        demoTimeoutRef.current = setTimeout(() => {
+        setDemoTimer(() => {
           if (!isDemoActive || shouldSkipDemoRef.current) return;
           setDemoPhase("generating");
           setIsGenerating(true);
 
-          demoTimeoutRef.current = setTimeout(() => {
+          setDemoTimer(() => {
             if (!isDemoActive || shouldSkipDemoRef.current) return;
             setIsGenerating(false);
             setDemoPhase("revealing");
@@ -408,7 +505,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
               revealTagCount * demoTimings.revealStepMs +
               demoTimings.revealTailMs +
               demoTimings.showDwellMs;
-            demoTimeoutRef.current = setTimeout(() => {
+            setDemoTimer(() => {
               if (!isDemoActive || shouldSkipDemoRef.current) return;
               setDemoPhase("clearing");
               setClearPhase("fading");
@@ -418,16 +515,16 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                 if (!isDemoActive || shouldSkipDemoRef.current) return;
                 if (titleLength <= 0) {
                   demoFixtureIndexRef.current += 1;
-                  demoTimeoutRef.current = setTimeout(runCycle, demoTimings.cyclePauseMs);
+                  setDemoTimer(runCycle, demoTimings.cyclePauseMs);
                   return;
                 }
 
                 titleLength -= 1;
                 setTitle(fixture.title.slice(0, titleLength));
-                demoTimeoutRef.current = setTimeout(runBackspace, demoTimings.backspaceCharMs);
+                setDemoTimer(runBackspace, demoTimings.backspaceCharMs);
               };
 
-              demoTimeoutRef.current = setTimeout(() => {
+              setDemoTimer(() => {
                 if (!isDemoActive || shouldSkipDemoRef.current) return;
                 const shell = shellRef.current;
                 const fromHeight = shell?.getBoundingClientRect().height ?? null;
@@ -449,8 +546,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                     setShellHeightPx(toHeight);
                   }
 
-                  collapseTimeoutRef.current = setTimeout(() => {
-                    collapseTimeoutRef.current = null;
+                  setDemoTimer(() => {
                     if (!isDemoActive || shouldSkipDemoRef.current) return;
                     setShellHeightTransitionMs(0);
                     setShellHeightPx(null);
@@ -464,27 +560,36 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
         }, demoTimings.generatingDelayMs);
       };
 
-      demoTimeoutRef.current = setTimeout(runTyping, demoTimings.typingStartDelayMs);
+      setDemoTimer(runTyping, demoTimings.typingStartDelayMs);
     };
 
     runCycle();
 
     return clearDemoTimer;
-  }, [clearDemoTimer, clearRevealTimer, demoFixtures, demoRunKey, demoTimings, isDemoActive, setResultTags]);
+  }, [clearDemoTimer, clearRevealTimer, demoFixtures, demoTimings, isDemoActive, setDemoTimer, setResultTags]);
 
   useEffect(() => {
     const onVisibilityChange = () => {
       if (document.hidden) {
-        clearDemoTimer();
-        clearRevealTimer();
-      } else if (isDemoActive && !shouldSkipDemoRef.current) {
-        setDemoRunKey((key) => key + 1);
+        if (!isDemoActive || shouldSkipDemoRef.current) return;
+        isDemoPausedRef.current = true;
+        pauseDemoTimer();
+        pauseRevealTimer();
+        if (clearPhase === "collapsing") {
+          setShellHeightTransitionMs(0);
+          setShellHeightPx(null);
+          setClearPhase("idle");
+        }
+      } else if (isDemoPausedRef.current && isDemoActive && !shouldSkipDemoRef.current) {
+        isDemoPausedRef.current = false;
+        resumeRevealTimer();
+        resumeDemoTimer();
       }
     };
 
     document.addEventListener("visibilitychange", onVisibilityChange);
     return () => document.removeEventListener("visibilitychange", onVisibilityChange);
-  }, [clearDemoTimer, clearRevealTimer, isDemoActive]);
+  }, [clearPhase, isDemoActive, pauseDemoTimer, pauseRevealTimer, resumeDemoTimer, resumeRevealTimer]);
 
   useEffect(() => clearDemoTimer, [clearDemoTimer]);
 
@@ -737,11 +842,6 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
               <Sparkles className="h-4 w-4 text-white" />
             </div>
             <span className="text-sm font-semibold text-stone-700">Tagloom Generator</span>
-            {isDemoActive ? (
-              <span className="ml-auto text-xs italic text-stone-400">
-                Live demo running ({demoPhase})...
-              </span>
-            ) : null}
             {source ? <span className="ml-auto text-xs italic text-stone-400">Source: {source}</span> : null}
           </div>
 
@@ -914,9 +1014,6 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
             )}
           </AnimatePresence>
 
-          {apiTags.length !== visibleTags.length ? (
-            <p className="mt-2 text-xs text-stone-500">Animating results...</p>
-          ) : null}
         </div>
       </motion.div>
     </div>
