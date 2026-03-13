@@ -58,6 +58,7 @@ type PendingContext = {
 };
 
 type DemoPhase = "typing" | "generating" | "revealing" | "clearing";
+type ClearPhase = "idle" | "fading" | "collapsing";
 
 type DemoFixture = {
   title: string;
@@ -75,7 +76,8 @@ type DemoTimings = {
   revealStepMs: number;
   revealTailMs: number;
   showDwellMs: number;
-  clearingStartDelayMs: number;
+  clearFadeMs: number;
+  clearCollapseMs: number;
   backspaceCharMs: number;
   cyclePauseMs: number;
 };
@@ -156,8 +158,9 @@ const DEFAULT_DEMO_TIMINGS: DemoTimings = {
   revealStepMs: 80,
   revealTailMs: 300,
   showDwellMs: 3500,
-  clearingStartDelayMs: 160,
-  backspaceCharMs: 18,
+  clearFadeMs: 160,
+  clearCollapseMs: 240,
+  backspaceCharMs: 9,
   cyclePauseMs: 500,
 };
 
@@ -235,9 +238,16 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   const [isDemoActive, setIsDemoActive] = useState(true);
   const [demoPhase, setDemoPhase] = useState<DemoPhase>("typing");
   const [demoRunKey, setDemoRunKey] = useState(0);
+  const [clearPhase, setClearPhase] = useState<ClearPhase>("idle");
+  const [shellHeightPx, setShellHeightPx] = useState<number | null>(null);
+  const [shellHeightTransitionMs, setShellHeightTransitionMs] = useState(0);
 
   const revealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const demoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const collapseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const collapseRafRef = useRef<number | null>(null);
+  const shellRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const requestVersionRef = useRef(0);
   const demoFixtureIndexRef = useRef(0);
@@ -255,6 +265,14 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     if (demoTimeoutRef.current) {
       clearTimeout(demoTimeoutRef.current);
       demoTimeoutRef.current = null;
+    }
+    if (collapseTimeoutRef.current) {
+      clearTimeout(collapseTimeoutRef.current);
+      collapseTimeoutRef.current = null;
+    }
+    if (collapseRafRef.current) {
+      cancelAnimationFrame(collapseRafRef.current);
+      collapseRafRef.current = null;
     }
   }, []);
 
@@ -352,6 +370,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
       setDescription("");
       setApiTags([]);
       setVisibleTags([]);
+      setClearPhase("idle");
       setIsGenerating(false);
       setCopied(false);
     };
@@ -392,8 +411,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
             demoTimeoutRef.current = setTimeout(() => {
               if (!isDemoActive || shouldSkipDemoRef.current) return;
               setDemoPhase("clearing");
-              setApiTags([]);
-              setVisibleTags([]);
+              setClearPhase("fading");
 
               let titleLength = fixture.title.length;
               const runBackspace = () => {
@@ -409,7 +427,38 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                 demoTimeoutRef.current = setTimeout(runBackspace, demoTimings.backspaceCharMs);
               };
 
-              demoTimeoutRef.current = setTimeout(runBackspace, demoTimings.clearingStartDelayMs);
+              demoTimeoutRef.current = setTimeout(() => {
+                if (!isDemoActive || shouldSkipDemoRef.current) return;
+                const shell = shellRef.current;
+                const fromHeight = shell?.getBoundingClientRect().height ?? null;
+                if (fromHeight !== null) {
+                  setShellHeightTransitionMs(0);
+                  setShellHeightPx(fromHeight);
+                }
+                setVisibleTags([]);
+                setApiTags([]);
+                setClearPhase("collapsing");
+
+                collapseRafRef.current = requestAnimationFrame(() => {
+                  collapseRafRef.current = null;
+                  if (!isDemoActive || shouldSkipDemoRef.current) return;
+                  const contentHeight = contentRef.current?.getBoundingClientRect().height ?? null;
+                  const toHeight = contentHeight !== null ? Math.max(contentHeight + 2, 0) : fromHeight;
+                  if (fromHeight !== null && toHeight !== undefined) {
+                    setShellHeightTransitionMs(demoTimings.clearCollapseMs);
+                    setShellHeightPx(toHeight);
+                  }
+
+                  collapseTimeoutRef.current = setTimeout(() => {
+                    collapseTimeoutRef.current = null;
+                    if (!isDemoActive || shouldSkipDemoRef.current) return;
+                    setShellHeightTransitionMs(0);
+                    setShellHeightPx(null);
+                    setClearPhase("idle");
+                    runBackspace();
+                  }, demoTimings.clearCollapseMs);
+                });
+              }, demoTimings.clearFadeMs);
             }, revealDuration);
           }, demoTimings.generatingLoadMs);
         }, demoTimings.generatingDelayMs);
@@ -507,6 +556,9 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     setPaywall(null);
     setApiTags([]);
     setVisibleTags([]);
+    setClearPhase("idle");
+    setShellHeightTransitionMs(0);
+    setShellHeightPx(null);
 
     try {
       await runGeneration(title, description, contextId);
@@ -635,6 +687,8 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   };
 
   const totalTags = visibleTags.length;
+  const showResults = totalTags > 0;
+  const isClearingFade = clearPhase === "fading";
 
   return (
     <div ref={glowRef} id="generator" className="relative mx-auto max-w-2xl">
@@ -643,6 +697,10 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
       </div>
 
       <motion.div
+        ref={shellRef}
+        data-testid="generator-shell"
+        data-clear-phase={clearPhase}
+        data-height-locked={shellHeightPx !== null ? "true" : "false"}
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
@@ -654,6 +712,8 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
           border: "1px solid rgba(255,255,255,0.92)",
           boxShadow:
             "0 24px 84px rgba(249,115,22,0.24), 0 12px 52px rgba(168,85,247,0.18), 0 1px 0 rgba(255,255,255,0.92) inset",
+          height: shellHeightPx ?? undefined,
+          transition: shellHeightPx !== null ? `height ${shellHeightTransitionMs}ms ease-out` : undefined,
         }}
       >
         {activeSheenId ? (
@@ -671,7 +731,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
           />
         ) : null}
 
-        <div className="relative z-10 p-6 sm:p-8">
+        <div ref={contentRef} className="relative z-10 p-6 sm:p-8">
           <div className="mb-6 flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/30">
               <Sparkles className="h-4 w-4 text-white" />
@@ -767,10 +827,12 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
           ) : null}
 
           <AnimatePresence>
-            {totalTags > 0 && (
+            {showResults && (
               <motion.div
+                data-testid="results-block"
                 initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
+                animate={isClearingFade ? { opacity: 0, y: 10 } : { opacity: 1, y: 0 }}
+                transition={{ duration: isClearingFade ? 0.16 : 0.22, ease: "easeOut" }}
                 className="mt-6"
               >
                 <div className="mb-3 flex items-center justify-between">
