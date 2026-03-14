@@ -142,7 +142,7 @@ export default function HomePage() {
           />
         </div>
 
-        <div className="relative mx-auto max-w-2xl">
+        <div className="relative mx-auto max-w-4xl">
           <motion.div
             initial="hidden"
             animate="visible"
@@ -158,36 +158,33 @@ export default function HomePage() {
             </motion.div>
             <motion.h1
               variants={fadeInUp}
-              className="mb-4 text-4xl font-bold leading-tight text-stone-900 sm:text-5xl"
+              className="mb-3 text-4xl font-bold leading-[1.06] text-stone-900 sm:text-5xl"
             >
-              The right tags.
-              <br />
-              <span className="bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
-                More buyers.
+              <span className="md:whitespace-nowrap">Etsy tags buyers actually search</span>
+              <span className="mt-2 block bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
+                More clicks. More sales.
               </span>
             </motion.h1>
             <motion.p
               variants={fadeInUp}
-              className="mx-auto mb-5 max-w-xl text-lg leading-relaxed text-stone-600"
+              className="mx-auto mb-8 max-w-xl text-lg leading-relaxed text-stone-600"
             >
-              Describe your Etsy listing and Tagloom instantly generates 13
-              optimized tags with cleaner buyer intent phrasing.
+              Paste your Etsy listing. Get 13 tags buyers are already searching.
             </motion.p>
             <motion.button
               variants={fadeInUp}
               onClick={triggerGeneratorFlow}
-              className="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-orange-500/30"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 px-6 py-3 text-sm font-semibold text-white transition-all hover:from-orange-600 hover:to-orange-700"
               style={{
-                background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
                 boxShadow: "0 4px 20px rgba(249,115,22,0.35)",
               }}
             >
-              Try it free - no card needed
+              Generate free tags
               <ArrowRight className="h-4 w-4" />
             </motion.button>
           </motion.div>
 
-          <div className="mt-16">
+          <div className="mt-24">
             <TagGenerator />
           </div>
         </div>

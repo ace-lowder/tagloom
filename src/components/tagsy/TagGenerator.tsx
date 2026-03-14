@@ -794,6 +794,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   const totalTags = visibleTags.length;
   const showResults = totalTags > 0;
   const isClearingFade = clearPhase === "fading";
+  const hasTitle = Boolean(title.trim());
 
   return (
     <div ref={glowRef} id="generator" className="relative mx-auto max-w-2xl">
@@ -838,8 +839,8 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
 
         <div ref={contentRef} className="relative z-10 p-6 sm:p-8">
           <div className="mb-6 flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/30">
-              <Sparkles className="h-4 w-4 text-white" />
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/30">
+              <Sparkles className="h-3.5 w-3.5 text-white" />
             </div>
             <span className="text-sm font-semibold text-stone-700">Tagloom Generator</span>
             {source ? <span className="ml-auto text-xs italic text-stone-400">Source: {source}</span> : null}
@@ -896,11 +897,12 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
           <button
             onClick={handleGenerate}
             disabled={isGenerating || !title.trim()}
-            className="mt-1 flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-orange-500/25 disabled:cursor-not-allowed disabled:opacity-50"
+            className={`mt-1 flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-semibold text-white transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${
+              hasTitle
+                ? "bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
+                : "bg-gray-300"
+            }`}
             style={{
-              background: title.trim()
-                ? "linear-gradient(135deg, #f97316 0%, #ea580c 100%)"
-                : "#d1d5db",
               boxShadow: title.trim() ? "0 4px 20px rgba(249,115,22,0.35)" : "none",
             }}
           >
@@ -916,7 +918,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
             ) : (
               <>
                 <Sparkles className="h-4 w-4" />
-                Generate Tags
+                Generate 13 Tags
               </>
             )}
           </button>
