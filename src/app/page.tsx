@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -27,7 +27,7 @@ const stagger = { visible: { transition: { staggerChildren: 0.1 } } };
 
 type FAQItemProps = {
   question: string;
-  answer: string;
+  answer: ReactNode;
 };
 
 function FAQItem({ question, answer }: FAQItemProps) {
@@ -79,21 +79,21 @@ export default function HomePage() {
   const benefits = [
     {
       icon: TrendingUp,
-      title: "More Views, Less Guesswork",
+      title: "Get found in Etsy search",
       description:
         "AI-crafted tags based on what buyers are actually searching for so your listings get found by the right people.",
       href: "/blog/how-to-rank-higher-on-etsy#why-tags-matter",
     },
     {
       icon: Clock,
-      title: "Minutes, Not Hours",
+      title: "13 tags in seconds",
       description:
         "Stop spending hours on keyword research and generate 13 optimized tags in seconds.",
       href: "/blog/how-to-rank-higher-on-etsy#keyword-research",
     },
     {
       icon: Zap,
-      title: "Built for Etsy Search",
+      title: "Stop guessing keywords.",
       description:
         "Every tag is selected to better align with Etsy search behavior and listing discoverability.",
       href: "/blog/how-to-rank-higher-on-etsy#ai-approach",
@@ -104,27 +104,61 @@ export default function HomePage() {
     {
       question: "How does Tagloom generate tags?",
       answer:
-        "Tagloom uses AI with listing context to generate buyer-intent and discovery tags that fit Etsy's 13-slot format.",
+        "Tagloom analyzes your title and description, identifies high-intent keywords, and builds a balanced 13-tag set that combines direct search terms with broader discovery terms.",
     },
     {
       question: "Will these tags work for my niche?",
       answer:
-        "Yes. The generator adapts to your listing title and description so tags stay relevant across categories.",
+        "Yes, because tags are generated from your listing context and optimized for both exact-match shopper intent and niche discovery, so they stay relevant across categories.",
     },
     {
-      question: "Do I need an Etsy account to use Tagloom?",
+      question: "Do I need to connect my Etsy account to Tagloom?",
       answer:
-        "No. Add listing details, generate tags, and paste them into your Etsy listing editor.",
+        "No, you don't need to connect anything. Generate your tags here, then quickly copy and paste them into your Etsy listing.",
+    },
+    {
+      question: "Can I generate tags for free?",
+      answer:
+        "Yes, every account gets 1 free generation so you can test Tagloom before upgrading.",
+    },
+    {
+      question: "Can I switch between Monthly and Yearly plans?",
+      answer: (
+        <>
+          Yes, you can switch between Monthly and Yearly anytime from your{" "}
+          <Link href="/billing" className="font-medium text-orange-700 hover:text-orange-800">
+            billing settings
+          </Link>
+          .
+        </>
+      ),
+    },
+    {
+      question: "What happens when I run out of monthly generations?",
+      answer:
+        "Your Monthly generation limit resets on your billing date, and if you need more before then you can upgrade to Yearly for unlimited generations or buy Starter generations.",
+    },
+    {
+      question: "Where can I manage my plan?",
+      answer: (
+        <>
+          Open the profile icon in the top-right corner, click{" "}
+          <Link href="/billing" className="font-medium text-orange-700 hover:text-orange-800">
+            Billing
+          </Link>
+          , and manage your plan there.
+        </>
+      ),
     },
     {
       question: "How many tags does Etsy allow?",
       answer:
-        "Etsy allows exactly 13 tags per listing, and Tagloom generates to that limit.",
+        "Etsy allows 13 tags per listing, and Tagloom gives you all 13 so you can fully use every slot.",
     },
     {
       question: "Can I cancel anytime?",
       answer:
-        "Yes. There are no long-term contracts in the current plan concepts shown on this page.",
+        "Yes, you can cancel anytime in billing and your plan stays active until the end of your current period, then you won't be charged again.",
     },
   ];
 
@@ -209,7 +243,7 @@ export default function HomePage() {
               variants={fadeInUp}
               className="text-3xl font-bold text-stone-900 sm:text-4xl"
             >
-              What you actually get
+              How this gets you more sales
             </motion.h2>
           </motion.div>
 
@@ -264,13 +298,13 @@ export default function HomePage() {
               variants={fadeInUp}
               className="mb-3 text-3xl font-bold text-stone-900 sm:text-4xl"
             >
-              Simple, honest pricing
+              Simple pricing, clear outcomes.
             </motion.h2>
             <motion.p
               variants={fadeInUp}
               className="mx-auto max-w-lg text-stone-500"
             >
-              No tricks. Start free, upgrade when you need more.
+              Start free, upgrade when better tags drive more sales.
             </motion.p>
           </motion.div>
 
@@ -389,26 +423,23 @@ export default function HomePage() {
                 variants={fadeInUp}
                 className="mb-4 text-3xl font-bold text-stone-900 sm:text-4xl"
               >
-                Ready to get more eyes on your listings?
+                Ready to get found by more Etsy buyers?
               </motion.h2>
               <motion.p
                 variants={fadeInUp}
                 className="mx-auto mb-8 max-w-lg leading-relaxed text-stone-600"
               >
-                Start with your next Etsy listing and generate a complete 13-tag
-                set in under a minute.
+                Generate 13 high-intent tags for your next listing in under a minute.
               </motion.p>
               <motion.button
                 variants={fadeInUp}
                 onClick={triggerGeneratorFlow}
-                className="inline-flex items-center gap-2 rounded-xl px-8 py-4 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-orange-500/30"
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 px-8 py-4 text-sm font-semibold text-white transition-all hover:from-orange-600 hover:to-orange-700"
                 style={{
-                  background:
-                    "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
                   boxShadow: "0 6px 28px rgba(249,115,22,0.32)",
                 }}
               >
-                Generate Tags Free
+                Generate Free Tags
                 <ArrowRight className="h-5 w-5" />
               </motion.button>
             </motion.div>

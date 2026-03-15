@@ -361,7 +361,6 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   }, []);
 
   const clearDemoTimer = useCallback(() => {
-    isDemoPausedRef.current = false;
     if (demoTimeoutRef.current) {
       clearTimeout(demoTimeoutRef.current);
       demoTimeoutRef.current = null;
@@ -375,11 +374,18 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
 
   const markUserInteraction = useCallback(() => {
     if (!isDemoActive) return;
+    isDemoPausedRef.current = false;
     setIsDemoActive(false);
     clearDemoTimer();
+    clearRevealTimer();
     setDemoPhase("typing");
+    setClearPhase("idle");
+    setShellHeightTransitionMs(0);
+    setShellHeightPx(null);
+    setApiTags([]);
+    setVisibleTags([]);
     setIsGenerating(false);
-  }, [clearDemoTimer, isDemoActive]);
+  }, [clearDemoTimer, clearRevealTimer, isDemoActive]);
 
   const playSheen = useCallback(() => {
     setActiveSheenId(Date.now());
@@ -590,6 +596,36 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     document.addEventListener("visibilitychange", onVisibilityChange);
     return () => document.removeEventListener("visibilitychange", onVisibilityChange);
   }, [clearPhase, isDemoActive, pauseDemoTimer, pauseRevealTimer, resumeDemoTimer, resumeRevealTimer]);
+
+  useEffect(() => {
+    if (!isDemoActive || shouldSkipDemoRef.current) return;
+    if (typeof IntersectionObserver === "undefined") return;
+
+    const node = shellRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry) return;
+        if (entry.isIntersecting) {
+          if (!isDemoPausedRef.current) return;
+          isDemoPausedRef.current = false;
+          resumeRevealTimer();
+          resumeDemoTimer();
+          return;
+        }
+
+        if (isDemoPausedRef.current) return;
+        isDemoPausedRef.current = true;
+        pauseDemoTimer();
+        pauseRevealTimer();
+      },
+      { threshold: 0.15 },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [isDemoActive, pauseDemoTimer, pauseRevealTimer, resumeDemoTimer, resumeRevealTimer]);
 
   useEffect(() => clearDemoTimer, [clearDemoTimer]);
 

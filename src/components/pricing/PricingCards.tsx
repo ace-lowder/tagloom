@@ -20,50 +20,47 @@ export type PricingPlan = {
 export const PRICING_PLANS: PricingPlan[] = [
   {
     id: "single_use",
-    name: "Single Use",
-    price: "2",
+    name: "Starter",
+    price: "7",
     period: "one-time",
-    description: "Try it once, no commitment",
+    description: "For testing and improving listings fast.",
     features: [
-      "5 tag generations",
-      "All 13 Etsy tag slots",
-      "One-click copy",
-      "Basic trend insights",
+      "5 generations",
+      "Use across multiple listings",
+      "Fast checkout",
     ],
-    cta: "Buy Once",
+    cta: "Start Now",
     popular: false,
     accent: true,
   },
   {
     id: "monthly",
     name: "Monthly",
-    price: "12",
+    price: "19",
     period: "/month",
-    description: "For active sellers",
+    description: "For sellers optimizing listings weekly.",
     features: [
-      "Unlimited generations",
-      "Advanced trend detection",
-      "Performance insights",
+      "100 generations per month",
+      "Tag strategy explanation",
       "Priority support",
-      "Bulk generation",
     ],
-    cta: "Start Free Trial",
+    cta: "Go Monthly",
     popular: true,
     accent: false,
   },
   {
     id: "yearly",
     name: "Yearly",
-    price: "99",
+    price: "149",
     period: "/year",
-    description: "Best value - 2 months free",
+    description: "Best value for year-round growth.",
     features: [
-      "Everything in Monthly",
-      "Early access to new features",
-      "Dedicated onboarding",
-      "Multiple shop support",
+      "Unlimited generations",
+      "Tag strategy explanation",
+      "Priority support",
+      "Best annual savings",
     ],
-    cta: "Get Best Value",
+    cta: "Get Unlimited",
     popular: false,
     accent: true,
   },
@@ -119,8 +116,8 @@ export default function PricingCards({
             ) : null}
             {showPopularBadge ? (
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <span className="relative overflow-hidden rounded-full bg-gradient-to-r from-orange-500 to-orange-600 px-3 py-1 text-xs font-semibold text-white shadow">
-                  <span className="pointer-events-none absolute -left-1/3 top-0 h-full w-1/2 -skew-x-12 bg-gradient-to-r from-transparent via-white/55 to-transparent opacity-0 transition-all duration-700 group-hover:left-[110%] group-hover:opacity-100" />
+                <span className="relative isolate inline-flex overflow-hidden rounded-full bg-gradient-to-r from-orange-500 to-orange-600 px-3 py-1 text-xs font-semibold text-white shadow">
+                  <span className="pointer-events-none absolute inset-y-0 -left-1/3 z-0 w-1/2 -skew-x-12 bg-gradient-to-r from-transparent via-white/55 to-transparent opacity-0 transition-all duration-700 group-hover:left-[110%] group-hover:opacity-100" />
                   <span className="relative z-10">Most Popular</span>
                 </span>
               </div>
@@ -147,18 +144,11 @@ export default function PricingCards({
                 onClick={() => onSelectPlan(plan.id)}
                 className={`relative mt-auto w-full rounded-xl py-3 text-sm font-semibold transition-all ${
                   isHighlighted
-                    ? "text-white shadow-lg shadow-orange-500/20 hover:-translate-y-0.5"
+                    ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/20 hover:from-orange-600 hover:to-orange-700"
                     : plan.accent
-                      ? "border border-orange-300 bg-orange-50 text-orange-700 hover:-translate-y-0.5 hover:border-orange-400 hover:shadow-lg hover:shadow-orange-100"
+                      ? "border border-orange-300 bg-orange-50 text-orange-700 hover:border-orange-500 hover:bg-orange-100 hover:text-orange-800"
                       : "bg-stone-100 text-stone-800 hover:bg-stone-200"
                 }`}
-                style={
-                  isHighlighted
-                    ? {
-                        background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
-                      }
-                    : {}
-                }
               >
                 {ctaLabel}
               </button>
