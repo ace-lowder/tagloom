@@ -13,55 +13,118 @@ export type BlogPost = {
   date: string;
   category: BlogCategory;
   readTime: string;
+  heroImage?: string;
   contentHtml: string;
   sections: BlogSection[];
 };
 
 const BLOG_IMAGE_1 = `<img src="/blog-inline-1.svg" alt="Tag strategy planning board" />`;
 const BLOG_IMAGE_2 = `<img src="/blog-inline-2.svg" alt="Etsy search trend dashboard" />`;
+const BLOG_IMAGE_PHOTOS = `<img src="/blog-photos-photos-photos.png" alt="Abstract listing photo composition example" />`;
 
 export const BLOG_POSTS: BlogPost[] = [
   {
     slug: "how-to-rank-higher-on-etsy",
-    title: "How to Rank Higher on Etsy with the Right Tags",
+    title: "How to Rank Higher on Etsy",
     excerpt:
-      "Etsy search is driven by tags. Learn which tag strategies consistently outperform the competition and how AI can accelerate your research.",
+      "If Etsy search feels confusing at first, you are not alone. Etsy first finds listings that match a shopper's words, then ranks those matches based on what seems most useful and most likely to convert.",
     date: "Feb 28, 2026",
     category: "SEO",
-    readTime: "6 min read",
+    readTime: "7 min read",
+    heroImage: "/blog-how-to-rank-higher-on-etsy-hero.png",
     sections: [
-      { id: "why-tags-matter", level: 2, title: "Why Tags Matter More Than You Think" },
-      { id: "how-etsy-uses-tags", level: 2, title: "How Etsy Uses Your Tags" },
-      { id: "long-tail-vs-broad", level: 3, title: "Long-tail vs. broad tags" },
-      { id: "keyword-research", level: 2, title: "Doing Keyword Research Right" },
-      { id: "ai-approach", level: 2, title: "The AI Approach to Tags" },
-      { id: "testing-and-iterating", level: 2, title: "Testing and Iterating" },
-      { id: "conclusion", level: 2, title: "Conclusion" },
+      { id: "how-etsy-search-works", level: 2, title: "How Etsy Search Works" },
+      { id: "start-with-keywords", level: 2, title: "Start with Keywords" },
+      { id: "build-your-listing", level: 2, title: "Build Your Listing" },
+      { id: "photos-photos-photos", level: 2, title: "Photos, Photos, Photos" },
+      { id: "improve-conversions", level: 2, title: "Improve Conversions" },
+      {
+        id: "turn-orders-into-reviews",
+        level: 2,
+        title: "Turn Orders into Reviews",
+      },
+      {
+        id: "build-trust-in-your-shop",
+        level: 2,
+        title: "Build Trust in Your Shop",
+      },
+      { id: "improve-every-month", level: 2, title: "Improve Every Month" },
+      { id: "listing-checklist", level: 2, title: "Listing Checklist" },
     ],
     contentHtml: `
-      <h2 id="why-tags-matter">Why Tags Matter More Than You Think</h2>
-      <p>When someone searches on Etsy, the platform scans your listing title, tags, and attributes to estimate relevance. Tags are the clearest signal you control directly, and they influence whether your listing appears for long-tail buyer intent searches.</p>
-      <p>Most sellers still use generic tags and repeated words that do not expand coverage. Strong tagging strategy means spreading intent coverage across niche phrases without sacrificing clarity.</p>
-      ${BLOG_IMAGE_1}
+      <h2 id="how-etsy-search-works">How Etsy Search Works</h2>
+      <p>If Etsy search feels confusing at first, you are not alone. A simple way to think about it is this: Etsy first finds listings that match a shopper’s words, then ranks those matches based on which listings seem most useful and most likely to convert.</p>
+      <p>The first step is keyword matching. Etsy looks at your title, tags, categories, attributes, and parts of your description to decide whether your listing is relevant. If your listing language clearly matches what buyers type, you earn more chances to appear.</p>
+      <p>The second step is performance. Once your listing is shown, Etsy pays attention to signals like clicks, favorites, purchases, review quality, and shop reliability. Listings that help shoppers quickly find what they want usually keep getting stronger placement over time.</p>
+      <p>Ranking higher is not one trick. It is a system with clear keywords, strong photos, a clear offer, and a good buyer experience after the sale. When those pieces work together, Etsy has more confidence showing your listings to more buyers.</p>
 
-      <h2 id="how-etsy-uses-tags">How Etsy Uses Your Tags</h2>
-      <p>Etsy combines listing quality and relevance, and relevance is mostly language matching. Tags that mirror how buyers phrase their needs tend to outperform broad single-word tags over time.</p>
-      <h3 id="long-tail-vs-broad">Long-tail vs. broad tags</h3>
-      <p>A broad tag like <em>mug</em> competes against huge catalogs. A phrase like <em>hand thrown ceramic mug</em> has clearer intent, lower competition, and often better conversion quality.</p>
+      <h2 id="start-with-keywords">Start with Keywords</h2>
+      <p>If you are new, start here. Keywords are how Etsy understands what you sell. Etsy looks at your title, tags, categories, attributes, and description together, so your goal is to use clear shopper language across all of them.</p>
+      <p>When you generate tags, focus on buyer intent phrases instead of random words. Multi word tags usually perform better than single words because they match real searches with stronger intent.</p>
+      <ul>
+        <li>Use all 13 tags and make each one unique.</li>
+        <li>Prefer intent phrases like <em>ceramic mug</em> or <em>handmade coffee mug</em>.</li>
+        <li>Avoid repeating the same phrase in multiple slots.</li>
+        <li>Use categories and attributes to support your tag generation strategy.</li>
+      </ul>
+      <p>Treat keywords as a living system. Check Shop Stats, find searches that bring quality traffic, and refresh weak tags every few weeks. Small updates done consistently usually create steady ranking gains.</p>
 
-      <h2 id="keyword-research">Doing Keyword Research Right</h2>
-      <p>Start with autocomplete, note phrase patterns, and audit top listings in your category for overlap and gaps. Keep a shortlist by buyer persona and shopping context to avoid repetitive tags.</p>
-      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.</p>
-      ${BLOG_IMAGE_2}
+      <h2 id="build-your-listing">Build Your Listing</h2>
+      <p>Once your keywords are set, your listing needs the same clarity from top to bottom. Keep your title short, readable, and specific so shoppers instantly understand what they are clicking on. Lead with your most important phrase, especially for mobile shoppers who only see the beginning.</p>
+      <p>Your description should confirm exactly what the item is, who it is for, and why it is worth buying. In the first lines, naturally include your main tags and related keyword phrases in normal language, then answer common buyer questions like size, material, and variations.</p>
+      <p>Use categories and attributes as part of your SEO foundation, not an afterthought. The more accurate these details are, the easier it is for Etsy to match your listing to the right searches.</p>
+      <p>Before publishing, do one final conversion check. Is your listing clear, accurate, and easy to trust at a glance? Strong listings are not just keyword matched. They are easy for real people to understand and buy.</p>
 
-      <h2 id="ai-approach">The AI Approach to Tags</h2>
-      <p>AI speeds synthesis and helps rephrase weak candidates into cleaner buyer-language phrases. It should support your strategy, not replace validation against real listing data.</p>
+      <h2 id="photos-photos-photos">Photos, Photos, Photos</h2>
+      <p>Great photos do two big jobs at once. They help your listing get clicked, and they help shoppers feel confident enough to buy. Etsy can match your keywords and tags, but if your first photo does not stop the scroll, you lose sales before buyers even read your title.</p>
+      <p>Use all available photo slots and think of them as a story.</p>
+      <ul>
+        <li>Start with a clean hero image.</li>
+        <li>Show different angles and close up details.</li>
+        <li>Add size or scale context.</li>
+        <li>Show what the item looks like in real life.</li>
+      </ul>
+      <p>Keep images simple and product focused. Avoid heavy text overlays, distracting props, and watermarks that compete with the item itself. Bright clear lighting and consistency across your shop often perform better than over styled photos.</p>
+      <p>If conversions are low, photos are one of the fastest things to improve. Test your first image, watch clicks and favorites, and keep upgrading until shoppers immediately understand the value.</p>
+      ${BLOG_IMAGE_PHOTOS}
 
-      <h2 id="testing-and-iterating">Testing and Iterating</h2>
-      <p>Track listing stats after each tag update window, then rotate the weakest performers every few weeks. Keep snapshots of each tag set so you can correlate traffic changes with language edits.</p>
+      <h2 id="improve-conversions">Improve Conversions</h2>
+      <p>Getting views is great, but conversions are what push rankings up over time. Etsy pays attention to how shoppers interact with your listing, so your goal is to make the buying decision feel easy and safe from the moment someone clicks.</p>
+      <p>Start with pricing and shipping because those are often the first blockers. Your item does not need to be the cheapest, but the value should be obvious. If shipping is high, explain why clearly and set accurate delivery expectations.</p>
+      <p>Then remove confusion from the listing itself. Make sure the title, first photo, description, and tags all describe the same exact product and options. If buyers feel surprised at checkout or uncertain about what they are getting, conversion drops fast.</p>
+      <p>When conversion improves, SEO usually improves with it. Focus on making each listing clearer, easier to trust, and easier to buy, then track what changes in your stats.</p>
 
-      <h2 id="conclusion">Conclusion</h2>
-      <p>Strategic, buyer-focused tags are one of the highest-leverage inputs in Etsy SEO; consistent testing and cleaner phrasing compounds results over time.</p>
+      <h2 id="turn-orders-into-reviews">Turn Orders into Reviews</h2>
+      <p>Reviews do not start after delivery. They start the moment a buyer places an order. The easiest way to earn more five star feedback is to reduce uncertainty at every step by confirming details quickly, shipping on time, and communicating early if anything changes.</p>
+      <p>Response time matters more than most new sellers realize. Even a short friendly message within 24 hours can calm buyer concerns and prevent a bad experience from escalating.</p>
+      <p>Shipping reliability is another big trust signal. Use accurate processing times, add tracking whenever possible, and only mark orders shipped when they are truly with the carrier. Buyers are much more likely to leave positive reviews when delivery feels predictable and professional.</p>
+      <p>Small thoughtful touches help too. A simple thank you note, careful packaging, and clear expectations can turn a first order into a repeat customer.</p>
+
+      <h2 id="build-trust-in-your-shop">Build Trust in Your Shop</h2>
+      <p>Trust is what turns a maybe into a sale, especially for new shops without a long review history yet. Buyers want to feel confident that a real reliable person is behind the listing and that they know what will happen after they click purchase.</p>
+      <p>Start with your shop basics. Complete your About section, add clear shop policies, and keep your profile active and consistent. These details answer silent buyer questions like: Is this shop legitimate? Will I get what I ordered? What happens if something goes wrong?</p>
+      <p>Keep listing details and policies aligned so there are no surprises. Processing times, shipping expectations, return terms, and product details should all match the real experience.</p>
+      <p>When your shop feels trustworthy, shoppers stay longer, ask better questions, and buy with more confidence. That trust loop supports better conversion and stronger ranking growth.</p>
+
+      <h2 id="improve-every-month">Improve Every Month</h2>
+      <p>One of the biggest mistakes new sellers make is changing everything at once, then not knowing what helped. A simple monthly rhythm works better. Review your stats, make a small set of focused updates, then give those changes time to work.</p>
+      <p>Check which listings get views but low sales, and which listings get almost no visibility. Low visibility usually points to keyword or tags issues. High views with low sales usually point to conversion issues like photos, pricing, or listing clarity.</p>
+      <p>Pick one or two listings to improve each month. Update keywords, tighten titles, refresh your first photo if needed, and make your description easier to scan. Then track performance for a few weeks before another round of edits so you can see what actually moved the needle.</p>
+      <p>This steady approach helps shops grow without burnout. Small improvements repeated every month compound into stronger rankings and more predictable sales.</p>
+
+      <h2 id="listing-checklist">Listing Checklist</h2>
+      <p>Before you publish or republish, run this checklist so you do not miss easy wins.</p>
+      <ul>
+        <li>Clear title with the main keyword phrase near the front.</li>
+        <li>All 13 tags used with varied phrases and no duplicate intent.</li>
+        <li>Tag generation reviewed so tags match the real product and buyer intent.</li>
+        <li>First photo is clean and strong enough to earn the click.</li>
+        <li>Full photo set answers common buyer questions.</li>
+        <li>Price and shipping are easy to understand.</li>
+        <li>Description includes key details like size, material, and variations.</li>
+        <li>Shop policies, About section, and processing times are complete and accurate.</li>
+      </ul>
+      <p>Then publish, watch your stats, and improve monthly. That rhythm is how new Etsy sellers move from inconsistent traffic to reliable sales.</p>
     `,
   },
   {
@@ -75,8 +138,16 @@ export const BLOG_POSTS: BlogPost[] = [
     sections: [
       { id: "ranking-signals", level: 2, title: "Core Ranking Signals" },
       { id: "listing-quality", level: 2, title: "Listing Quality Scores" },
-      { id: "conversion-loop", level: 3, title: "The conversion feedback loop" },
-      { id: "optimization-routine", level: 2, title: "A Practical Optimization Routine" },
+      {
+        id: "conversion-loop",
+        level: 3,
+        title: "The conversion feedback loop",
+      },
+      {
+        id: "optimization-routine",
+        level: 2,
+        title: "A Practical Optimization Routine",
+      },
       { id: "final-notes", level: 2, title: "Final Notes" },
     ],
     contentHtml: `
@@ -109,10 +180,22 @@ export const BLOG_POSTS: BlogPost[] = [
     category: "Tips",
     readTime: "5 min read",
     sections: [
-      { id: "mistake-overlap", level: 2, title: "Mistake 1: Repetitive Overlap" },
+      {
+        id: "mistake-overlap",
+        level: 2,
+        title: "Mistake 1: Repetitive Overlap",
+      },
       { id: "mistake-generic", level: 2, title: "Mistake 2: Generic Language" },
-      { id: "mistake-seasonal", level: 2, title: "Mistake 3: No Seasonal Coverage" },
-      { id: "mistake-testing", level: 2, title: "Mistake 4: No Testing Cadence" },
+      {
+        id: "mistake-seasonal",
+        level: 2,
+        title: "Mistake 3: No Seasonal Coverage",
+      },
+      {
+        id: "mistake-testing",
+        level: 2,
+        title: "Mistake 4: No Testing Cadence",
+      },
       { id: "quick-checklist", level: 2, title: "Quick Checklist" },
     ],
     contentHtml: `
@@ -136,7 +219,8 @@ export const BLOG_POSTS: BlogPost[] = [
   },
   {
     slug: "seasonal-tags-strategy",
-    title: "Seasonal Tag Strategy: How to Prepare Your Listings for Peak Seasons",
+    title:
+      "Seasonal Tag Strategy: How to Prepare Your Listings for Peak Seasons",
     excerpt:
       "Holiday shoppers are searching now. Here's how to update your tags ahead of major seasonal windows to capture peak traffic.",
     date: "Jan 12, 2026",
@@ -146,7 +230,11 @@ export const BLOG_POSTS: BlogPost[] = [
       { id: "season-map", level: 2, title: "Build a Seasonal Map" },
       { id: "lead-time", level: 2, title: "Use Early Lead Time" },
       { id: "calendar-system", level: 3, title: "Calendar system that scales" },
-      { id: "content-refresh", level: 2, title: "Refresh Content Alongside Tags" },
+      {
+        id: "content-refresh",
+        level: 2,
+        title: "Refresh Content Alongside Tags",
+      },
       { id: "season-wrap", level: 2, title: "Season Wrap-Up" },
     ],
     contentHtml: `

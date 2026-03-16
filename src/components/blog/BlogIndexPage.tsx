@@ -74,7 +74,7 @@ export default function BlogIndexPage({ posts }: BlogIndexPageProps) {
                     </span>
                   </div>
                   <p className="mb-4 text-sm leading-relaxed text-stone-600 sm:text-base">
-                    {featured.excerpt} Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                    {featured.excerpt}
                   </p>
                   <div className="flex items-center gap-4 text-xs text-stone-400">
                     <span className="flex items-center gap-1.5">
@@ -86,8 +86,8 @@ export default function BlogIndexPage({ posts }: BlogIndexPageProps) {
 
                 <div className="relative min-h-[260px] lg:min-h-full">
                   <Image
-                    src="/blog-feature-placeholder.svg"
-                    alt="Featured article"
+                    src={featured.heroImage || "/blog-feature-placeholder.svg"}
+                    alt={featured.title}
                     fill
                     className="object-cover"
                     sizes="(max-width: 1024px) 100vw, 40vw"

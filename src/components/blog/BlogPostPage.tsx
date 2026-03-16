@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
@@ -153,6 +154,18 @@ export default function BlogPostPage({ post }: BlogPostPageProps) {
                 <span>{post.readTime}</span>
               </div>
             </div>
+
+            {post.heroImage ? (
+              <div className="relative mb-8 aspect-[16/9] overflow-hidden rounded-2xl border border-stone-200 bg-stone-100">
+                <Image
+                  src={post.heroImage}
+                  alt={post.title}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 720px"
+                />
+              </div>
+            ) : null}
 
             <div
               ref={contentRef}
