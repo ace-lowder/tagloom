@@ -46,7 +46,7 @@ type TableOfContentsProps = {
 
 const BLOG_OVERVIEW_ID = "post-overview";
 const BLOG_TOC_SCROLL_OFFSET = 104;
-const BLOG_ACTIVE_MARKER_OFFSET = BLOG_TOC_SCROLL_OFFSET + 8;
+const BLOG_ACTIVE_MARKER_VIEWPORT_RATIO = 0.5;
 
 function TableOfContents({ sections, activeId }: TableOfContentsProps) {
   const scrollTo = (id: string) => {
@@ -123,7 +123,7 @@ export default function BlogPostPage({ post }: BlogPostPageProps) {
       const anchors = getAnchorPositions();
       if (!anchors.length) return;
 
-      const marker = window.scrollY + BLOG_ACTIVE_MARKER_OFFSET;
+      const marker = window.scrollY + window.innerHeight * BLOG_ACTIVE_MARKER_VIEWPORT_RATIO;
       const firstAnchor = anchors[0];
       const lastAnchor = anchors[anchors.length - 1];
       let nextActiveId = firstAnchor.id;
