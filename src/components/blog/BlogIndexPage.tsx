@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Calendar, User } from "lucide-react";
+import { ArrowRight, Calendar } from "lucide-react";
 import type { BlogPost } from "@/content/blog";
 import SiteFooter from "@/components/shared/SiteFooter";
 
@@ -37,7 +37,7 @@ export default function BlogIndexPage({ posts }: BlogIndexPageProps) {
               variants={fadeInUp}
               className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600"
             >
-              Tagloom Blog
+              Blog
             </motion.p>
             <motion.h1
               variants={fadeInUp}
@@ -46,7 +46,7 @@ export default function BlogIndexPage({ posts }: BlogIndexPageProps) {
               Insights for Etsy Sellers
             </motion.h1>
             <motion.p variants={fadeInUp} className="max-w-xl text-lg text-stone-500">
-              Practical guides on tags, SEO, and growing your Etsy shop with AI.
+              Practical guides on tags, SEO, and listing optimization.
             </motion.p>
           </motion.div>
 
@@ -77,10 +77,6 @@ export default function BlogIndexPage({ posts }: BlogIndexPageProps) {
                     {featured.excerpt} Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
                   </p>
                   <div className="flex items-center gap-4 text-xs text-stone-400">
-                    <span className="flex items-center gap-1.5">
-                      <User className="h-3.5 w-3.5" />
-                      {featured.author}
-                    </span>
                     <span className="flex items-center gap-1.5">
                       <Calendar className="h-3.5 w-3.5" />
                       {featured.date}
@@ -129,10 +125,6 @@ export default function BlogIndexPage({ posts }: BlogIndexPageProps) {
                         {post.excerpt}
                       </p>
                       <div className="flex items-center gap-4 text-xs text-stone-400">
-                        <span className="flex items-center gap-1.5">
-                          <User className="h-3.5 w-3.5" />
-                          {post.author}
-                        </span>
                         <span className="flex items-center gap-1.5">
                           <Calendar className="h-3.5 w-3.5" />
                           {post.date}

@@ -10,7 +10,6 @@ export type BlogPost = {
   slug: string;
   title: string;
   excerpt: string;
-  author: string;
   date: string;
   category: BlogCategory;
   readTime: string;
@@ -27,7 +26,6 @@ export const BLOG_POSTS: BlogPost[] = [
     title: "How to Rank Higher on Etsy with the Right Tags",
     excerpt:
       "Etsy search is driven by tags. Learn which tag strategies consistently outperform the competition and how AI can accelerate your research.",
-    author: "Sarah Kim",
     date: "Feb 28, 2026",
     category: "SEO",
     readTime: "6 min read",
@@ -71,7 +69,6 @@ export const BLOG_POSTS: BlogPost[] = [
     title: "The Etsy Algorithm Explained: What Actually Affects Your Ranking",
     excerpt:
       "Tags, recency, reviews, shipping speed - how does Etsy's algorithm actually weigh each factor? We break down what matters most.",
-    author: "James Patel",
     date: "Feb 14, 2026",
     category: "Strategy",
     readTime: "8 min read",
@@ -108,7 +105,6 @@ export const BLOG_POSTS: BlogPost[] = [
     title: "7 Tag Mistakes Etsy Sellers Make (And How to Fix Them)",
     excerpt:
       "From repeating words to ignoring long-tail phrases, these common mistakes could be costing you thousands of views per month.",
-    author: "Emily Tran",
     date: "Jan 30, 2026",
     category: "Tips",
     readTime: "5 min read",
@@ -143,7 +139,6 @@ export const BLOG_POSTS: BlogPost[] = [
     title: "Seasonal Tag Strategy: How to Prepare Your Listings for Peak Seasons",
     excerpt:
       "Holiday shoppers are searching now. Here's how to update your tags ahead of major seasonal windows to capture peak traffic.",
-    author: "Sarah Kim",
     date: "Jan 12, 2026",
     category: "Strategy",
     readTime: "7 min read",
@@ -178,7 +173,6 @@ export const BLOG_POSTS: BlogPost[] = [
     title: "Long-Tail Keywords: The Secret to Etsy Visibility for New Shops",
     excerpt:
       "Competing with established shops is hard, but with the right long-tail strategy even new listings can get discovered quickly.",
-    author: "James Patel",
     date: "Dec 20, 2025",
     category: "SEO",
     readTime: "6 min read",
@@ -213,7 +207,6 @@ export const BLOG_POSTS: BlogPost[] = [
     title: "AI-Generated Tags vs Manual Research: Which Gets More Views?",
     excerpt:
       "We ran a multi-listing test to compare AI tag generation against traditional manual keyword workflows.",
-    author: "Emily Tran",
     date: "Dec 5, 2025",
     category: "Research",
     readTime: "9 min read",

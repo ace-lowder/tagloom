@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Calendar, User } from "lucide-react";
+import { ArrowLeft, Calendar } from "lucide-react";
 import type { BlogPost } from "@/content/blog";
 import SiteFooter from "@/components/shared/SiteFooter";
 
@@ -146,10 +146,6 @@ export default function BlogPostPage({ post }: BlogPostPageProps) {
                 {post.title}
               </h1>
               <div className="flex items-center gap-5 text-sm text-stone-400">
-                <span className="flex items-center gap-1.5">
-                  <User className="h-4 w-4" />
-                  {post.author}
-                </span>
                 <span className="flex items-center gap-1.5">
                   <Calendar className="h-4 w-4" />
                   {post.date}
