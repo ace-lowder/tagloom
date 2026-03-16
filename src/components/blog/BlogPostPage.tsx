@@ -10,79 +10,27 @@ import { DEFAULT_BLOG_BOTTOM_CTA, type BlogPost } from "@/content/blog";
 import SiteFooter from "@/components/shared/SiteFooter";
 import { triggerGeneratorCta } from "@/lib/generatorCta";
 
-function ReadingProgress() {
-  const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    const onScroll = () => {
-      const el = document.documentElement;
-      const scrollTop = el.scrollTop || document.body.scrollTop;
-      const scrollHeight = el.scrollHeight - el.clientHeight;
-      setProgress(scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0);
-    };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  return (
-    <div className="fixed left-0 right-0 top-0 z-[60] h-1 bg-stone-200">
-      <motion.div
-        className="h-full origin-left"
-        style={{
-          width: `${progress}%`,
-          background: "linear-gradient(90deg, #f97316, #ea580c)",
-        }}
-        transition={{ duration: 0.1 }}
-      />
-    </div>
-  );
-}
+type BlogPostPageProps = {
+  post: BlogPost;
+};
 
 type TableOfContentsProps = {
   sections: BlogPost["sections"];
   activeId: string;
 };
 
+type TocAnchor = {
+  id: string;
+  top: number;
+};
+
 const BLOG_OVERVIEW_ID = "post-overview";
 const BLOG_TOC_SCROLL_OFFSET = 104;
 const BLOG_ACTIVE_MARKER_VIEWPORT_RATIO = 0.5;
-
-function TableOfContents({ sections, activeId }: TableOfContentsProps) {
-  const scrollTo = (id: string) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-
-    const top =
-      el.getBoundingClientRect().top + window.scrollY - BLOG_TOC_SCROLL_OFFSET;
-    window.scrollTo({ top, behavior: "smooth" });
-  };
-
-  return (
-    <nav className="space-y-1">
-      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-stone-400">
-        Contents
-      </p>
-      {sections.map((section) => (
-        <button
-          key={section.id}
-          onClick={() => scrollTo(section.id)}
-          className={`block w-full py-1 text-left text-sm transition-colors ${section.level === 3 ? "pl-4" : ""} ${
-            activeId === section.id
-              ? "font-medium text-orange-600"
-              : "text-stone-500 hover:text-stone-800"
-          }`}
-        >
-          {section.title}
-        </button>
-      ))}
-    </nav>
-  );
-}
-
-type BlogPostPageProps = {
-  post: BlogPost;
-};
+const blogNavLinkClass =
+  "flex items-center gap-2 text-sm text-stone-500 transition-colors hover:text-orange-600";
+const ctaButtonClass =
+  "inline-flex items-center gap-2 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700";
 
 export default function BlogPostPage({ post }: BlogPostPageProps) {
   const [activeId, setActiveId] = useState("");
@@ -94,55 +42,21 @@ export default function BlogPostPage({ post }: BlogPostPageProps) {
   ];
   const cta = post.bottomCta ?? DEFAULT_BLOG_BOTTOM_CTA;
 
+  const handleCtaClick = () => {
+    triggerGeneratorCta({
+      isHomePage: false,
+      navigateHome: () => router.push("/"),
+      requestReset: true,
+    });
+  };
+
   useEffect(() => {
-    const getAnchorPositions = () => {
-      const overview = document.getElementById(BLOG_OVERVIEW_ID);
-      const headings = Array.from(
-        contentRef.current?.querySelectorAll<HTMLElement>("h2[id], h3[id]") || [],
-      );
-
-      const anchors: Array<{ id: string; top: number }> = [];
-      if (overview) {
-        anchors.push({
-          id: BLOG_OVERVIEW_ID,
-          top: overview.getBoundingClientRect().top + window.scrollY,
-        });
-      }
-
-      for (const heading of headings) {
-        anchors.push({
-          id: heading.id,
-          top: heading.getBoundingClientRect().top + window.scrollY,
-        });
-      }
-
-      return anchors;
-    };
-
     const updateActiveHeading = () => {
-      const anchors = getAnchorPositions();
-      if (!anchors.length) return;
-
-      const marker = window.scrollY + window.innerHeight * BLOG_ACTIVE_MARKER_VIEWPORT_RATIO;
-      const firstAnchor = anchors[0];
-      const lastAnchor = anchors[anchors.length - 1];
-      let nextActiveId = firstAnchor.id;
-
-      if (marker < firstAnchor.top) {
-        nextActiveId = firstAnchor.id;
-      } else if (marker >= lastAnchor.top) {
-        nextActiveId = lastAnchor.id;
-      } else {
-        for (let i = 0; i < anchors.length - 1; i += 1) {
-          const current = anchors[i];
-          const next = anchors[i + 1];
-          if (marker >= current.top && marker < next.top) {
-            nextActiveId = current.id;
-            break;
-          }
-        }
-      }
-
+      const anchors = collectTocAnchors(contentRef.current);
+      const marker =
+        window.scrollY + window.innerHeight * BLOG_ACTIVE_MARKER_VIEWPORT_RATIO;
+      const nextActiveId = getActiveSectionId(anchors, marker);
+      if (!nextActiveId) return;
       setActiveId((prev) => (prev === nextActiveId ? prev : nextActiveId));
     };
 
@@ -151,6 +65,7 @@ export default function BlogPostPage({ post }: BlogPostPageProps) {
     const rafId = window.requestAnimationFrame(() => {
       timeoutId = window.setTimeout(updateActiveHeading, 120);
     });
+
     window.addEventListener("scroll", updateActiveHeading, { passive: true });
     window.addEventListener("resize", updateActiveHeading);
 
@@ -169,10 +84,7 @@ export default function BlogPostPage({ post }: BlogPostPageProps) {
       <ReadingProgress />
 
       <div className="mx-auto max-w-6xl px-5 py-12 pt-24">
-        <Link
-          href="/blog"
-          className="mb-8 flex items-center gap-2 text-sm text-stone-500 transition-colors hover:text-orange-600"
-        >
+        <Link href="/blog" className={`mb-8 ${blogNavLinkClass}`}>
           <ArrowLeft className="h-4 w-4" />
           Back to Blog
         </Link>
@@ -232,26 +144,13 @@ export default function BlogPostPage({ post }: BlogPostPageProps) {
               <p className="mb-5 max-w-xl text-sm leading-relaxed text-stone-600 sm:text-base">
                 {cta.body}
               </p>
-              <button
-                type="button"
-                onClick={() =>
-                  triggerGeneratorCta({
-                    isHomePage: false,
-                    navigateHome: () => router.push("/"),
-                    requestReset: true,
-                  })
-                }
-                className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700"
-              >
+              <button type="button" onClick={handleCtaClick} className={ctaButtonClass}>
                 {cta.buttonLabel}
               </button>
             </section>
 
             <div className="mt-14 flex items-center justify-between border-t border-stone-200 pt-8">
-              <Link
-                href="/blog"
-                className="flex items-center gap-2 text-sm text-stone-500 transition-colors hover:text-orange-600"
-              >
+              <Link href="/blog" className={blogNavLinkClass}>
                 <ArrowLeft className="h-4 w-4" />
                 All articles
               </Link>
@@ -263,4 +162,108 @@ export default function BlogPostPage({ post }: BlogPostPageProps) {
       <SiteFooter />
     </div>
   );
+}
+
+function ReadingProgress() {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const el = document.documentElement;
+      const scrollTop = el.scrollTop || document.body.scrollTop;
+      const scrollHeight = el.scrollHeight - el.clientHeight;
+      setProgress(scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  return (
+    <div className="fixed left-0 right-0 top-0 z-[60] h-1 bg-stone-200">
+      <motion.div
+        className="h-full origin-left"
+        style={{
+          width: `${progress}%`,
+          background: "linear-gradient(90deg, #f97316, #ea580c)",
+        }}
+        transition={{ duration: 0.1 }}
+      />
+    </div>
+  );
+}
+
+function TableOfContents({ sections, activeId }: TableOfContentsProps) {
+  const scrollTo = (id: string) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    const top =
+      el.getBoundingClientRect().top + window.scrollY - BLOG_TOC_SCROLL_OFFSET;
+    window.scrollTo({ top, behavior: "smooth" });
+  };
+
+  return (
+    <nav className="space-y-1">
+      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-stone-400">
+        Contents
+      </p>
+      {sections.map((section) => (
+        <button
+          key={section.id}
+          onClick={() => scrollTo(section.id)}
+          className={`block w-full py-1 text-left text-sm transition-colors ${section.level === 3 ? "pl-4" : ""} ${
+            activeId === section.id
+              ? "font-medium text-orange-600"
+              : "text-stone-500 hover:text-stone-800"
+          }`}
+        >
+          {section.title}
+        </button>
+      ))}
+    </nav>
+  );
+}
+
+function collectTocAnchors(contentNode: HTMLDivElement | null): TocAnchor[] {
+  const overview = document.getElementById(BLOG_OVERVIEW_ID);
+  const headings = Array.from(
+    contentNode?.querySelectorAll<HTMLElement>("h2[id], h3[id]") || [],
+  );
+  const anchors: TocAnchor[] = [];
+
+  if (overview) {
+    anchors.push({
+      id: BLOG_OVERVIEW_ID,
+      top: overview.getBoundingClientRect().top + window.scrollY,
+    });
+  }
+
+  for (const heading of headings) {
+    anchors.push({
+      id: heading.id,
+      top: heading.getBoundingClientRect().top + window.scrollY,
+    });
+  }
+
+  return anchors;
+}
+
+function getActiveSectionId(anchors: TocAnchor[], marker: number): string | null {
+  if (!anchors.length) return null;
+
+  const firstAnchor = anchors[0];
+  const lastAnchor = anchors[anchors.length - 1];
+  if (marker < firstAnchor.top) return firstAnchor.id;
+  if (marker >= lastAnchor.top) return lastAnchor.id;
+
+  for (let i = 0; i < anchors.length - 1; i += 1) {
+    const current = anchors[i];
+    const next = anchors[i + 1];
+    if (marker >= current.top && marker < next.top) {
+      return current.id;
+    }
+  }
+
+  return firstAnchor.id;
 }

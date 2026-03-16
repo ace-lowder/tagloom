@@ -4,15 +4,21 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, Calendar } from "lucide-react";
-import type { BlogPost } from "@/content/blog";
+import type { BlogCategory, BlogPost } from "@/content/blog";
 import SiteFooter from "@/components/shared/SiteFooter";
 
-const categoryColors: Record<string, string> = {
+const categoryColors: Record<BlogCategory, string> = {
   SEO: "bg-orange-100 text-orange-700",
   Strategy: "bg-purple-100 text-purple-700",
   Tips: "bg-green-100 text-green-700",
   Research: "bg-blue-100 text-blue-700",
 };
+const categoryBadgeClass = "rounded-full px-2.5 py-1 text-xs font-semibold";
+const featuredMetaClass = "mb-3 flex items-center gap-2";
+const dateMetaClass = "flex items-center gap-4 text-xs text-stone-400";
+const dateRowClass = "flex items-center gap-1.5";
+const cardArrowClass =
+  "h-4 w-4 text-stone-400 transition-colors group-hover:text-orange-600";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 18 },
@@ -57,9 +63,9 @@ export default function BlogIndexPage({ posts }: BlogIndexPageProps) {
                 className="group grid overflow-hidden rounded-3xl border border-stone-200 bg-white transition-all hover:-translate-y-1 hover:border-orange-200 hover:shadow-lg lg:grid-cols-[1.2fr_1fr]"
               >
                 <div className="p-7 sm:p-9">
-                  <div className="mb-3 flex items-center gap-2">
+                  <div className={featuredMetaClass}>
                     <span
-                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${categoryColors[featured.category] || "bg-stone-100 text-stone-600"}`}
+                      className={`${categoryBadgeClass} ${categoryColors[featured.category]}`}
                     >
                       Featured
                     </span>
@@ -70,14 +76,14 @@ export default function BlogIndexPage({ posts }: BlogIndexPageProps) {
                       {featured.title}
                     </h2>
                     <span className="mt-1 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-stone-100 transition-colors group-hover:bg-orange-100">
-                      <ArrowRight className="h-4 w-4 text-stone-400 transition-colors group-hover:text-orange-600" />
+                      <ArrowRight className={cardArrowClass} />
                     </span>
                   </div>
                   <p className="mb-4 text-sm leading-relaxed text-stone-600 sm:text-base">
                     {featured.excerpt}
                   </p>
-                  <div className="flex items-center gap-4 text-xs text-stone-400">
-                    <span className="flex items-center gap-1.5">
+                  <div className={dateMetaClass}>
+                    <span className={dateRowClass}>
                       <Calendar className="h-3.5 w-3.5" />
                       {featured.date}
                     </span>
@@ -110,9 +116,9 @@ export default function BlogIndexPage({ posts }: BlogIndexPageProps) {
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
-                      <div className="mb-3 flex items-center gap-2">
+                      <div className={featuredMetaClass}>
                         <span
-                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${categoryColors[post.category] || "bg-stone-100 text-stone-600"}`}
+                          className={`${categoryBadgeClass} ${categoryColors[post.category]}`}
                         >
                           {post.category}
                         </span>
@@ -124,8 +130,8 @@ export default function BlogIndexPage({ posts }: BlogIndexPageProps) {
                       <p className="mb-4 text-sm leading-relaxed text-stone-500">
                         {post.excerpt}
                       </p>
-                      <div className="flex items-center gap-4 text-xs text-stone-400">
-                        <span className="flex items-center gap-1.5">
+                      <div className={dateMetaClass}>
+                        <span className={dateRowClass}>
                           <Calendar className="h-3.5 w-3.5" />
                           {post.date}
                         </span>
@@ -133,7 +139,7 @@ export default function BlogIndexPage({ posts }: BlogIndexPageProps) {
                     </div>
                     <div className="mt-1 flex-shrink-0">
                       <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-stone-100 transition-colors group-hover:bg-orange-100">
-                        <ArrowRight className="h-4 w-4 text-stone-400 transition-colors group-hover:text-orange-600" />
+                        <ArrowRight className={cardArrowClass} />
                       </div>
                     </div>
                   </div>
