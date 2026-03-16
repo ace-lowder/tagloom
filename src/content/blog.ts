@@ -6,6 +6,13 @@ export type BlogSection = {
   title: string;
 };
 
+export type BlogBottomCta = {
+  eyebrow?: string;
+  heading: string;
+  body: string;
+  buttonLabel: string;
+};
+
 export type BlogPost = {
   slug: string;
   title: string;
@@ -14,6 +21,7 @@ export type BlogPost = {
   category: BlogCategory;
   readTime: string;
   heroImage?: string;
+  bottomCta?: BlogBottomCta;
   contentHtml: string;
   sections: BlogSection[];
 };
@@ -21,6 +29,14 @@ export type BlogPost = {
 const BLOG_IMAGE_1 = `<img src="/blog-inline-1.svg" alt="Tag strategy planning board" />`;
 const BLOG_IMAGE_2 = `<img src="/blog-inline-2.svg" alt="Etsy search trend dashboard" />`;
 const BLOG_IMAGE_PHOTOS = `<img src="/blog-photos-photos-photos.png" alt="Abstract listing photo composition example" />`;
+
+export const DEFAULT_BLOG_BOTTOM_CTA: BlogBottomCta = {
+  eyebrow: "Ready to Put This Into Action?",
+  heading: "Generate better Etsy tags in seconds with Tagloom",
+  body:
+    "Use the Tagloom tag generator to create 13 optimized Etsy tags and turn what you learned into faster listing improvements. Try it now for free.",
+  buttonLabel: "Try it free",
+};
 
 export const BLOG_POSTS: BlogPost[] = [
   {
@@ -32,6 +48,13 @@ export const BLOG_POSTS: BlogPost[] = [
     category: "SEO",
     readTime: "7 min read",
     heroImage: "/blog-how-to-rank-higher-on-etsy-hero.png",
+    bottomCta: {
+      eyebrow: "Ready to Apply This?",
+      heading: "Use the Tagloom tag generator to rank higher on Etsy",
+      body:
+        "Turn what you just learned into action. Generate 13 optimized Etsy tags in seconds and try Tagloom now for free.",
+      buttonLabel: "Try it free",
+    },
     sections: [
       { id: "how-etsy-search-works", level: 2, title: "How Etsy Search Works" },
       { id: "start-with-keywords", level: 2, title: "Start with Keywords" },
