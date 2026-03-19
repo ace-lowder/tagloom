@@ -29,6 +29,8 @@ export type BlogPost = {
 const BLOG_IMAGE_1 = `<img src="/blog-inline-1.svg" alt="Tag strategy planning board" />`;
 const BLOG_IMAGE_2 = `<img src="/blog-inline-2.svg" alt="Etsy search trend dashboard" />`;
 const BLOG_IMAGE_PHOTOS = `<img src="/blog-photos-photos-photos.png" alt="Abstract listing photo composition example" />`;
+const BLOG_IMAGE_ETSY_ALGO_SEARCH_FILTER = `<img src="/blog-etsy-algorithm-search-filter.png" alt="Etsy search filtering and listing match concept" />`;
+const BLOG_IMAGE_ETSY_ALGO_SHIPMENT = `<img src="/blog-etsy-algorithm-shipment.png" alt="Shipping and delivery experience concept for Etsy orders" />`;
 
 export const DEFAULT_BLOG_BOTTOM_CTA: BlogBottomCta = {
   eyebrow: "Ready to Apply This?",
@@ -45,7 +47,7 @@ export const BLOG_POSTS: BlogPost[] = [
       "If Etsy search feels confusing at first, you are not alone. Etsy first finds listings that match a shopper's words, then ranks those matches based on what seems most useful and most likely to convert.",
     date: "Feb 28, 2026",
     category: "SEO",
-    readTime: "7 min read",
+    readTime: "6 min read",
     heroImage: "/blog-how-to-rank-higher-on-etsy-hero.png",
     sections: [
       { id: "how-etsy-search-works", level: 2, title: "How Etsy Search Works" },
@@ -149,7 +151,7 @@ export const BLOG_POSTS: BlogPost[] = [
       "What we know about Etsy ranking, from tags and tag generation to conversion, reviews, and listing quality signals.",
     date: "Feb 14, 2026",
     category: "Strategy",
-    readTime: "8 min read",
+    readTime: "9 min read",
     sections: [
       { id: "the-algorithm", level: 2, title: "The Algorithm" },
       { id: "why-should-i-care", level: 2, title: "Why Should I Care?" },
@@ -208,7 +210,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>A solid tag generation workflow can make this much easier and cut down on repetitive tag choices. It helps you cover more relevant search angles without cramming similar words into every slot. Your title and tags should back each other up. If your tags suggest one shopper intent but your title suggests another, match quality drops. A quick beginner check is to read your title and top tags out loud and ask, “Do these clearly describe the same exact item?”</p>
       <p>When title, tags, categories, attributes, and description all point to the same intent, Etsy can match your listing more confidently and show it more often to the right buyers.</p>
       <p>If you are brand new, start by fixing one listing fully before jumping between many listings. It is easier to learn what works when you can compare before and after clearly.</p>
-      ${BLOG_IMAGE_1}
+      ${BLOG_IMAGE_ETSY_ALGO_SEARCH_FILTER}
 
       <h2 id="clicks-and-sales">Clicks and Sales</h2>
       <p>Clicks and sales are what show Etsy your listing was a good match. Etsy can show your listing in search, but if shoppers keep skipping it, that sends a weak signal for that query. Your first photo and title usually make or break the click. If they feel clear, relevant, and trustworthy in the first second or two, click-through improves. If they feel vague, people keep scrolling.</p>
@@ -241,7 +243,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>Shipping clarity is critical. Unexpected shipping costs or confusing timelines can quickly reduce trust and hurt sales.</p>
       <p>For beginners, simple and honest shipping policies often outperform complicated offers. Clear delivery windows reduce buyer anxiety and improve conversion quality.</p>
       <p>For new shops, honest shipping expectations and straightforward pricing are major trust advantages. They reduce friction and support stronger conversion signals.</p>
-      ${BLOG_IMAGE_2}
+      ${BLOG_IMAGE_ETSY_ALGO_SHIPMENT}
 
       <h2 id="reviews-and-customer-experience">Reviews and Customer Experience</h2>
       <p>Reviews are not just social proof for shoppers. They also tell Etsy your shop delivers a good overall experience.</p>
