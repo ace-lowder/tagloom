@@ -31,10 +31,9 @@ const BLOG_IMAGE_2 = `<img src="/blog-inline-2.svg" alt="Etsy search trend dashb
 const BLOG_IMAGE_PHOTOS = `<img src="/blog-photos-photos-photos.png" alt="Abstract listing photo composition example" />`;
 
 export const DEFAULT_BLOG_BOTTOM_CTA: BlogBottomCta = {
-  eyebrow: "Ready to Put This Into Action?",
-  heading: "Generate better Etsy tags in seconds with Tagloom",
-  body:
-    "Use the Tagloom tag generator to create 13 optimized Etsy tags and turn what you learned into faster listing improvements. Try it now for free.",
+  eyebrow: "Ready to Apply This?",
+  heading: "Try the Tagloom tag generator for free",
+  body: "Turned what you learned into action. Generate 13 optimized Etsy tags in seconds to improve your listing today.",
   buttonLabel: "Try it free",
 };
 
@@ -48,13 +47,6 @@ export const BLOG_POSTS: BlogPost[] = [
     category: "SEO",
     readTime: "7 min read",
     heroImage: "/blog-how-to-rank-higher-on-etsy-hero.png",
-    bottomCta: {
-      eyebrow: "Ready to Apply This?",
-      heading: "Use the Tagloom tag generator to rank higher on Etsy",
-      body:
-        "Turn what you just learned into action. Generate 13 optimized Etsy tags in seconds and try Tagloom now for free.",
-      buttonLabel: "Try it free",
-    },
     sections: [
       { id: "how-etsy-search-works", level: 2, title: "How Etsy Search Works" },
       { id: "start-with-keywords", level: 2, title: "Start with Keywords" },
@@ -152,46 +144,132 @@ export const BLOG_POSTS: BlogPost[] = [
   },
   {
     slug: "etsy-algorithm-explained",
-    title: "The Etsy Algorithm Explained: What Actually Affects Your Ranking",
+    title: "What We Know About the Etsy Algorithm",
     excerpt:
-      "Tags, recency, reviews, shipping speed - how does Etsy's algorithm actually weigh each factor? We break down what matters most.",
+      "What we know about Etsy ranking, from tags and tag generation to conversion, reviews, and listing quality signals.",
     date: "Feb 14, 2026",
     category: "Strategy",
     readTime: "8 min read",
     sections: [
-      { id: "ranking-signals", level: 2, title: "Core Ranking Signals" },
-      { id: "listing-quality", level: 2, title: "Listing Quality Scores" },
+      { id: "the-algorithm", level: 2, title: "The Algorithm" },
+      { id: "why-should-i-care", level: 2, title: "Why Should I Care?" },
+      { id: "how-to-get-found", level: 2, title: "How to Get Found" },
+      { id: "clicks-and-sales", level: 2, title: "Clicks and Sales" },
+      { id: "quality-signals", level: 2, title: "Quality Signals" },
       {
-        id: "conversion-loop",
-        level: 3,
-        title: "The conversion feedback loop",
-      },
-      {
-        id: "optimization-routine",
+        id: "photo-upgrades-to-boost-clicks",
         level: 2,
-        title: "A Practical Optimization Routine",
+        title: "Photo Upgrades to Boost Clicks",
       },
-      { id: "final-notes", level: 2, title: "Final Notes" },
+      {
+        id: "pricing-shipping-and-rank",
+        level: 2,
+        title: "Pricing, Shipping, and Rank",
+      },
+      {
+        id: "reviews-and-customer-experience",
+        level: 2,
+        title: "Reviews and Customer Experience",
+      },
+      { id: "niches-consistency", level: 2, title: "Niches? Consistency?" },
+      {
+        id: "what-we-dont-know-for-sure",
+        level: 2,
+        title: "What We Don't Know for Sure",
+      },
+      { id: "what-now", level: 2, title: "What Now?" },
     ],
     contentHtml: `
-      <h2 id="ranking-signals">Core Ranking Signals</h2>
-      <p>Etsy ranking behavior is a blend of relevance, listing quality, and customer trust indicators. Relevance decides eligibility, then engagement metrics decide which eligible listings surface first.</p>
-      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer feugiat, erat sed congue pretium, ipsum ligula finibus mauris, ac hendrerit nulla nisl vel tortor.</p>
+      <h2 id="the-algorithm">The Algorithm</h2>
+      <p>If Etsy ranking feels confusing, you are definitely not the only one. The easiest way to think about the algorithm is this: Etsy is trying to show each shopper the listing they are most likely to click, buy, and feel good about after it arrives. Most of that happens in two steps.</p>
+      <ol class="list-decimal pl-6 space-y-2">
+        <li>Etsy matches the search using your listing language, including title, tags, and categories. This is Etsy deciding, “Does this listing even belong in this search?”</li>
+        <li>The algorithm ranks those matched listings using performance signals, like clicks, sales, reviews, and shop reliability. This is Etsy deciding, “Out of these matching listings, which ones should we show first?”</li>
+      </ol>
+      <p>A signal is just a clue Etsy uses to decide whether shoppers are happy with what they found. Strong signals usually mean buyers got what they expected. Think of signals like little “yes” votes from real people when they click, buy, leave a good review, or complete an order without problems.</p>
+      <p>This is why views alone is not enough. You can have a solid product that tons of people see, but if shoppers do not click or buy, Etsy learns that your listing is not what people want.</p>
+      <p>The upside is that you can improve your store. Better tags help you match with the right shopper, and better listing quality helps you keep that visibility over time. For beginners, this is good news because you do not need to “beat” huge shops overnight. You just need to make steady improvements Etsy can measure.</p>
 
-      <h2 id="listing-quality">Listing Quality Scores</h2>
-      <p>Listings that convert and satisfy buyers tend to stay visible longer. Strong photos, clear shipping promises, and precise tag-to-title consistency matter together, not in isolation.</p>
+      <h2 id="why-should-i-care">Why Should I Care?</h2>
+      <p>You should care because Etsy search is often the difference between a listing that sits quietly and one that gets steady daily traffic. Ranking decides whether all that work you put in actually gets seen.</p>
+      <p>This matters even more for new shops. You usually do not have years of reviews, huge order volume, or strong brand recognition yet, so listing setup and tags have to do more of the heavy lifting.</p>
+      <p>Understanding the algorithm also saves you a lot of time. Instead of changing random things and hoping for the best, you can focus on what usually moves results: better search matching, stronger clicks, stronger conversion, and better customer experience.</p>
+      <p>Conversion simply means the percent of visitors who become buyers. For example, if 100 people visit and 2 buy, your conversion rate is 2 percent. If that sounds low, do not panic. Most shops improve conversion slowly by making the listing easier to understand and easier to trust.</p>
+      <p>Once you know what Etsy rewards, your weekly work becomes clear. You can prioritize better tags, better photos, and better listing clarity instead of guessing what to fix next.</p>
+
+      <h2 id="how-to-get-found">How to Get Found</h2>
+      <p>Getting found starts with search matching. Etsy needs enough clear clues to understand what your product is, who it is for, and when to show your listing. In plain language, if Etsy cannot quickly “read” your listing, it will struggle to put it in front of the right shopper.</p>
+      <ul>
+        <li>Optimize the 13 tags in all of your listings.</li>
+        <li>Front-load your title with your strongest keyword phrase.</li>
+        <li>Use categories and attributes to support your tags.</li>
+        <li>Keep descriptions clear so buyers and Etsy both understand the offer.</li>
+      </ul>
+      <p>A solid tag generation workflow can make this much easier and cut down on repetitive tag choices. It helps you cover more relevant search angles without cramming similar words into every slot. Your title and tags should back each other up. If your tags suggest one shopper intent but your title suggests another, match quality drops. A quick beginner check is to read your title and top tags out loud and ask, “Do these clearly describe the same exact item?”</p>
+      <p>When title, tags, categories, attributes, and description all point to the same intent, Etsy can match your listing more confidently and show it more often to the right buyers.</p>
+      <p>If you are brand new, start by fixing one listing fully before jumping between many listings. It is easier to learn what works when you can compare before and after clearly.</p>
       ${BLOG_IMAGE_1}
 
-      <h3 id="conversion-loop">The conversion feedback loop</h3>
-      <p>Better relevance increases qualified impressions; better messaging increases conversion; better conversion improves placement. This loop is why tiny copy improvements can outperform big pricing changes.</p>
+      <h2 id="clicks-and-sales">Clicks and Sales</h2>
+      <p>Clicks and sales are what show Etsy your listing was a good match. Etsy can show your listing in search, but if shoppers keep skipping it, that sends a weak signal for that query. Your first photo and title usually make or break the click. If they feel clear, relevant, and trustworthy in the first second or two, click-through improves. If they feel vague, people keep scrolling.</p>
+      <p>After the click, conversion takes over. Listing clarity, product details, pricing, and shipping expectations all influence whether that shopper actually buys. In plain terms, better conversion means more people who visit your listing actually place an order. If your listing gets traffic but no purchases, Etsy may treat that as a weak match over time, even when your tags are decent.</p>
+      <p>If your clicks are fine but sales are low, that is usually a conversion issue, not a tags issue. In that case, work on listing clarity and trust first. For beginners, that often means clearer size details, cleaner photos, and simpler shipping expectations before changing tags again.</p>
+      <p>This creates a feedback loop. Better tag matching brings better traffic, better traffic creates better clicks and sales, and better sales reinforce ranking over time.</p>
 
-      <h2 id="optimization-routine">A Practical Optimization Routine</h2>
-      <p>Run weekly metadata reviews and monthly positioning updates. Keep one variable change per iteration when possible, so you can attribute wins to the right update.</p>
-      <p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Quis ipsum suspendisse ultrices gravida dictum fusce.</p>
+      <h2 id="quality-signals">Quality Signals</h2>
+      <p>Quality signals are Etsy’s way of measuring the buyer's experience. Etsy wants listings that satisfy shoppers, not listings that only get a quick burst of impressions. If “signal” feels too technical, think of it as a behavior clue: what shoppers do before and after they click tells Etsy whether your listing actually helped them.</p>
+      <p>Listing clarity is one of the biggest signals. When title, tags, photos, and description all describe the same product clearly, buyers decide faster and conversion improves.</p>
+      <p>Shop reliability matters too. Realistic processing times, on-time shipping, clear communication, and low issue rates all support stronger trust signals. Trust signals are simply the signs that tell Etsy your shop is dependable and safe for buyers. When buyers get fewer surprises, you usually see better reviews and more repeat purchases.</p>
+      <p>This is why support speed and order handling matter even if your tags are strong. Strong tags can win the click, but weak customer experience can still hurt rank later.</p>
+      <p>These signals compound. The more consistently your shop delivers a smooth buyer experience, the more stable your ranking tends to become.</p>
+
+      <h2 id="photo-upgrades-to-boost-clicks">Photo Upgrades to Boost Clicks</h2>
+      <p>If impressions are coming in but clicks are weak, photos are often the fastest thing to fix. Your first image has one job: make the product obvious and appealing at a glance.</p>
+      <ul>
+        <li>Use a clean, bright hero photo with clear subject focus.</li>
+        <li>Add close-up photos for texture, quality, and finish.</li>
+        <li>Show scale so buyers understand size quickly.</li>
+        <li>Include real-use context so buyers can picture ownership.</li>
+      </ul>
+      <p>Consistent photo style across listings helps your shop feel more trustworthy. It also helps buyers scan your catalog faster and stay longer.</p>
+      <p>Better photos usually increase click-through and conversion together. That improvement supports your tags and strengthens ranking momentum.</p>
+      <p>Use Shop Stats to track photo changes over time. Small upgrades to your hero image can add up to meaningful gains when you test them consistently.</p>
+
+      <h2 id="pricing-shipping-and-rank">Pricing, Shipping, and Rank</h2>
+      <p>Pricing and shipping directly affect conversion, and conversion affects ranking. If buyers click but leave when total cost looks unclear, Etsy reads that as weak performance.</p>
+      <p>Your price does not need to be the lowest, but it should feel fair for what the buyer sees in your photos, details, and overall quality. Clear value usually beats random discounting. Beginners often underprice out of fear, but clarity and trust often outperform “cheapest wins” pricing.</p>
+      <p>Shipping clarity is critical. Unexpected shipping costs or confusing timelines can quickly reduce trust and hurt sales.</p>
+      <p>For beginners, simple and honest shipping policies often outperform complicated offers. Clear delivery windows reduce buyer anxiety and improve conversion quality.</p>
+      <p>For new shops, honest shipping expectations and straightforward pricing are major trust advantages. They reduce friction and support stronger conversion signals.</p>
       ${BLOG_IMAGE_2}
 
-      <h2 id="final-notes">Final Notes</h2>
-      <p>Think in systems: tags, titles, thumbnails, and reviews work best when optimized as one funnel.</p>
+      <h2 id="reviews-and-customer-experience">Reviews and Customer Experience</h2>
+      <p>Reviews are not just social proof for shoppers. They also tell Etsy your shop delivers a good overall experience.</p>
+      <p>Good reviews start before delivery. Clear listings, realistic timelines, and proactive communication reduce surprises and reduce negative outcomes. Many beginner sellers think reviews are only about product quality, but expectation matching is just as important.</p>
+      <p>Small service habits help more than most people think. Fast replies, careful packaging, and clear updates can turn average orders into strong reviews.</p>
+      <p>Even one thoughtful follow-up message can make buyers feel taken care of. That often leads to better reviews and more repeat customers.</p>
+      <p>Over time, stronger review quality and better customer experience make your listing performance more durable, which supports long-term ranking stability.</p>
+
+      <h2 id="niches-consistency">Niches? Consistency?</h2>
+      <p>A clear niche makes everything easier to optimize, including tags, titles, photos, and offer positioning. Focus helps Etsy understand your shop faster and helps shoppers trust it faster.</p>
+      <p>Consistency across your catalog also improves performance. If one listing works, related listings with similar quality and intent can benefit from that clarity.</p>
+      <p>This does not mean every product must look the same. It means your products should make sense together for a similar buyer problem or style preference.</p>
+      <p>It also makes tag generation easier because your listings will share related themes and keyword patterns. That helps you build better tags faster with less guesswork.</p>
+      <p>When growth feels inconsistent, tightening your niche and standardizing listing quality is often one of the fastest ways to regain momentum.</p>
+
+      <h2 id="what-we-dont-know-for-sure">What We Don't Know for Sure</h2>
+      <p>Etsy does not publish a full ranking formula, so nobody outside Etsy can give you exact factor weights with certainty. Be careful with anyone promising guaranteed ranking hacks.</p>
+      <p>What we do know comes from consistent patterns across successful listings and Etsy’s own guidance. Relevant tags, smart tag generation, strong click-through, healthy conversion, and good reviews usually move together.</p>
+      <p>We also know the system evolves. Etsy likely adjusts how different signals are weighted over time and across categories. A change that helps one category today might be less impactful later, which is why ongoing testing matters.</p>
+      <p>So the goal is not to chase one secret trick. The goal is to keep improving the signals you can control and keep your tags and listing quality aligned with buyer intent.</p>
+      <p>The safest strategy is to improve what you can control, test in small batches, and review real results in Shop Stats before making your next round of changes.</p>
+
+      <h2 id="what-now">What Now?</h2>
+      <p>Start simple. Pick one listing this week and improve it from top to bottom instead of making scattered edits across your whole shop.</p>
+      <p>Focus on the highest-impact areas first: title clarity, better tags, stronger tag generation, better hero photo, clearer description, and realistic shipping expectations.</p>
+      <p>Then give the changes time to gather signal before editing again. Watch impressions, clicks, favorites, and sales together so you can see whether traffic quality improved.</p>
+      <p>If a listing improves, repeat that same process on your next listing. That gives you a repeatable system you can keep using every month.</p>
+      <p>Repeat this cycle every week or two. Most Etsy growth comes from steady improvements, not one perfect trick, and better tags plus better listing quality is the fastest path to consistent results.</p>
     `,
   },
   {
