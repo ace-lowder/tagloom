@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Calendar } from "lucide-react";
 import { DEFAULT_BLOG_BOTTOM_CTA, type BlogPost } from "@/content/blog";
@@ -34,12 +34,15 @@ const ctaButtonClass =
 
 export default function BlogPostPage({ post }: BlogPostPageProps) {
   const [activeId, setActiveId] = useState("");
-  const contentRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const tocSections = [
-    { id: BLOG_OVERVIEW_ID, level: 2 as const, title: post.title },
-    ...post.sections,
-  ];
+  const tocSections = useMemo(
+    () => [{ id: BLOG_OVERVIEW_ID, level: 2 as const, title: post.title }, ...post.sections],
+    [post.sections, post.title],
+  );
+  const tocSectionIds = useMemo(
+    () => tocSections.map((section) => section.id),
+    [tocSections],
+  );
   const cta = post.bottomCta ?? DEFAULT_BLOG_BOTTOM_CTA;
 
   const handleCtaClick = () => {
@@ -52,7 +55,7 @@ export default function BlogPostPage({ post }: BlogPostPageProps) {
 
   useEffect(() => {
     const updateActiveHeading = () => {
-      const anchors = collectTocAnchors(contentRef.current);
+      const anchors = collectTocAnchors(tocSectionIds);
       const marker =
         window.scrollY + window.innerHeight * BLOG_ACTIVE_MARKER_VIEWPORT_RATIO;
       const nextActiveId = getActiveSectionId(anchors, marker);
@@ -77,7 +80,7 @@ export default function BlogPostPage({ post }: BlogPostPageProps) {
       window.removeEventListener("scroll", updateActiveHeading);
       window.removeEventListener("resize", updateActiveHeading);
     };
-  }, [post.slug]);
+  }, [post.slug, tocSectionIds]);
 
   return (
     <div className="min-h-screen bg-stone-50 font-sans">
@@ -126,11 +129,7 @@ export default function BlogPostPage({ post }: BlogPostPageProps) {
               </div>
             ) : null}
 
-            <div
-              ref={contentRef}
-              className="prose-tagsy"
-              dangerouslySetInnerHTML={{ __html: post.contentHtml }}
-            />
+            <div className="prose-tagsy prose-blog" dangerouslySetInnerHTML={{ __html: post.contentHtml }} />
 
             <section className="mt-12 rounded-2xl border border-orange-200 bg-gradient-to-br from-orange-50 to-white p-6 sm:p-7">
               {cta.eyebrow ? (
@@ -225,24 +224,15 @@ function TableOfContents({ sections, activeId }: TableOfContentsProps) {
   );
 }
 
-function collectTocAnchors(contentNode: HTMLDivElement | null): TocAnchor[] {
-  const overview = document.getElementById(BLOG_OVERVIEW_ID);
-  const headings = Array.from(
-    contentNode?.querySelectorAll<HTMLElement>("h2[id], h3[id]") || [],
-  );
+function collectTocAnchors(ids: string[]): TocAnchor[] {
   const anchors: TocAnchor[] = [];
 
-  if (overview) {
+  for (const id of ids) {
+    const element = document.getElementById(id);
+    if (!element) continue;
     anchors.push({
-      id: BLOG_OVERVIEW_ID,
-      top: overview.getBoundingClientRect().top + window.scrollY,
-    });
-  }
-
-  for (const heading of headings) {
-    anchors.push({
-      id: heading.id,
-      top: heading.getBoundingClientRect().top + window.scrollY,
+      id,
+      top: element.getBoundingClientRect().top + window.scrollY,
     });
   }
 
