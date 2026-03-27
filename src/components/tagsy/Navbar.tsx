@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import BrandMark from "@/components/brand/BrandMark";
 import { useAuthController } from "@/components/auth/AuthController";
+import { sanitizeNextPath } from "@/lib/authModal";
 import { triggerGeneratorCta } from "@/lib/generatorCta";
 import type { CurrentUser } from "@/lib/auth";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -126,15 +127,18 @@ export default function Navbar({ currentUser }: NavbarProps) {
   };
 
   const onSignOut = async () => {
+    const nextTarget = getLogoutNextPath(pathname || "/");
+    const loginHref = `/login?next=${encodeURIComponent(nextTarget)}`;
+
     if (!supabase) {
-      router.push("/login");
+      router.push(loginHref);
       return;
     }
 
     setIsLoggingOut(true);
     closeAllMenus();
     await supabase.auth.signOut();
-    router.push("/");
+    router.push(loginHref);
     router.refresh();
     setIsLoggingOut(false);
   };
@@ -426,4 +430,16 @@ function getAvatarInitials(email: string | null) {
     .slice(0, 2)
     .toUpperCase();
   return initials || "AC";
+}
+
+function getLogoutNextPath(pathname: string) {
+  const currentPath =
+    typeof window === "undefined"
+      ? pathname
+      : `${window.location.pathname}${window.location.search}`;
+  const safePath = sanitizeNextPath(currentPath);
+  if (safePath === "/login" || safePath.startsWith("/login?")) {
+    return "/";
+  }
+  return safePath;
 }

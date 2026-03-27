@@ -1,14 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
-import AppShell from "@/components/auth/AppShell";
-import { toCurrentUser } from "@/lib/auth";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-
-type ProfileSummary = {
-  subscription_tier: "monthly" | "yearly" | null;
-  subscription_active: boolean;
-};
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -25,51 +17,14 @@ export const metadata: Metadata = {
   description: "Generate 13 Etsy-ready tags in under 60 seconds.",
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  let currentUser = null;
-
-  try {
-    const supabase = createSupabaseServerClient();
-    if (!supabase) {
-      currentUser = null;
-    } else {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      let profile: ProfileSummary | null = null;
-      if (user) {
-        const { data } = await supabase
-          .from("profiles")
-          .select("subscription_tier, subscription_active")
-          .eq("id", user.id)
-          .maybeSingle<ProfileSummary>();
-        profile = data ?? null;
-      }
-
-      currentUser = toCurrentUser(
-        user,
-        profile
-          ? {
-              subscriptionTier: profile.subscription_tier,
-              subscriptionActive: profile.subscription_active,
-            }
-          : null,
-      );
-    }
-  } catch {
-    currentUser = null;
-  }
-
   return (
     <html lang="en">
-      <body className={`${outfit.variable} ${inter.variable} bg-[#F7F7F5] text-black`}>
-        <AppShell currentUser={currentUser}>{children}</AppShell>
-      </body>
+      <body className={`${outfit.variable} ${inter.variable} bg-[#F7F7F5] text-black`}>{children}</body>
     </html>
   );
 }
