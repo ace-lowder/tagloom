@@ -204,7 +204,7 @@ function HeroSection({ onGenerate }: HeroSectionProps) {
           <motion.button
             variants={fadeInUp}
             onClick={onGenerate}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 px-6 py-3 text-sm font-semibold text-white transition-all hover:from-orange-600 hover:to-orange-700"
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 px-6 py-3 text-sm font-semibold text-white transition-[background,box-shadow,color] duration-200 hover:from-orange-600 hover:to-orange-700"
             style={{
               boxShadow: "0 4px 20px rgba(249,115,22,0.35)",
             }}
@@ -462,7 +462,7 @@ function BottomCtaSection({ onGenerate }: BottomCtaSectionProps) {
             <motion.button
               variants={fadeInUp}
               onClick={onGenerate}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 px-8 py-4 text-sm font-semibold text-white transition-all hover:from-orange-600 hover:to-orange-700"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 px-8 py-4 text-sm font-semibold text-white transition-[background,box-shadow,color] duration-200 hover:from-orange-600 hover:to-orange-700"
               style={{
                 boxShadow: "0 6px 28px rgba(249,115,22,0.32)",
               }}
