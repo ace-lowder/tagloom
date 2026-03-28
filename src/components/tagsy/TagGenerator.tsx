@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } fro
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Copy, Sparkles } from "lucide-react";
 import { useAuthController } from "@/components/auth/AuthController";
+import TurnstileField, { type TurnstileFieldHandle } from "@/components/security/TurnstileField";
 import { AUTH_SUCCESS_EVENT } from "@/lib/authModal";
 import { GENERATOR_CTA_EVENT } from "@/lib/generatorCta";
 import GradientBackground from "./GradientBackground";
@@ -225,6 +226,8 @@ function sanitizeMergedTags(target: string[], discovery: string[]) {
 
 export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGeneratorProps) {
   const { openAuthModal } = useAuthController();
+  const turnstileRef = useRef<TurnstileFieldHandle | null>(null);
+  const turnstileEnabled = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -630,14 +633,23 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   useEffect(() => clearDemoTimer, [clearDemoTimer]);
 
   const runGeneration = useCallback(
-    async (inputTitle: string, inputDescription: string, contextId: string) => {
+    async (
+      inputTitle: string,
+      inputDescription: string,
+      contextId: string,
+      turnstileToken?: string | null,
+    ) => {
       const response = await fetch("/api/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(turnstileToken ? { "x-turnstile-token": turnstileToken } : {}),
+        },
         body: JSON.stringify({
           title: inputTitle,
           description: inputDescription,
           generationContextId: contextId,
+          turnstileToken,
         }),
       });
 
@@ -680,6 +692,20 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     markUserInteraction();
     if (!title.trim()) return;
 
+    let turnstileToken: string | null = null;
+    if (turnstileEnabled) {
+      try {
+        turnstileToken = await turnstileRef.current?.getToken() ?? null;
+        if (!turnstileToken) {
+          setError("Please complete the bot check and try again.");
+          return;
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Bot check failed. Please try again.");
+        return;
+      }
+    }
+
     const contextId = generationContextId || generateContextId();
     setGenerationContextId(contextId);
 
@@ -702,13 +728,21 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     setShellHeightPx(null);
 
     try {
-      await runGeneration(title, description, contextId);
+      await runGeneration(title, description, contextId, turnstileToken);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
       setIsGenerating(false);
     }
-  }, [clearRevealTimer, description, generationContextId, markUserInteraction, runGeneration, title]);
+  }, [
+    clearRevealTimer,
+    description,
+    generationContextId,
+    markUserInteraction,
+    runGeneration,
+    title,
+    turnstileEnabled,
+  ]);
 
   const goToLogin = () => {
     markUserInteraction();
@@ -959,7 +993,8 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
             )}
           </button>
 
-          {error ? <p className="mt-2 text-sm text-red-700">{error}</p> : null}
+            {error ? <p className="mt-2 text-sm text-red-700">{error}</p> : null}
+          <TurnstileField ref={turnstileRef} onError={setError} />
           {entitlementUsed ? (
             <p className="mt-2 text-xs text-stone-500">Unlocked with: {entitlementUsed.replace("_", " ")}</p>
           ) : null}

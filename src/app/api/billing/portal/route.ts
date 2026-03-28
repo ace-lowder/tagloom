@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { applyApiProtection, jsonFromBlockedResult } from "@/lib/apiProtection";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getStripeClient } from "@/lib/stripe";
 
@@ -24,6 +25,17 @@ export async function POST(req: Request) {
 
   if (!user) {
     return NextResponse.json({ error: "You must be logged in." }, { status: 401 });
+  }
+
+  const protection = await applyApiProtection({
+    route: "/api/billing/portal",
+    request: req,
+    userId: user.id,
+    rateLimits: [{ name: "user_20_per_10m", actor: "user", limit: 20, windowMs: 600_000 }],
+  });
+
+  if (protection.blocked) {
+    return jsonFromBlockedResult(protection.blocked);
   }
 
   const { data: profile } = await supabase

@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { applyApiProtection, jsonFromBlockedResult } from "@/lib/apiProtection";
 
 type ContactPayload = {
   name?: string;
   email?: string;
   subject?: string;
   message?: string;
+  turnstileToken?: string;
 };
 
 type SanitizedPayload = {
@@ -72,6 +74,21 @@ async function sendSupportMessage(payload: SanitizedPayload, meta: { ip: string 
 
 export async function POST(req: NextRequest) {
   const payload = (await req.json().catch(() => ({}))) as ContactPayload;
+  const turnstileToken =
+    req.headers.get("x-turnstile-token") || payload.turnstileToken || null;
+
+  const protection = await applyApiProtection({
+    route: "/api/support/contact",
+    request: req,
+    requireTurnstile: true,
+    turnstileToken,
+    rateLimits: [{ name: "ip_5_per_10m", actor: "ip", limit: 5, windowMs: 600_000 }],
+  });
+
+  if (protection.blocked) {
+    return jsonFromBlockedResult(protection.blocked);
+  }
+
   const validation = validatePayload(payload);
 
   if (!validation.ok) {

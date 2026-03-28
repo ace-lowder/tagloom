@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { applyApiProtection, jsonFromBlockedResult } from "@/lib/apiProtection";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { generateTags, getPlaceholderTags } from "@/lib/tag-generation";
 
@@ -6,6 +7,7 @@ type GenerateRequest = {
   title?: string;
   description?: string;
   generationContextId?: string;
+  turnstileToken?: string;
 };
 
 type ProfileRecord = {
@@ -34,6 +36,20 @@ export async function POST(req: NextRequest) {
   const title = String(body.title ?? "").trim();
   const description = String(body.description ?? "").trim();
   const generationContextId = body.generationContextId ?? null;
+  const turnstileToken =
+    req.headers.get("x-turnstile-token") || body.turnstileToken || null;
+
+  const preAuthProtection = await applyApiProtection({
+    route: "/api/generate",
+    request: req,
+    requireTurnstile: true,
+    turnstileToken,
+    rateLimits: [{ name: "ip_20_per_min", actor: "ip", limit: 20, windowMs: 60_000 }],
+  });
+
+  if (preAuthProtection.blocked) {
+    return jsonFromBlockedResult(preAuthProtection.blocked);
+  }
 
   if (!title) {
     return NextResponse.json({ error: "Title is required." }, { status: 400 });
@@ -61,6 +77,20 @@ export async function POST(req: NextRequest) {
       "Create an account or log in to unlock this generation. New accounts get 1 free generation.",
       generationContextId,
     );
+  }
+
+  const userProtection = await applyApiProtection({
+    route: "/api/generate",
+    request: req,
+    userId: user.id,
+    rateLimits: [
+      { name: "user_30_per_min", actor: "user", limit: 30, windowMs: 60_000 },
+      { name: "user_300_per_day", actor: "user", limit: 300, windowMs: 86_400_000 },
+    ],
+  });
+
+  if (userProtection.blocked) {
+    return jsonFromBlockedResult(userProtection.blocked);
   }
 
   const { data: profile, error: profileError } = await supabase

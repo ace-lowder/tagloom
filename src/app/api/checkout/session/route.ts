@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
+import { applyApiProtection, jsonFromBlockedResult } from "@/lib/apiProtection";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getStripeClient, STRIPE_METADATA_KEYS } from "@/lib/stripe";
 
@@ -42,6 +43,20 @@ export async function POST(req: NextRequest) {
 
   if (!user) {
     return NextResponse.json({ error: "You must be logged in." }, { status: 401 });
+  }
+
+  const protection = await applyApiProtection({
+    route: "/api/checkout/session",
+    request: req,
+    userId: user.id,
+    rateLimits: [
+      { name: "user_10_per_10m", actor: "user", limit: 10, windowMs: 600_000 },
+      { name: "ip_30_per_10m", actor: "ip", limit: 30, windowMs: 600_000 },
+    ],
+  });
+
+  if (protection.blocked) {
+    return jsonFromBlockedResult(protection.blocked);
   }
 
   const {

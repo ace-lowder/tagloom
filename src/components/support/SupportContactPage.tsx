@@ -1,8 +1,9 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Mail } from "lucide-react";
+import TurnstileField, { type TurnstileFieldHandle } from "@/components/security/TurnstileField";
 import SiteFooter from "@/components/shared/SiteFooter";
 
 type SupportContactPageProps = {
@@ -10,6 +11,7 @@ type SupportContactPageProps = {
 };
 
 export default function SupportContactPage({ initialEmail }: SupportContactPageProps) {
+  const turnstileRef = useRef<TurnstileFieldHandle | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState(initialEmail);
   const [subject, setSubject] = useState("");
@@ -25,14 +27,26 @@ export default function SupportContactPage({ initialEmail }: SupportContactPageP
     setIsSubmitting(true);
 
     try {
+      let turnstileToken: string | null = null;
+      if (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY) {
+        turnstileToken = (await turnstileRef.current?.getToken()) ?? null;
+        if (!turnstileToken) {
+          throw new Error("Please complete the bot check and try again.");
+        }
+      }
+
       const response = await fetch("/api/support/contact", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(turnstileToken ? { "x-turnstile-token": turnstileToken } : {}),
+        },
         body: JSON.stringify({
           name,
           email,
           subject,
           message,
+          turnstileToken,
         }),
       });
 
@@ -138,6 +152,7 @@ export default function SupportContactPage({ initialEmail }: SupportContactPageP
 
             {error ? <p className="text-sm text-red-700">{error}</p> : null}
             {success ? <p className="text-sm text-green-700">Thanks, your message was sent.</p> : null}
+            <TurnstileField ref={turnstileRef} onError={setError} />
 
             <button
               type="submit"

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { applyApiProtection, jsonFromBlockedResult } from "@/lib/apiProtection";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 type CheckEmailBody = {
@@ -10,6 +11,16 @@ function normalizeEmail(value: string) {
 }
 
 export async function POST(req: NextRequest) {
+  const protection = await applyApiProtection({
+    route: "/api/auth/email-exists",
+    request: req,
+    rateLimits: [{ name: "ip_20_per_10m", actor: "ip", limit: 20, windowMs: 600_000 }],
+  });
+
+  if (protection.blocked) {
+    return jsonFromBlockedResult(protection.blocked);
+  }
+
   const body = (await req.json().catch(() => ({}))) as CheckEmailBody;
   const email = normalizeEmail(String(body.email ?? ""));
 
