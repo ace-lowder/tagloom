@@ -10,6 +10,7 @@ import {
   Mail,
   RotateCcw,
   Search,
+  ShoppingCart,
   Sparkles,
   Tag,
   User,
@@ -30,6 +31,7 @@ const topicIcons = {
   sparkles: Sparkles,
   "rotate-ccw": RotateCcw,
   tag: Tag,
+  "shopping-cart": ShoppingCart,
   "help-circle": HelpCircle,
 };
 
@@ -40,6 +42,7 @@ type SupportHubPageProps = {
 
 export default function SupportHubPage({ topics, articles }: SupportHubPageProps) {
   const [search, setSearch] = useState("");
+  const popularArticles = useMemo(() => articles.slice(0, 5), [articles]);
 
   useEffect(() => {
     const resetSupport = () => {
@@ -116,7 +119,10 @@ export default function SupportHubPage({ topics, articles }: SupportHubPageProps
                       <div
                         className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl ${topic.color}`}
                       >
-                        <Icon className="h-5 w-5" />
+                        <Icon
+                          className="h-5 w-5"
+                          strokeWidth={topic.icon === "help-circle" ? 2.4 : undefined}
+                        />
                       </div>
                       <h3 className="mb-1 font-semibold text-stone-800 transition-colors group-hover:text-orange-600">
                         {topic.name}
@@ -137,7 +143,7 @@ export default function SupportHubPage({ topics, articles }: SupportHubPageProps
               variants={stagger}
               className="divide-y divide-stone-100 rounded-2xl border border-stone-100 bg-white"
             >
-              {articles.map((article) => (
+              {popularArticles.map((article) => (
                 <motion.div key={article.slug} variants={fadeInUp}>
                   <Link
                     href={`/support/${article.topic}/${article.slug}`}
