@@ -175,6 +175,8 @@ const DEFAULT_DEMO_TIMINGS: DemoTimings = {
 const CONTEXT_STORAGE_PREFIX = "tagloom:genctx:";
 const TITLE_MAX = 140;
 const DESCRIPTION_MAX = 6000;
+const DEFAULT_TITLE_PLACEHOLDER =
+  "e.g. Handmade ceramic coffee mug with minimalist design";
 
 function getContextStorageKey(id: string) {
   return `${CONTEXT_STORAGE_PREFIX}${id}`;
@@ -232,6 +234,9 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   const turnstileEnabled = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
   const [title, setTitle] = useState("");
+  const [titlePlaceholder, setTitlePlaceholder] = useState(
+    DEFAULT_TITLE_PLACEHOLDER,
+  );
   const [description, setDescription] = useState("");
   const [showDescription, setShowDescription] = useState(false);
   const [focusedField, setFocusedField] = useState<"title" | "description" | null>(null);
@@ -414,6 +419,16 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     [demoConfig?.timings],
   );
 
+  const getCurrentDemoFixtureTitle = useCallback(() => {
+    if (!demoFixtures.length) return DEFAULT_TITLE_PLACEHOLDER;
+    const index = demoFixtureIndexRef.current % demoFixtures.length;
+    const fixtureTitle = demoFixtures[index]?.title?.trim();
+    if (!fixtureTitle) return DEFAULT_TITLE_PLACEHOLDER;
+    return fixtureTitle.toLowerCase().startsWith("e.g.")
+      ? fixtureTitle
+      : `e.g. ${fixtureTitle}`;
+  }, [demoFixtures]);
+
   const animateApiTagsIn = useCallback(
     (tags: string[], requestVersion: number) => {
       clearRevealTimer();
@@ -478,6 +493,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
       setSource(null);
       setEntitlementUsed(null);
       setDescription("");
+      setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
       setApiTags([]);
       setVisibleTags([]);
       setIsUnlockingFromPaywall(false);
@@ -729,6 +745,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     setEntitlementUsed(null);
     setPaywall(null);
     setIsUnlockingFromPaywall(false);
+    setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
     setApiTags([]);
     setVisibleTags([]);
     setClearPhase("idle");
@@ -822,6 +839,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
 
     setGenerationContextId(context.id);
     setTitle(context.title);
+    setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
     setDescription(context.description);
     setShowDescription(Boolean(context.description));
 
@@ -946,6 +964,10 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
               maxLength={TITLE_MAX}
               value={title}
               onFocus={() => {
+                if (isDemoActive) {
+                  setTitlePlaceholder(getCurrentDemoFixtureTitle());
+                  setTitle("");
+                }
                 markUserInteraction();
                 setShowDescription(true);
                 setFocusedField("title");
@@ -957,8 +979,11 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
               onChange={(e) => {
                 markUserInteraction();
                 setTitle(e.target.value);
+                if (e.target.value.length > 0) {
+                  setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
+                }
               }}
-              placeholder="e.g. Handmade ceramic coffee mug with minimalist design"
+              placeholder={titlePlaceholder}
               className="w-full rounded-xl border border-stone-200 bg-white/70 px-4 py-3 text-sm text-stone-800 placeholder-stone-400 transition-all focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
             />
           </div>

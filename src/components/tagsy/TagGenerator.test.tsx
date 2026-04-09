@@ -80,6 +80,8 @@ const CLEAR_TEST_TIMINGS = {
   clearFadeMs: 80,
   clearCollapseMs: 80,
 };
+const DEFAULT_TITLE_PLACEHOLDER =
+  "e.g. Handmade ceramic coffee mug with minimalist design";
 
 function sanitizeExpectedTags(target: string[], discovery: string[]) {
   const seen = new Set<string>();
@@ -237,6 +239,96 @@ describe("TagGenerator demo chips", () => {
       "e.g. Handmade ceramic coffee mug with minimalist design",
     ) as HTMLInputElement;
     await waitFor(() => expect(titleInput.value.length).toBeLessThan(fixture.title.length));
+  });
+
+  it("on partial demo typing focus, clears value and sets full fixture placeholder", async () => {
+    const fixture = {
+      title: "Full demo title should become placeholder",
+      tags: {
+        target: ["alpha", "beta", "gamma"],
+        discovery: ["delta", "epsilon", "zeta"],
+      },
+    };
+
+    render(
+      <TagGenerator
+        demoConfig={{
+          timings: TEST_TIMINGS,
+          fixtures: [fixture],
+        }}
+      />,
+    );
+
+    const titleInput = screen.getByPlaceholderText(
+      DEFAULT_TITLE_PLACEHOLDER,
+    ) as HTMLInputElement;
+
+    await waitFor(() => expect(titleInput.value.length).toBeGreaterThan(0));
+    expect(titleInput.value.length).toBeLessThan(fixture.title.length);
+
+    fireEvent.focus(titleInput);
+    expect(titleInput.value).toBe("");
+    expect(titleInput).toHaveAttribute("placeholder", `e.g. ${fixture.title}`);
+
+    fireEvent.change(titleInput, { target: { value: "x" } });
+    expect(titleInput).toHaveAttribute("placeholder", DEFAULT_TITLE_PLACEHOLDER);
+  });
+
+  it("on backspacing focus, clears value and keeps full fixture placeholder", async () => {
+    const fixture = {
+      title: "Backspacing demo title placeholder",
+      tags: {
+        target: ["alpha", "beta", "gamma"],
+        discovery: ["delta", "epsilon", "zeta"],
+      },
+    };
+
+    render(
+      <TagGenerator
+        demoConfig={{
+          timings: CLEAR_TEST_TIMINGS,
+          fixtures: [fixture],
+        }}
+      />,
+    );
+
+    const titleInput = screen.getByPlaceholderText(
+      DEFAULT_TITLE_PLACEHOLDER,
+    ) as HTMLInputElement;
+
+    await waitFor(() => expect(titleInput.value).toBe(fixture.title));
+    await waitFor(() => expect(titleInput.value.length).toBeLessThan(fixture.title.length));
+    await waitFor(() => expect(titleInput.value.length).toBeGreaterThan(0));
+
+    fireEvent.focus(titleInput);
+    expect(titleInput.value).toBe("");
+    expect(titleInput).toHaveAttribute("placeholder", `e.g. ${fixture.title}`);
+  });
+
+  it("keeps default placeholder when refocusing after user interaction", async () => {
+    render(
+      <TagGenerator
+        demoConfig={{
+          timings: TEST_TIMINGS,
+          fixtures: [
+            {
+              title: "Any demo fixture",
+              tags: { target: ["a"], discovery: ["b"] },
+            },
+          ],
+        }}
+      />,
+    );
+
+    const titleInput = screen.getByPlaceholderText(
+      DEFAULT_TITLE_PLACEHOLDER,
+    ) as HTMLInputElement;
+
+    fireEvent.change(titleInput, { target: { value: "manual title" } });
+    fireEvent.blur(titleInput);
+    fireEvent.focus(titleInput);
+
+    expect(titleInput).toHaveAttribute("placeholder", DEFAULT_TITLE_PLACEHOLDER);
   });
 });
 
