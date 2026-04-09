@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, Copy, Sparkles } from "lucide-react";
+import { Check, Copy, LockOpen, Sparkles } from "lucide-react";
 import { useAuthController } from "@/components/auth/AuthController";
 import TurnstileField, { type TurnstileFieldHandle } from "@/components/security/TurnstileField";
 import { AUTH_SUCCESS_EVENT } from "@/lib/authModal";
@@ -243,6 +243,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   const [source, setSource] = useState<"model" | "fallback" | null>(null);
   const [entitlementUsed, setEntitlementUsed] = useState<string | null>(null);
   const [paywall, setPaywall] = useState<PaywallState | null>(null);
+  const [isUnlockingFromPaywall, setIsUnlockingFromPaywall] = useState(false);
   const [activeSheenId, setActiveSheenId] = useState<number | null>(null);
   const [generationContextId, setGenerationContextId] = useState<string | null>(null);
   const [isDemoActive, setIsDemoActive] = useState(true);
@@ -476,6 +477,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
       setDescription("");
       setApiTags([]);
       setVisibleTags([]);
+      setIsUnlockingFromPaywall(false);
       setClearPhase("idle");
       setIsGenerating(false);
       setCopied(false);
@@ -660,6 +662,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
       }
 
       if (data.status === "paywall") {
+        setIsUnlockingFromPaywall(false);
         setPaywall({
           reason: data.reason,
           message: data.message,
@@ -671,9 +674,10 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
         return;
       }
 
-      setPaywall(null);
       setSource(data.source);
       setEntitlementUsed(data.entitlementUsed);
+      setPaywall(null);
+      setIsUnlockingFromPaywall(false);
       setResultTags(data.tags.target, data.tags.discovery);
 
       clearPendingContext(contextId);
@@ -721,6 +725,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     setSource(null);
     setEntitlementUsed(null);
     setPaywall(null);
+    setIsUnlockingFromPaywall(false);
     setApiTags([]);
     setVisibleTags([]);
     setClearPhase("idle");
@@ -835,20 +840,25 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     const onAuthSuccess = () => {
       if (!paywall || paywall.reason !== "auth_required") return;
       if (!generationContextId) return;
+      if (!visibleTags.length) return;
 
       const context = loadPendingContext(generationContextId);
       if (!context) return;
 
       setError("");
       setPaywall(null);
+      setIsUnlockingFromPaywall(true);
+      setApiTags([]);
+      setVisibleTags([]);
       runGeneration(context.title, context.description, context.id).catch((err) => {
+        setIsUnlockingFromPaywall(false);
         setError(err instanceof Error ? err.message : "Could not resume generation.");
       });
     };
 
     window.addEventListener(AUTH_SUCCESS_EVENT, onAuthSuccess);
     return () => window.removeEventListener(AUTH_SUCCESS_EVENT, onAuthSuccess);
-  }, [generationContextId, paywall, runGeneration]);
+  }, [generationContextId, paywall, runGeneration, visibleTags.length]);
 
   const handleCopyAll = async () => {
     markUserInteraction();
@@ -862,7 +872,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   };
 
   const totalTags = visibleTags.length;
-  const showResults = totalTags > 0;
+  const showResults = totalTags > 0 || isUnlockingFromPaywall || Boolean(paywall);
   const isClearingFade = clearPhase === "fading";
   const hasTitle = Boolean(title.trim());
 
@@ -1008,79 +1018,106 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                 transition={{ duration: isClearingFade ? 0.16 : 0.22, ease: "easeOut" }}
                 className="mt-6"
               >
-                <div className="mb-3 flex items-center justify-between">
-                  <span data-testid="generated-tag-count" className="text-sm font-medium text-stone-700">
-                    {totalTags} tags generated
-                  </span>
-                  <button
-                    onClick={handleCopyAll}
-                    disabled={Boolean(paywall)}
-                    className="flex items-center gap-1.5 rounded-lg bg-stone-100 px-3 py-1.5 text-xs font-medium text-stone-600 transition-all hover:bg-orange-100 hover:text-orange-700 disabled:opacity-50"
-                  >
-                    {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                    {copied ? "Copied!" : "Copy All"}
-                  </button>
-                </div>
-
-                <div className={`flex flex-wrap gap-2 ${paywall ? "blur-sm select-none" : ""}`}>
-                  {visibleTags.map((tag, i) => (
-                    <motion.span
-                      key={`${tag}-${i}`}
-                      data-testid="generated-tag-chip"
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: i * 0.04, type: "spring", stiffness: 300, damping: 20 }}
-                      className="cursor-default rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm text-stone-700 shadow-sm"
+                {!isUnlockingFromPaywall ? (
+                  <div className="mb-3 flex items-center justify-between">
+                    <span data-testid="generated-tag-count" className="text-sm font-medium text-stone-700">
+                      {totalTags} tags generated
+                    </span>
+                    <button
+                      onClick={handleCopyAll}
+                      disabled={Boolean(paywall)}
+                      className="flex items-center gap-1.5 rounded-lg bg-stone-100 px-3 py-1.5 text-xs font-medium text-stone-600 transition-all hover:bg-orange-100 hover:text-orange-700 disabled:opacity-50"
                     >
-                      {tag}
-                    </motion.span>
-                  ))}
-                </div>
+                      {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                      {copied ? "Copied!" : "Copy All"}
+                    </button>
+                  </div>
+                ) : null}
+
+                {isUnlockingFromPaywall ? (
+                  <div className="mt-3 flex flex-col items-center justify-center gap-3 rounded-xl border border-stone-200 bg-white/70 py-8">
+                    <div className="relative h-12 w-12">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        className="absolute inset-0 rounded-full border-2 border-orange-200 border-t-orange-500"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <LockOpen className="h-5 w-5 text-orange-600" />
+                      </div>
+                    </div>
+                    <p className="text-sm font-semibold text-stone-700">Unlocking tags</p>
+                  </div>
+                ) : (
+                  <div className={`flex flex-wrap gap-2 ${paywall ? "blur-sm select-none" : ""}`}>
+                    {visibleTags.map((tag, i) => (
+                      <motion.span
+                        key={`${tag}-${i}`}
+                        data-testid="generated-tag-chip"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: i * 0.04, type: "spring", stiffness: 300, damping: 20 }}
+                        className="cursor-default rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm text-stone-700 shadow-sm"
+                      >
+                        {tag}
+                      </motion.span>
+                    ))}
+                  </div>
+                )}
 
                 {paywall ? (
                   <div className="mt-4 rounded-xl border border-orange-200 bg-orange-50 p-4">
-                    <p className="text-sm font-medium text-orange-800">{paywall.message}</p>
-                    <p className="mt-1 text-xs text-orange-700">
-                      Log in to unlock this exact generation. New accounts get 1 free generation.
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={goToLogin}
-                        className="rounded-lg bg-white px-3 py-2 text-xs font-semibold text-orange-700 ring-1 ring-orange-300"
-                      >
-                        Create account / Log in
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => startCheckout("single_use")}
-                        disabled={isCheckingOut || paywall.reason === "auth_required"}
-                        className="rounded-lg bg-orange-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
-                      >
-                        {isCheckingOut ? "Loading..." : "Buy single use"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => startCheckout("monthly")}
-                        disabled={isCheckingOut || paywall.reason === "auth_required"}
-                        className="rounded-lg bg-stone-800 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
-                      >
-                        Monthly (100/mo)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => startCheckout("yearly")}
-                        disabled={isCheckingOut || paywall.reason === "auth_required"}
-                        className="rounded-lg bg-stone-800 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
-                      >
-                        Yearly (unlimited)
-                      </button>
-                    </div>
                     {paywall.reason === "auth_required" ? (
-                      <p className="mt-2 text-xs text-orange-700">
-                        Purchase options unlock after login so we can attach payment to your account.
-                      </p>
-                    ) : null}
+                      <div className="space-y-3 text-center">
+                        <p className="text-sm font-semibold text-orange-800">
+                          Create an account or log in to unlock this generation for FREE
+                        </p>
+                        <button
+                          type="button"
+                          onClick={goToLogin}
+                          className="rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700"
+                        >
+                          Create account / Log in
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-sm font-medium text-orange-800">{paywall.message}</p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={goToLogin}
+                            className="rounded-lg bg-white px-3 py-2 text-xs font-semibold text-orange-700 ring-1 ring-orange-300"
+                          >
+                            Create account / Log in
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => startCheckout("single_use")}
+                            disabled={isCheckingOut}
+                            className="rounded-lg bg-orange-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                          >
+                            {isCheckingOut ? "Loading..." : "Buy single use"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => startCheckout("monthly")}
+                            disabled={isCheckingOut}
+                            className="rounded-lg bg-stone-800 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                          >
+                            Monthly (100/mo)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => startCheckout("yearly")}
+                            disabled={isCheckingOut}
+                            className="rounded-lg bg-stone-800 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                          >
+                            Yearly (unlimited)
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ) : null}
               </motion.div>
