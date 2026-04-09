@@ -173,6 +173,8 @@ const DEFAULT_DEMO_TIMINGS: DemoTimings = {
 };
 
 const CONTEXT_STORAGE_PREFIX = "tagloom:genctx:";
+const TITLE_MAX = 140;
+const DESCRIPTION_MAX = 6000;
 
 function getContextStorageKey(id: string) {
   return `${CONTEXT_STORAGE_PREFIX}${id}`;
@@ -232,6 +234,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [showDescription, setShowDescription] = useState(false);
+  const [focusedField, setFocusedField] = useState<"title" | "description" | null>(null);
 
   const [apiTags, setApiTags] = useState<string[]>([]);
   const [visibleTags, setVisibleTags] = useState<string[]>([]);
@@ -927,17 +930,29 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
           </div>
 
           <div className="mb-3">
-            <label className="mb-1.5 block text-sm font-medium text-stone-700">
-              Listing Title <span className="text-orange-500">*</span>
-            </label>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label className="text-sm font-medium text-stone-700">
+                Listing Title <span className="text-orange-500">*</span>
+              </label>
+              {focusedField === "title" ? (
+                <span className="text-xs font-medium text-stone-500">
+                  {title.length}/{TITLE_MAX}
+                </span>
+              ) : null}
+            </div>
             <input
               ref={titleInputRef}
               type="text"
+              maxLength={TITLE_MAX}
               value={title}
               onFocus={() => {
                 markUserInteraction();
                 setShowDescription(true);
+                setFocusedField("title");
                 if (onFocus) onFocus();
+              }}
+              onBlur={() => {
+                setFocusedField(null);
               }}
               onChange={(e) => {
                 markUserInteraction();
@@ -957,11 +972,25 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                 transition={{ duration: 0.3 }}
                 className="mb-3 overflow-visible"
               >
-                <label className="mb-1.5 block text-sm font-medium text-stone-700">
-                  Listing Description <span className="font-normal text-stone-400">(optional)</span>
-                </label>
+                <div className="mb-1.5 flex items-center justify-between">
+                  <label className="text-sm font-medium text-stone-700">
+                    Listing Description <span className="font-normal text-stone-400">(optional)</span>
+                  </label>
+                  {focusedField === "description" ? (
+                    <span className="text-xs font-medium text-stone-500">
+                      {description.length}/{DESCRIPTION_MAX}
+                    </span>
+                  ) : null}
+                </div>
                 <textarea
+                  maxLength={DESCRIPTION_MAX}
                   value={description}
+                  onFocus={() => {
+                    setFocusedField("description");
+                  }}
+                  onBlur={() => {
+                    setFocusedField(null);
+                  }}
                   onChange={(e) => {
                     markUserInteraction();
                     setDescription(e.target.value);
