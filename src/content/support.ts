@@ -98,22 +98,19 @@ export const SUPPORT_ARTICLES: SupportArticle[] = [
     topic: "account",
     title: "How to reset your password",
     contentHtml: `
-      <h2>What this solves</h2>
-      <p>Use this when you can access your email but cannot remember your password or login keeps rejecting it.</p>
-
-      <h2>How to fix it</h2>
+      <h2>Reset Steps</h2>
+      <p>Use this flow when your password fails or you need to replace it. Run it once from start to finish before troubleshooting. Most failures come from interrupted attempts or using an older reset email.</p>
       <ol>
-        <li>Open the login page and click <strong>Forgot password</strong>.</li>
-        <li>Enter your account email and submit once.</li>
-        <li>Check inbox and spam for the reset message. The link can take a minute to arrive.</li>
-        <li>Choose a new password you have not used recently, then sign in with the updated password.</li>
+        <li>Open <a href="/login">Log in</a> and choose <strong>Reset password</strong>.</li>
+        <li>Enter your account email carefully and submit one request.</li>
+        <li>Open the reset email and use the newest reset link.</li>
+        <li>Set a new password you have not used recently.</li>
+        <li>Return to login and sign in with the new password.</li>
       </ol>
+      <p>After sign-in, validate quickly: new password works, old password fails, and a second login attempt succeeds in the same browser session. This check confirms both credential update and session continuity.</p>
 
-      <h2>If this didn’t work</h2>
-      <p>If no reset email arrives after 10 minutes, confirm you entered the right address. Then contact <a href="/support/contact">Support</a> so we can verify delivery logs.</p>
-
-      <h2>Related next step</h2>
-      <p>If reset succeeds but login still fails, review the login issues article for browser and session checks.</p>
+      <h2>Can’t find the email?</h2>
+      <p>If the reset password email does not arrive, check spam and filtered folders, then verify the submitted address exactly matches your account email. If the link opens but reset does not complete, the link may be stale. Retry in this order: wait up to 10 minutes, submit one fresh reset request, open only the newest email, and complete the password change immediately. Do not run multiple reset attempts from different devices at the same time while troubleshooting.</p>
     `,
     relatedSlugs: ["login-issues", "verify-email-address", "update-account-email"],
   },
