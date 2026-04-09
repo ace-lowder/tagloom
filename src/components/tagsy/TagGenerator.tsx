@@ -955,7 +955,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="mb-3 overflow-hidden"
+                className="mb-3 overflow-visible"
               >
                 <label className="mb-1.5 block text-sm font-medium text-stone-700">
                   Listing Description <span className="font-normal text-stone-400">(optional)</span>
