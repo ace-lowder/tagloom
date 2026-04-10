@@ -45,6 +45,9 @@ type GeneratePaywallResponse = {
 };
 
 type GenerateResponse = GenerateOkResponse | GeneratePaywallResponse;
+type AccountUsageResponse = {
+  usageLabel: string | null;
+};
 
 type PaywallState = {
   reason: "auth_required" | "payment_required" | "limit_reached";
@@ -248,8 +251,8 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
-  const [source, setSource] = useState<"model" | "fallback" | null>(null);
   const [entitlementUsed, setEntitlementUsed] = useState<string | null>(null);
+  const [usageLabel, setUsageLabel] = useState<string | null>(null);
   const [paywall, setPaywall] = useState<PaywallState | null>(null);
   const [isUnlockingFromPaywall, setIsUnlockingFromPaywall] = useState(false);
   const [activeSheenId, setActiveSheenId] = useState<number | null>(null);
@@ -429,6 +432,18 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
       : `e.g. ${fixtureTitle}`;
   }, [demoFixtures]);
 
+  const refreshUsageLabel = useCallback(async () => {
+    try {
+      const response = await fetch("/api/account/usage", { method: "GET" });
+      if (!response.ok) return;
+      const data = (await response.json()) as AccountUsageResponse;
+      const nextLabel = typeof data.usageLabel === "string" ? data.usageLabel.trim() : "";
+      setUsageLabel(nextLabel || null);
+    } catch {
+      setUsageLabel(null);
+    }
+  }, []);
+
   const animateApiTagsIn = useCallback(
     (tags: string[], requestVersion: number) => {
       clearRevealTimer();
@@ -451,6 +466,10 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     },
     [clearRevealTimer, demoTimings.revealStepMs, setRevealTimer],
   );
+
+  useEffect(() => {
+    void refreshUsageLabel();
+  }, [refreshUsageLabel]);
 
   useEffect(() => {
     const onCta = () => {
@@ -490,7 +509,6 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
       setDemoPhase("typing");
       setError("");
       setPaywall(null);
-      setSource(null);
       setEntitlementUsed(null);
       setDescription("");
       setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
@@ -687,17 +705,16 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
           message: data.message,
           requestId: data.requestId,
         });
-        setSource(null);
         setEntitlementUsed(null);
         setResultTags(data.placeholders.target, data.placeholders.discovery);
         return;
       }
 
-      setSource(data.source);
       setEntitlementUsed(data.entitlementUsed);
       setPaywall(null);
       setIsUnlockingFromPaywall(false);
       setResultTags(data.tags.target, data.tags.discovery);
+      void refreshUsageLabel();
 
       clearPendingContext(contextId);
 
@@ -708,7 +725,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
         window.history.replaceState({}, "", url.toString());
       }
     },
-    [setResultTags],
+    [refreshUsageLabel, setResultTags],
   );
 
   const handleGenerate = useCallback(async () => {
@@ -741,7 +758,6 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     clearRevealTimer();
     setError("");
     setIsGenerating(true);
-    setSource(null);
     setEntitlementUsed(null);
     setPaywall(null);
     setIsUnlockingFromPaywall(false);
@@ -859,6 +875,15 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
 
   useEffect(() => {
     const onAuthSuccess = () => {
+      void refreshUsageLabel();
+    };
+
+    window.addEventListener(AUTH_SUCCESS_EVENT, onAuthSuccess);
+    return () => window.removeEventListener(AUTH_SUCCESS_EVENT, onAuthSuccess);
+  }, [refreshUsageLabel]);
+
+  useEffect(() => {
+    const onAuthSuccess = () => {
       if (!paywall || paywall.reason !== "auth_required") return;
       if (!generationContextId) return;
       if (!visibleTags.length) return;
@@ -944,7 +969,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
               <Sparkles className="h-3.5 w-3.5 text-white" />
             </div>
             <span className="text-sm font-semibold text-stone-700">Tagloom Generator</span>
-            {source ? <span className="ml-auto text-xs italic text-stone-400">Source: {source}</span> : null}
+            {usageLabel ? <span className="ml-auto text-xs text-stone-500">{usageLabel}</span> : null}
           </div>
 
           <div className="mb-3">
@@ -998,9 +1023,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                 className="mb-3 overflow-visible"
               >
                 <div className="mb-1.5 flex items-center justify-between">
-                  <label className="text-sm font-medium text-stone-700">
-                    Listing Description <span className="font-normal text-stone-400">(optional)</span>
-                  </label>
+                  <label className="text-sm font-medium text-stone-700">Listing Description</label>
                   {focusedField === "description" ? (
                     <span className="text-xs font-medium text-stone-500">
                       {description.length}/{DESCRIPTION_MAX}

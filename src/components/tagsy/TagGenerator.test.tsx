@@ -101,6 +101,47 @@ function mockGenerateResponse(body: unknown, ok = true) {
   } as Response);
 }
 
+function createFetchMockForGenerator(
+  ...generateResponses: Array<Promise<Response> | (() => Promise<Response>)>
+) {
+  let generateIndex = 0;
+
+  return vi.fn().mockImplementation((input: unknown) => {
+    const url =
+      typeof input === "string"
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : typeof input === "object" &&
+              input !== null &&
+              "url" in input &&
+              typeof (input as { url?: unknown }).url === "string"
+            ? ((input as { url: string }).url)
+            : String(input);
+
+    if (url.includes("/api/account/usage")) {
+      return mockGenerateResponse({ usageLabel: null });
+    }
+
+    const next = generateResponses[generateIndex];
+    generateIndex += 1;
+    if (!next) {
+      return mockGenerateResponse({ error: "Unexpected fetch call." }, false);
+    }
+    if (typeof next === "function") {
+      return next();
+    }
+    return next;
+  });
+}
+
+function countGenerateCalls(fetchMock: ReturnType<typeof vi.fn>) {
+  return fetchMock.mock.calls.filter(([input]) => {
+    const url = typeof input === "string" ? input : String(input);
+    return url.includes("/api/generate");
+  }).length;
+}
+
 async function advanceToReveal(title: string, tagCount: number) {
   const ms = 1 + title.length * 1 + 1 + 1 + tagCount * 1 + 40;
   await act(async () => {
@@ -369,9 +410,8 @@ describe("TagGenerator auth unlock flow", () => {
       "custom printed tee",
     ];
 
-    const fetchMock = vi
-      .fn()
-      .mockImplementationOnce(() =>
+    const fetchMock = createFetchMockForGenerator(
+      () =>
         mockGenerateResponse({
           status: "paywall",
           reason: "auth_required",
@@ -379,8 +419,7 @@ describe("TagGenerator auth unlock flow", () => {
           message: "Create account or login.",
           placeholders: { target: placeholders, discovery: [] },
         }),
-      )
-      .mockImplementationOnce(() =>
+      () =>
         new Promise<Response>((resolve) => {
           setTimeout(() => {
             resolve({
@@ -395,7 +434,7 @@ describe("TagGenerator auth unlock flow", () => {
             } as Response);
           }, 25);
         }),
-      );
+    );
 
     vi.stubGlobal("fetch", fetchMock);
 
@@ -429,7 +468,7 @@ describe("TagGenerator auth unlock flow", () => {
     await waitFor(() => expect(screen.queryByText("Unlocking tags")).not.toBeInTheDocument());
     await waitFor(() => expect(screen.queryByText("hidden keyword")).not.toBeInTheDocument());
 
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(countGenerateCalls(fetchMock)).toBe(2);
     expect(screen.getByRole("button", { name: "Copy All" })).not.toBeDisabled();
   });
 
@@ -450,9 +489,8 @@ describe("TagGenerator auth unlock flow", () => {
       "etsy target",
     ];
 
-    const fetchMock = vi
-      .fn()
-      .mockImplementationOnce(() =>
+    const fetchMock = createFetchMockForGenerator(
+      () =>
         mockGenerateResponse({
           status: "paywall",
           reason: "auth_required",
@@ -460,15 +498,14 @@ describe("TagGenerator auth unlock flow", () => {
           message: "Create account or login.",
           placeholders: { target: placeholders, discovery: [] },
         }),
-      )
-      .mockImplementationOnce(() =>
+      () =>
         mockGenerateResponse(
           {
             error: "Could not generate tags.",
           },
           false,
         ),
-      );
+    );
 
     vi.stubGlobal("fetch", fetchMock);
 
@@ -494,11 +531,11 @@ describe("TagGenerator auth unlock flow", () => {
     await screen.findByText("Could not generate tags.");
     expect(screen.queryByText("Unlocking tags")).not.toBeInTheDocument();
     expect(screen.queryByText("hidden keyword")).not.toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(countGenerateCalls(fetchMock)).toBe(2);
   });
 
   it("does not trigger unlock rerun for non-auth paywall reasons", async () => {
-    const fetchMock = vi.fn().mockImplementationOnce(() =>
+    const fetchMock = createFetchMockForGenerator(() =>
       mockGenerateResponse({
         status: "paywall",
         reason: "payment_required",
@@ -531,6 +568,6 @@ describe("TagGenerator auth unlock flow", () => {
       await new Promise((resolve) => setTimeout(resolve, 20));
     });
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(countGenerateCalls(fetchMock)).toBe(1);
   });
 });
