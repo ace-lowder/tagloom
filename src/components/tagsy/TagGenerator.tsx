@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, Copy, LockOpen, Sparkles } from "lucide-react";
+import { Check, Copy, Info, LockOpen, Sparkles } from "lucide-react";
 import { useAuthController } from "@/components/auth/AuthController";
 import TurnstileField, { type TurnstileFieldHandle } from "@/components/security/TurnstileField";
 import { AUTH_SUCCESS_EVENT } from "@/lib/authModal";
@@ -47,6 +48,7 @@ type GeneratePaywallResponse = {
 type GenerateResponse = GenerateOkResponse | GeneratePaywallResponse;
 type AccountUsageResponse = {
   usageLabel: string | null;
+  monthlyResetAt?: string | null;
 };
 
 type PaywallState = {
@@ -180,6 +182,7 @@ const TITLE_MAX = 140;
 const DESCRIPTION_MAX = 6000;
 const DEFAULT_TITLE_PLACEHOLDER =
   "e.g. Handmade ceramic coffee mug with minimalist design";
+const USAGE_HINT_CLOSE_DELAY_MS = 500;
 
 function getContextStorageKey(id: string) {
   return `${CONTEXT_STORAGE_PREFIX}${id}`;
@@ -231,6 +234,26 @@ function sanitizeMergedTags(target: string[], discovery: string[]) {
   return sanitizeTags([...target, ...discovery]);
 }
 
+function getUsageHintText(usageLabel: string | null, monthlyResetAt?: string | null) {
+  if (!usageLabel) return null;
+  const normalized = usageLabel.toLowerCase();
+
+  if (normalized.includes("/100")) {
+    if (monthlyResetAt) {
+      return "Monthly includes 100 generations each billing period.";
+    }
+    return "Monthly includes 100 generations each billing period.";
+  }
+  if (normalized.includes("starter")) {
+    return "Starter generations are prepaid and decrease as you generate.";
+  }
+  if (normalized.includes("free")) {
+    return "New accounts include 1 free generation; when it reaches 0 you can upgrade.";
+  }
+
+  return null;
+}
+
 export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGeneratorProps) {
   const { openAuthModal } = useAuthController();
   const turnstileRef = useRef<TurnstileFieldHandle | null>(null);
@@ -253,6 +276,8 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   const [error, setError] = useState("");
   const [entitlementUsed, setEntitlementUsed] = useState<string | null>(null);
   const [usageLabel, setUsageLabel] = useState<string | null>(null);
+  const [monthlyResetAt, setMonthlyResetAt] = useState<string | null>(null);
+  const [isUsageHintOpen, setIsUsageHintOpen] = useState(false);
   const [paywall, setPaywall] = useState<PaywallState | null>(null);
   const [isUnlockingFromPaywall, setIsUnlockingFromPaywall] = useState(false);
   const [activeSheenId, setActiveSheenId] = useState<number | null>(null);
@@ -270,6 +295,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   const contentRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const requestVersionRef = useRef(0);
+  const usageHintCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const demoFixtureIndexRef = useRef(0);
   const demoCharIndexRef = useRef(0);
   const shouldSkipDemoRef = useRef(false);
@@ -439,9 +465,34 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
       const data = (await response.json()) as AccountUsageResponse;
       const nextLabel = typeof data.usageLabel === "string" ? data.usageLabel.trim() : "";
       setUsageLabel(nextLabel || null);
+      setMonthlyResetAt(
+        typeof data.monthlyResetAt === "string" && data.monthlyResetAt.trim()
+          ? data.monthlyResetAt
+          : null,
+      );
     } catch {
       setUsageLabel(null);
+      setMonthlyResetAt(null);
     }
+  }, []);
+
+  const openUsageHint = useCallback(() => {
+    if (usageHintCloseTimeoutRef.current) {
+      clearTimeout(usageHintCloseTimeoutRef.current);
+      usageHintCloseTimeoutRef.current = null;
+    }
+    setIsUsageHintOpen(true);
+  }, []);
+
+  const queueUsageHintClose = useCallback(() => {
+    if (usageHintCloseTimeoutRef.current) {
+      clearTimeout(usageHintCloseTimeoutRef.current);
+      usageHintCloseTimeoutRef.current = null;
+    }
+    usageHintCloseTimeoutRef.current = setTimeout(() => {
+      setIsUsageHintOpen(false);
+      usageHintCloseTimeoutRef.current = null;
+    }, USAGE_HINT_CLOSE_DELAY_MS);
   }, []);
 
   const animateApiTagsIn = useCallback(
@@ -487,6 +538,14 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
       clearRevealTimer();
     };
   }, [clearRevealTimer]);
+
+  useEffect(() => {
+    return () => {
+      if (usageHintCloseTimeoutRef.current) {
+        clearTimeout(usageHintCloseTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const setResultTags = useCallback(
     (target: string[], discovery: string[]) => {
@@ -921,6 +980,20 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   const showResults = totalTags > 0 || isUnlockingFromPaywall || Boolean(paywall);
   const isClearingFade = clearPhase === "fading";
   const hasTitle = Boolean(title.trim());
+  const usageHint = useMemo(
+    () => getUsageHintText(usageLabel, monthlyResetAt),
+    [monthlyResetAt, usageLabel],
+  );
+  const monthlyResetDateText = useMemo(() => {
+    if (!monthlyResetAt) return null;
+    const date = new Date(monthlyResetAt);
+    if (Number.isNaN(date.getTime())) return null;
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }).format(date);
+  }, [monthlyResetAt]);
 
   return (
     <div ref={glowRef} id="generator" className="relative mx-auto max-w-2xl">
@@ -969,7 +1042,59 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
               <Sparkles className="h-3.5 w-3.5 text-white" />
             </div>
             <span className="text-sm font-semibold text-stone-700">Tagloom Generator</span>
-            {usageLabel ? <span className="ml-auto text-xs text-stone-500">{usageLabel}</span> : null}
+            {usageLabel ? (
+              <motion.div
+                key={usageLabel}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="relative ml-auto flex items-center gap-1.5"
+              >
+                <span className="text-xs text-stone-500">{usageLabel}</span>
+                {usageHint ? (
+                  <>
+                    <button
+                      type="button"
+                      aria-label="Usage info"
+                      aria-describedby={isUsageHintOpen ? "usage-hint-tooltip" : undefined}
+                      onMouseEnter={openUsageHint}
+                      onMouseLeave={queueUsageHintClose}
+                      onFocus={openUsageHint}
+                      onBlur={queueUsageHintClose}
+                      className="inline-flex h-4 w-4 items-center justify-center rounded-sm text-stone-500 transition-colors hover:text-stone-700 focus:outline-none focus:ring-2 focus:ring-orange-300/60"
+                    >
+                      <Info className="h-4 w-4" />
+                    </button>
+                    <AnimatePresence>
+                      {isUsageHintOpen ? (
+                        <motion.div
+                          id="usage-hint-tooltip"
+                          role="tooltip"
+                          onMouseEnter={openUsageHint}
+                          onMouseLeave={queueUsageHintClose}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.16, ease: "easeOut" }}
+                          className="absolute right-0 top-full z-20 mt-1.5 w-64 rounded-lg border border-stone-200 bg-white/95 px-3 py-2 text-xs leading-relaxed text-stone-600 shadow-lg backdrop-blur-sm"
+                        >
+                          <p>{usageHint}</p>
+                          {usageLabel.toLowerCase().includes("/100") && monthlyResetDateText ? (
+                            <p className="mt-1.5">
+                              Resets on{" "}
+                              <Link href="/billing" className="font-medium text-orange-700 hover:text-orange-800">
+                                {monthlyResetDateText}
+                              </Link>
+                              .
+                            </p>
+                          ) : null}
+                        </motion.div>
+                      ) : null}
+                    </AnimatePresence>
+                  </>
+                ) : null}
+              </motion.div>
+            ) : null}
           </div>
 
           <div className="mb-3">

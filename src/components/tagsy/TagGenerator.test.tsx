@@ -571,3 +571,67 @@ describe("TagGenerator auth unlock flow", () => {
     expect(countGenerateCalls(fetchMock)).toBe(1);
   });
 });
+
+describe("TagGenerator usage label info", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("renders usage label with info trigger for monthly state and shows tooltip on hover/focus", async () => {
+    const fetchMock = vi.fn().mockImplementation((input: unknown) => {
+      const url = typeof input === "string" ? input : String(input);
+      if (url.includes("/api/account/usage")) {
+        return mockGenerateResponse({
+          usageLabel: "76/100 generations remaining",
+          monthlyResetAt: "2026-05-15T00:00:00.000Z",
+        });
+      }
+      return mockGenerateResponse({ error: "Unexpected fetch call." }, false);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+
+    expect(await screen.findByText("76/100 generations remaining")).toBeInTheDocument();
+
+    const infoButton = screen.getByRole("button", { name: "Usage info" });
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+
+    fireEvent.mouseEnter(infoButton);
+    expect(
+      await screen.findByText("Monthly includes 100 generations each billing period."),
+    ).toBeInTheDocument();
+    const resetLink = screen.getByRole("link", { name: /May \d{1,2}, 2026/ });
+    expect(resetLink).toHaveAttribute("href", "/billing");
+
+    fireEvent.mouseLeave(infoButton);
+    await waitFor(() => expect(screen.queryByRole("tooltip")).not.toBeInTheDocument());
+
+    fireEvent.focus(infoButton);
+    expect(
+      await screen.findByText("Monthly includes 100 generations each billing period."),
+    ).toBeInTheDocument();
+
+    fireEvent.blur(infoButton);
+    await waitFor(() => expect(screen.queryByRole("tooltip")).not.toBeInTheDocument());
+  });
+
+  it("does not render usage info cluster when usage label is blank", async () => {
+    const fetchMock = vi.fn().mockImplementation((input: unknown) => {
+      const url = typeof input === "string" ? input : String(input);
+      if (url.includes("/api/account/usage")) {
+        return mockGenerateResponse({ usageLabel: null });
+      }
+      return mockGenerateResponse({ error: "Unexpected fetch call." }, false);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalled();
+    });
+    expect(screen.queryByRole("button", { name: "Usage info" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/generations remaining/i)).not.toBeInTheDocument();
+  });
+});
