@@ -3,22 +3,10 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getStripeClient, STRIPE_METADATA_KEYS } from "@/lib/stripe";
-
-function toTimestamp(value?: number | null) {
-  if (!value) return null;
-  return new Date(value * 1000).toISOString();
-}
-
-async function findUserIdFromCustomerId(customerId: string, admin: ReturnType<typeof createSupabaseAdminClient>) {
-  if (!admin) return null;
-  const adminClient = admin as any;
-  const { data } = await adminClient
-    .from("profiles")
-    .select("id")
-    .eq("stripe_customer_id", customerId)
-    .maybeSingle();
-  return data?.id ?? null;
-}
+import {
+  findUserIdFromStripeCustomerId,
+  syncBillingProjectionForUser,
+} from "@/lib/stripeBillingSync";
 
 async function grantSingleUseCredit(userId: string, admin: ReturnType<typeof createSupabaseAdminClient>) {
   if (!admin) return;
@@ -34,36 +22,6 @@ async function grantSingleUseCredit(userId: string, admin: ReturnType<typeof cre
   await adminClient
     .from("profiles")
     .update({ single_use_credits: (profile.single_use_credits || 0) + 1 })
-    .eq("id", userId);
-}
-
-async function syncSubscription(
-  subscription: Stripe.Subscription,
-  userId: string,
-  customerId: string | null,
-  admin: ReturnType<typeof createSupabaseAdminClient>,
-) {
-  if (!admin) return;
-  const adminClient = admin as any;
-
-  const monthlyPriceId = process.env.STRIPE_MONTHLY_PRICE_ID;
-  const yearlyPriceId = process.env.STRIPE_YEARLY_PRICE_ID;
-
-  const sub = subscription as any;
-  const priceId = subscription.items.data[0]?.price?.id ?? null;
-  const tier = priceId === monthlyPriceId ? "monthly" : priceId === yearlyPriceId ? "yearly" : null;
-
-  const isActive = subscription.status === "active" || subscription.status === "trialing";
-
-  await adminClient
-    .from("profiles")
-    .update({
-      stripe_customer_id: customerId,
-      subscription_tier: tier,
-      subscription_active: isActive,
-      subscription_period_start: toTimestamp(sub.current_period_start),
-      subscription_period_end: toTimestamp(sub.current_period_end),
-    })
     .eq("id", userId);
 }
 
@@ -104,7 +62,7 @@ export async function POST(req: Request) {
 
       let userId = metadata[STRIPE_METADATA_KEYS.userId] ?? null;
       if (!userId && customerId) {
-        userId = await findUserIdFromCustomerId(customerId, admin);
+        userId = await findUserIdFromStripeCustomerId(customerId);
       }
 
       if (!userId) {
@@ -130,18 +88,27 @@ export async function POST(req: Request) {
 
       if ((purchaseType === "monthly" || purchaseType === "yearly") && typeof session.subscription === "string") {
         const subscription = await stripe.subscriptions.retrieve(session.subscription);
-        await syncSubscription(subscription, userId, customerId, admin);
+        await syncBillingProjectionForUser({
+          userId,
+          customerId,
+          subscription,
+        });
       }
     }
 
-    if (event.type === "customer.subscription.created" || event.type === "customer.subscription.updated") {
+    if (
+      event.type === "customer.subscription.created" ||
+      event.type === "customer.subscription.updated" ||
+      event.type === "customer.subscription.resumed" ||
+      event.type === "customer.subscription.paused"
+    ) {
       const subscription = event.data.object as Stripe.Subscription;
       const metadata = subscription.metadata || {};
       const customerId = typeof subscription.customer === "string" ? subscription.customer : null;
 
       let userId = metadata[STRIPE_METADATA_KEYS.userId] ?? null;
       if (!userId && customerId) {
-        userId = await findUserIdFromCustomerId(customerId, admin);
+        userId = await findUserIdFromStripeCustomerId(customerId);
       }
 
       if (!userId) {
@@ -153,7 +120,11 @@ export async function POST(req: Request) {
         return NextResponse.json({ received: true });
       }
 
-      await syncSubscription(subscription, userId, customerId, admin);
+      await syncBillingProjectionForUser({
+        userId,
+        customerId,
+        subscription,
+      });
     }
 
     if (event.type === "customer.subscription.deleted") {
@@ -163,7 +134,7 @@ export async function POST(req: Request) {
 
       let userId = metadata[STRIPE_METADATA_KEYS.userId] ?? null;
       if (!userId && customerId) {
-        userId = await findUserIdFromCustomerId(customerId, admin);
+        userId = await findUserIdFromStripeCustomerId(customerId);
       }
 
       if (!userId) {
@@ -174,19 +145,27 @@ export async function POST(req: Request) {
         return NextResponse.json({ received: true });
       }
 
-      const adminClient = admin as any;
-      await adminClient
-        .from("profiles")
-        .update({
-          subscription_active: false,
-          subscription_tier: null,
-          subscription_period_start: null,
-          subscription_period_end: null,
-        })
-        .eq("id", userId);
+      if (!customerId) {
+        const adminClient = admin as any;
+        await adminClient
+          .from("profiles")
+          .update({
+            subscription_active: false,
+            subscription_tier: null,
+            subscription_period_start: null,
+            subscription_period_end: null,
+          })
+          .eq("id", userId);
+      } else {
+        await syncBillingProjectionForUser({
+          userId,
+          customerId,
+          subscription: null,
+        });
+      }
     }
 
-    if (event.type === "invoice.paid") {
+    if (event.type === "invoice.paid" || event.type === "invoice.payment_failed") {
       const invoice = event.data.object as any;
       const subscriptionId = typeof invoice.subscription === "string" ? invoice.subscription : null;
       if (subscriptionId) {
@@ -196,11 +175,15 @@ export async function POST(req: Request) {
         let userId = metadata[STRIPE_METADATA_KEYS.userId] ?? null;
 
         if (!userId && customerId) {
-          userId = await findUserIdFromCustomerId(customerId, admin);
+          userId = await findUserIdFromStripeCustomerId(customerId);
         }
 
         if (userId) {
-          await syncSubscription(subscription, userId, customerId, admin);
+          await syncBillingProjectionForUser({
+            userId,
+            customerId,
+            subscription,
+          });
         }
       }
     }
