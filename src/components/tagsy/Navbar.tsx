@@ -44,7 +44,7 @@ const DESKTOP_NAV_LINK_CLASS =
 const MOBILE_NAV_LINK_CLASS =
   "block rounded-lg px-3 py-2.5 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50";
 const PROFILE_ACTION_BUTTON_CLASS =
-  "inline-flex items-center justify-center gap-1.5 rounded-lg border border-stone-400/90 bg-white px-3 py-2 text-sm font-semibold text-stone-700 transition-colors hover:border-stone-900 hover:text-stone-900";
+  "inline-flex items-center justify-center gap-2.5 rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-600 transition-colors hover:border-stone-400/90 hover:bg-stone-50 hover:text-stone-700";
 
 const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   unverified: "Unverified",
@@ -221,7 +221,7 @@ export default function Navbar({ currentUser }: NavbarProps) {
             className={PROFILE_ACTION_BUTTON_CLASS}
           >
             <PrimaryIcon className="h-3.5 w-3.5" />
-            <span className="relative top-px">{primaryAction.label}</span>
+            <span className="relative -top-px">{primaryAction.label}</span>
           </button>
           <button
             type="button"
@@ -230,7 +230,7 @@ export default function Navbar({ currentUser }: NavbarProps) {
             className={`${PROFILE_ACTION_BUTTON_CLASS} disabled:opacity-60`}
           >
             <LogOut className="h-3.5 w-3.5" />
-            <span className="relative top-px">
+            <span className="relative -top-px">
               {isLoggingOut ? "Logging out..." : "Log out"}
             </span>
           </button>
