@@ -1,58 +1,18 @@
 import { redirect } from "next/navigation";
-import type Stripe from "stripe";
 import BillingPageClient from "@/components/billing/BillingPageClient";
-import { getStripeClient } from "@/lib/stripe";
+import {
+  needsBillingProjectionRefresh,
+  syncBillingProjectionForUser,
+} from "@/lib/stripeBillingSync";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type BillingProfile = {
   subscription_tier: "monthly" | "yearly" | null;
   subscription_active: boolean;
+  subscription_period_start: string | null;
   subscription_period_end: string | null;
   stripe_customer_id: string | null;
 };
-
-async function resolveNextChargeAt(profile: BillingProfile | null) {
-  if (!profile) return null;
-  if (profile.subscription_period_end) return profile.subscription_period_end;
-  if (!profile.subscription_active || !profile.stripe_customer_id) return null;
-
-  const stripe = getStripeClient();
-  if (!stripe) return null;
-
-  try {
-    const getSubscriptionPeriodEnd = (subscription: Stripe.Subscription | undefined) => {
-      const periodEnd = subscription?.items?.data?.[0]?.current_period_end;
-      if (!periodEnd) return null;
-      return new Date(periodEnd * 1000).toISOString();
-    };
-
-    const activeSubs = await stripe.subscriptions.list({
-      customer: profile.stripe_customer_id,
-      status: "active",
-      limit: 5,
-    });
-
-    const activePeriodEnd = getSubscriptionPeriodEnd(activeSubs.data[0]);
-    if (activePeriodEnd) {
-      return activePeriodEnd;
-    }
-
-    const trialingSubs = await stripe.subscriptions.list({
-      customer: profile.stripe_customer_id,
-      status: "trialing",
-      limit: 5,
-    });
-
-    const trialingPeriodEnd = getSubscriptionPeriodEnd(trialingSubs.data[0]);
-    if (trialingPeriodEnd) {
-      return trialingPeriodEnd;
-    }
-  } catch {
-    return null;
-  }
-
-  return null;
-}
 
 export default async function BillingPage() {
   const supabase = createSupabaseServerClient();
@@ -68,12 +28,42 @@ export default async function BillingPage() {
     redirect("/login?next=/billing");
   }
 
-  const { data: profile } = await supabase
+  const { data: initialProfile } = await supabase
     .from("profiles")
-    .select("subscription_tier, subscription_active, subscription_period_end, stripe_customer_id")
+    .select(
+      "subscription_tier, subscription_active, subscription_period_start, subscription_period_end, stripe_customer_id",
+    )
     .eq("id", user.id)
     .maybeSingle<BillingProfile>();
-  const nextChargeAt = await resolveNextChargeAt(profile ?? null);
+
+  let profile = initialProfile ?? null;
+  if (
+    profile &&
+    needsBillingProjectionRefresh({
+      id: user.id,
+      stripe_customer_id: profile.stripe_customer_id,
+      subscription_tier: profile.subscription_tier,
+      subscription_active: profile.subscription_active,
+      subscription_period_start: profile.subscription_period_start,
+      subscription_period_end: profile.subscription_period_end,
+    })
+  ) {
+    const refreshed = await syncBillingProjectionForUser({
+      userId: user.id,
+      customerId: profile.stripe_customer_id,
+    });
+    if (refreshed) {
+      profile = {
+        subscription_tier: refreshed.subscription_tier,
+        subscription_active: refreshed.subscription_active,
+        subscription_period_start: refreshed.subscription_period_start,
+        subscription_period_end: refreshed.subscription_period_end,
+        stripe_customer_id: refreshed.stripe_customer_id,
+      };
+    }
+  }
+
+  const nextChargeAt = profile?.subscription_period_end ?? null;
 
   return (
     <BillingPageClient

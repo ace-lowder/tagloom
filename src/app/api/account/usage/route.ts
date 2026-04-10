@@ -1,12 +1,19 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  needsBillingProjectionRefresh,
+  syncBillingProjectionForUser,
+} from "@/lib/stripeBillingSync";
 
 type ProfileUsageRecord = {
+  id: string;
   free_generation_credits: number;
   single_use_credits: number;
+  stripe_customer_id: string | null;
   subscription_tier: "monthly" | "yearly" | null;
   subscription_active: boolean;
   subscription_period_start: string | null;
+  subscription_period_end: string | null;
   monthly_generation_count: number;
   monthly_count_period_start: string | null;
 };
@@ -41,6 +48,13 @@ function formatUsageLabel(profile: ProfileUsageRecord): string | null {
   return `${freeRemaining} free ${pluralize("generation", freeRemaining)} remaining`;
 }
 
+function resolveMonthlyResetAt(profile: ProfileUsageRecord): string | null {
+  if (!(profile.subscription_active && profile.subscription_tier === "monthly")) {
+    return null;
+  }
+  return profile.subscription_period_end ?? null;
+}
+
 export async function GET() {
   const supabase = createSupabaseServerClient();
   if (!supabase) {
@@ -58,7 +72,7 @@ export async function GET() {
   const { data: profile, error } = await supabase
     .from("profiles")
     .select(
-      "free_generation_credits, single_use_credits, subscription_tier, subscription_active, subscription_period_start, monthly_generation_count, monthly_count_period_start",
+      "id, free_generation_credits, single_use_credits, stripe_customer_id, subscription_tier, subscription_active, subscription_period_start, subscription_period_end, monthly_generation_count, monthly_count_period_start",
     )
     .eq("id", user.id)
     .maybeSingle<ProfileUsageRecord>();
@@ -67,7 +81,37 @@ export async function GET() {
     return NextResponse.json({ usageLabel: null });
   }
 
+  let effectiveProfile = profile;
+
+  if (
+    needsBillingProjectionRefresh({
+      id: profile.id,
+      stripe_customer_id: profile.stripe_customer_id,
+      subscription_tier: profile.subscription_tier,
+      subscription_active: profile.subscription_active,
+      subscription_period_start: profile.subscription_period_start,
+      subscription_period_end: profile.subscription_period_end,
+    })
+  ) {
+    const refreshed = await syncBillingProjectionForUser({
+      userId: profile.id,
+      customerId: profile.stripe_customer_id,
+    });
+
+    if (refreshed) {
+      effectiveProfile = {
+        ...profile,
+        stripe_customer_id: refreshed.stripe_customer_id,
+        subscription_tier: refreshed.subscription_tier,
+        subscription_active: refreshed.subscription_active,
+        subscription_period_start: refreshed.subscription_period_start,
+        subscription_period_end: refreshed.subscription_period_end,
+      };
+    }
+  }
+
   return NextResponse.json({
-    usageLabel: formatUsageLabel(profile),
+    usageLabel: formatUsageLabel(effectiveProfile),
+    monthlyResetAt: resolveMonthlyResetAt(effectiveProfile),
   });
 }

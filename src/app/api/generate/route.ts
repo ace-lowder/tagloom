@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { applyApiProtection, jsonFromBlockedResult } from "@/lib/apiProtection";
+import {
+  needsBillingProjectionRefresh,
+  syncBillingProjectionForUser,
+} from "@/lib/stripeBillingSync";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { generateTags, getPlaceholderTags } from "@/lib/tag-generation";
 
@@ -14,9 +18,11 @@ type ProfileRecord = {
   id: string;
   free_generation_credits: number;
   single_use_credits: number;
+  stripe_customer_id: string | null;
   subscription_tier: "monthly" | "yearly" | null;
   subscription_active: boolean;
   subscription_period_start: string | null;
+  subscription_period_end: string | null;
   monthly_generation_count: number;
   monthly_count_period_start: string | null;
 };
@@ -93,56 +99,135 @@ export async function POST(req: NextRequest) {
     return jsonFromBlockedResult(userProtection.blocked);
   }
 
-  const { data: profile, error: profileError } = await supabase
+  const { data: rawProfile, error: profileError } = await supabase
     .from("profiles")
     .select(
-      "id, free_generation_credits, single_use_credits, subscription_tier, subscription_active, subscription_period_start, monthly_generation_count, monthly_count_period_start",
+      "id, free_generation_credits, single_use_credits, stripe_customer_id, subscription_tier, subscription_active, subscription_period_start, subscription_period_end, monthly_generation_count, monthly_count_period_start",
     )
     .eq("id", user.id)
     .single<ProfileRecord>();
 
-  if (profileError || !profile) {
+  if (profileError || !rawProfile) {
     return NextResponse.json(
       { error: "Unable to load user profile. Please try again." },
       { status: 500 },
     );
   }
 
-  let entitlementUsed: "free_credit" | "single_use" | "subscription_monthly" | "subscription_yearly" | null = null;
+  let profile = rawProfile;
 
-  const profileUpdates: Partial<ProfileRecord> = {};
-
-  if (profile.free_generation_credits > 0) {
-    entitlementUsed = "free_credit";
-    profileUpdates.free_generation_credits = Math.max(0, profile.free_generation_credits - 1);
-  } else if (profile.single_use_credits > 0) {
-    entitlementUsed = "single_use";
-    profileUpdates.single_use_credits = Math.max(0, profile.single_use_credits - 1);
-  } else if (profile.subscription_active && profile.subscription_tier === "yearly") {
-    entitlementUsed = "subscription_yearly";
-  } else if (profile.subscription_active && profile.subscription_tier === "monthly") {
-    const periodStart = profile.subscription_period_start;
-    const countPeriodStart = profile.monthly_count_period_start;
-
-    if (periodStart && countPeriodStart !== periodStart) {
-      profile.monthly_generation_count = 0;
-      profileUpdates.monthly_generation_count = 0;
-      profileUpdates.monthly_count_period_start = periodStart;
+  if (
+    needsBillingProjectionRefresh({
+      id: profile.id,
+      stripe_customer_id: profile.stripe_customer_id,
+      subscription_tier: profile.subscription_tier,
+      subscription_active: profile.subscription_active,
+      subscription_period_start: profile.subscription_period_start,
+      subscription_period_end: profile.subscription_period_end,
+    })
+  ) {
+    const refreshed = await syncBillingProjectionForUser({
+      userId: profile.id,
+      customerId: profile.stripe_customer_id,
+    });
+    if (refreshed) {
+      profile = {
+        ...profile,
+        subscription_tier: refreshed.subscription_tier,
+        subscription_active: refreshed.subscription_active,
+        subscription_period_start: refreshed.subscription_period_start,
+        subscription_period_end: refreshed.subscription_period_end,
+        stripe_customer_id: refreshed.stripe_customer_id,
+      };
     }
+  }
 
-    if (profile.monthly_generation_count < 100) {
-      entitlementUsed = "subscription_monthly";
-      profileUpdates.monthly_generation_count = profile.monthly_generation_count + 1;
-      if (!profileUpdates.monthly_count_period_start && periodStart) {
-        profileUpdates.monthly_count_period_start = periodStart;
-      }
-    } else {
-      return paywall(
-        "limit_reached",
-        "Monthly generation limit reached (100). Upgrade to yearly or wait for your next Stripe billing period.",
-        generationContextId,
+  const resolveEntitlement = (inputProfile: ProfileRecord) => {
+    const mutableProfile: ProfileRecord = { ...inputProfile };
+    const updates: Partial<ProfileRecord> = {};
+    let used:
+      | "free_credit"
+      | "single_use"
+      | "subscription_monthly"
+      | "subscription_yearly"
+      | null = null;
+
+    if (mutableProfile.free_generation_credits > 0) {
+      used = "free_credit";
+      updates.free_generation_credits = Math.max(
+        0,
+        mutableProfile.free_generation_credits - 1,
       );
+      return { used, updates, limitReached: false };
     }
+
+    if (mutableProfile.single_use_credits > 0) {
+      used = "single_use";
+      updates.single_use_credits = Math.max(
+        0,
+        mutableProfile.single_use_credits - 1,
+      );
+      return { used, updates, limitReached: false };
+    }
+
+    if (mutableProfile.subscription_active && mutableProfile.subscription_tier === "yearly") {
+      used = "subscription_yearly";
+      return { used, updates, limitReached: false };
+    }
+
+    if (mutableProfile.subscription_active && mutableProfile.subscription_tier === "monthly") {
+      const periodStart = mutableProfile.subscription_period_start;
+      const countPeriodStart = mutableProfile.monthly_count_period_start;
+
+      if (periodStart && countPeriodStart !== periodStart) {
+        mutableProfile.monthly_generation_count = 0;
+        updates.monthly_generation_count = 0;
+        updates.monthly_count_period_start = periodStart;
+      }
+
+      if (mutableProfile.monthly_generation_count < 100) {
+        used = "subscription_monthly";
+        updates.monthly_generation_count = mutableProfile.monthly_generation_count + 1;
+        if (!updates.monthly_count_period_start && periodStart) {
+          updates.monthly_count_period_start = periodStart;
+        }
+        return { used, updates, limitReached: false };
+      }
+
+      return { used: null, updates, limitReached: true };
+    }
+
+    return { used, updates, limitReached: false };
+  };
+
+  let { used: entitlementUsed, updates: profileUpdates, limitReached } =
+    resolveEntitlement(profile);
+
+  if (!entitlementUsed && !limitReached && profile.stripe_customer_id) {
+    const refreshed = await syncBillingProjectionForUser({
+      userId: profile.id,
+      customerId: profile.stripe_customer_id,
+    });
+    if (refreshed) {
+      profile = {
+        ...profile,
+        subscription_tier: refreshed.subscription_tier,
+        subscription_active: refreshed.subscription_active,
+        subscription_period_start: refreshed.subscription_period_start,
+        subscription_period_end: refreshed.subscription_period_end,
+        stripe_customer_id: refreshed.stripe_customer_id,
+      };
+      ({ used: entitlementUsed, updates: profileUpdates, limitReached } =
+        resolveEntitlement(profile));
+    }
+  }
+
+  if (limitReached) {
+    return paywall(
+      "limit_reached",
+      "Monthly generation limit reached (100). Upgrade to yearly or wait for your next Stripe billing period.",
+      generationContextId,
+    );
   }
 
   if (!entitlementUsed) {
