@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { applyApiProtection, jsonFromBlockedResult } from "@/lib/apiProtection";
+import { getCanonicalSubscriptionForCustomer } from "@/lib/stripeBillingSync";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getStripeClient, STRIPE_METADATA_KEYS } from "@/lib/stripe";
 
@@ -16,6 +17,13 @@ function appendParams(urlString: string, params: Record<string, string | null | 
     url.searchParams.set(key, value);
   }
   return url.toString();
+}
+
+function resolveTierFromSubscriptionPrice(priceId: string | null) {
+  if (!priceId) return null;
+  if (priceId === process.env.STRIPE_MONTHLY_PRICE_ID) return "monthly";
+  if (priceId === process.env.STRIPE_YEARLY_PRICE_ID) return "yearly";
+  return null;
 }
 
 export async function POST(req: NextRequest) {
@@ -59,16 +67,79 @@ export async function POST(req: NextRequest) {
     return jsonFromBlockedResult(protection.blocked);
   }
 
-  const {
-    data: profile,
-  } = await supabase
-    .from("profiles")
-    .select("stripe_customer_id")
-    .eq("id", user.id)
-    .single<{ stripe_customer_id: string | null }>();
+  type CheckoutProfile = {
+    stripe_customer_id: string | null;
+    starter_upgrade_discount_available: boolean;
+    subscription_tier: "monthly" | "yearly" | null;
+    subscription_active: boolean;
+  };
 
-  const successUrlBase = process.env.STRIPE_SUCCESS_URL || `${req.nextUrl.origin}/`;
-  const cancelUrlBase = process.env.STRIPE_CANCEL_URL || `${req.nextUrl.origin}/`;
+  const profileSelect =
+    "stripe_customer_id, starter_upgrade_discount_available, subscription_tier, subscription_active";
+  const legacyProfileSelect =
+    "stripe_customer_id, subscription_tier, subscription_active";
+
+  const { data: profileWithDiscount, error: profileWithDiscountError } = await supabase
+    .from("profiles")
+    .select(profileSelect)
+    .eq("id", user.id)
+    .single<CheckoutProfile>();
+
+  let profile: CheckoutProfile | null = profileWithDiscount;
+  if (profileWithDiscountError?.code === "42703") {
+    const { data: legacyProfile, error: legacyProfileError } = await supabase
+      .from("profiles")
+      .select(legacyProfileSelect)
+      .eq("id", user.id)
+      .single<Pick<CheckoutProfile, "stripe_customer_id" | "subscription_tier" | "subscription_active">>();
+
+    if (legacyProfileError || !legacyProfile) {
+      return NextResponse.json({ error: "Could not load billing profile." }, { status: 500 });
+    }
+
+    profile = {
+      ...legacyProfile,
+      starter_upgrade_discount_available: false,
+    };
+  } else if (profileWithDiscountError || !profileWithDiscount) {
+    return NextResponse.json({ error: "Could not load billing profile." }, { status: 500 });
+  }
+
+  if (purchaseType === "monthly" || purchaseType === "yearly") {
+    let effectiveTier: "monthly" | "yearly" | null =
+      profile?.subscription_active ? profile.subscription_tier : null;
+
+    if (profile?.stripe_customer_id) {
+      const canonical = await getCanonicalSubscriptionForCustomer(profile.stripe_customer_id);
+      if (canonical) {
+        effectiveTier = resolveTierFromSubscriptionPrice(
+          canonical.items.data[0]?.price?.id ?? null,
+        );
+      }
+    }
+
+    if (effectiveTier === purchaseType) {
+      return NextResponse.json(
+        { error: `You are already on ${purchaseType}.` },
+        { status: 409 },
+      );
+    }
+
+    if (effectiveTier && effectiveTier !== purchaseType) {
+      return NextResponse.json(
+        {
+          error:
+            "Plan changes for active subscriptions must be done in billing portal to avoid duplicate subscriptions.",
+          requiresPortal: true,
+        },
+        { status: 409 },
+      );
+    }
+  }
+
+  const defaultBillingReturn = `${req.nextUrl.origin}/billing`;
+  const successUrlBase = process.env.STRIPE_SUCCESS_URL || defaultBillingReturn;
+  const cancelUrlBase = process.env.STRIPE_CANCEL_URL || defaultBillingReturn;
 
   const successUrl = appendParams(successUrlBase, {
     checkout: "success",
@@ -88,6 +159,15 @@ export async function POST(req: NextRequest) {
 
   if (generationContextId) {
     metadata[STRIPE_METADATA_KEYS.generationContextId] = generationContextId;
+  }
+
+  const couponId = process.env.STRIPE_STARTER_UPGRADE_COUPON_ID;
+  const shouldApplyStarterDiscount =
+    (purchaseType === "monthly" || purchaseType === "yearly") &&
+    Boolean(profile?.starter_upgrade_discount_available) &&
+    Boolean(couponId);
+  if (shouldApplyStarterDiscount) {
+    metadata.starter_upgrade_discount_applied = "true";
   }
 
   const singleUsePriceId = process.env.STRIPE_SINGLE_USE_PRICE_ID;
@@ -129,6 +209,9 @@ export async function POST(req: NextRequest) {
       : await stripe.checkout.sessions.create({
           ...baseParams,
           mode: "subscription",
+          discounts: shouldApplyStarterDiscount
+            ? [{ coupon: couponId as string }]
+            : undefined,
           subscription_data: {
             metadata,
           },

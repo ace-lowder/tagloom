@@ -21,7 +21,10 @@ async function grantSingleUseCredit(userId: string, admin: ReturnType<typeof cre
 
   await adminClient
     .from("profiles")
-    .update({ single_use_credits: (profile.single_use_credits || 0) + 1 })
+    .update({
+      single_use_credits: (profile.single_use_credits || 0) + 1,
+      starter_upgrade_discount_available: true,
+    })
     .eq("id", userId);
 }
 
@@ -84,6 +87,18 @@ export async function POST(req: Request) {
       const purchaseType = metadata[STRIPE_METADATA_KEYS.purchaseType];
       if (purchaseType === "single_use" && session.payment_status === "paid") {
         await grantSingleUseCredit(userId, admin);
+      }
+
+      const shouldConsumeStarterDiscount =
+        (purchaseType === "monthly" || purchaseType === "yearly") &&
+        metadata.starter_upgrade_discount_applied === "true" &&
+        session.payment_status === "paid";
+      if (shouldConsumeStarterDiscount) {
+        const adminClient = admin as any;
+        await adminClient
+          .from("profiles")
+          .update({ starter_upgrade_discount_available: false })
+          .eq("id", userId);
       }
 
       if ((purchaseType === "monthly" || purchaseType === "yearly") && typeof session.subscription === "string") {
@@ -154,6 +169,7 @@ export async function POST(req: Request) {
             subscription_tier: null,
             subscription_period_start: null,
             subscription_period_end: null,
+            subscription_cancel_at: null,
           })
           .eq("id", userId);
       } else {

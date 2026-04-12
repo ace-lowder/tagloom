@@ -23,6 +23,7 @@ type ProfileRecord = {
   subscription_active: boolean;
   subscription_period_start: string | null;
   subscription_period_end: string | null;
+  subscription_cancel_at?: string | null;
   monthly_generation_count: number;
   monthly_count_period_start: string | null;
 };
@@ -124,6 +125,7 @@ export async function POST(req: NextRequest) {
       subscription_active: profile.subscription_active,
       subscription_period_start: profile.subscription_period_start,
       subscription_period_end: profile.subscription_period_end,
+      subscription_cancel_at: profile.subscription_cancel_at ?? null,
     })
   ) {
     const refreshed = await syncBillingProjectionForUser({
@@ -137,6 +139,7 @@ export async function POST(req: NextRequest) {
         subscription_active: refreshed.subscription_active,
         subscription_period_start: refreshed.subscription_period_start,
         subscription_period_end: refreshed.subscription_period_end,
+        subscription_cancel_at: refreshed.subscription_cancel_at,
         stripe_customer_id: refreshed.stripe_customer_id,
       };
     }
@@ -215,6 +218,7 @@ export async function POST(req: NextRequest) {
         subscription_active: refreshed.subscription_active,
         subscription_period_start: refreshed.subscription_period_start,
         subscription_period_end: refreshed.subscription_period_end,
+        subscription_cancel_at: refreshed.subscription_cancel_at,
         stripe_customer_id: refreshed.stripe_customer_id,
       };
       ({ used: entitlementUsed, updates: profileUpdates, limitReached } =
