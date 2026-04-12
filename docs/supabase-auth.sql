@@ -65,11 +65,13 @@ create trigger on_auth_user_created
 alter table public.profiles
   add column if not exists free_generation_credits int not null default 1,
   add column if not exists single_use_credits int not null default 0,
+  add column if not exists starter_upgrade_discount_available boolean not null default false,
   add column if not exists stripe_customer_id text,
   add column if not exists subscription_tier text,
   add column if not exists subscription_active boolean not null default false,
   add column if not exists subscription_period_start timestamptz,
   add column if not exists subscription_period_end timestamptz,
+  add column if not exists subscription_cancel_at timestamptz,
   add column if not exists monthly_generation_count int not null default 0,
   add column if not exists monthly_count_period_start timestamptz;
 

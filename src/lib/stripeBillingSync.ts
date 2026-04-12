@@ -9,6 +9,7 @@ export type BillingProjectionProfile = {
   subscription_active: boolean;
   subscription_period_start: string | null;
   subscription_period_end: string | null;
+  subscription_cancel_at: string | null;
 };
 
 type BillingProjectionUpdate = {
@@ -17,11 +18,25 @@ type BillingProjectionUpdate = {
   subscription_active: boolean;
   subscription_period_start: string | null;
   subscription_period_end: string | null;
+  subscription_cancel_at: string | null;
+};
+
+type ActiveSubscriptionCandidate = {
+  subscription: Stripe.Subscription;
+  tier: "monthly" | "yearly" | null;
 };
 
 function toTimestamp(value?: number | null) {
   if (!value) return null;
   return new Date(value * 1000).toISOString();
+}
+
+function isMissingCancelAtColumnError(error: unknown) {
+  const message =
+    typeof error === "object" && error && "message" in error
+      ? String((error as { message?: string }).message ?? "")
+      : "";
+  return message.includes("subscription_cancel_at");
 }
 
 function isSubscriptionStatusActive(status: string) {
@@ -38,6 +53,26 @@ function resolveTierFromSubscription(subscription: Stripe.Subscription) {
   return null;
 }
 
+function chooseCanonicalSubscription(
+  candidates: ActiveSubscriptionCandidate[],
+): Stripe.Subscription | null {
+  if (!candidates.length) return null;
+
+  const score = (tier: "monthly" | "yearly" | null) => {
+    if (tier === "yearly") return 2;
+    if (tier === "monthly") return 1;
+    return 0;
+  };
+
+  const sorted = [...candidates].sort((a, b) => {
+    const tierDiff = score(b.tier) - score(a.tier);
+    if (tierDiff !== 0) return tierDiff;
+    return b.subscription.created - a.subscription.created;
+  });
+
+  return sorted[0]?.subscription ?? null;
+}
+
 function buildProjectionUpdate(
   customerId: string | null,
   subscription: Stripe.Subscription | null,
@@ -49,6 +84,7 @@ function buildProjectionUpdate(
       subscription_active: false,
       subscription_period_start: null,
       subscription_period_end: null,
+      subscription_cancel_at: null,
     };
   }
 
@@ -67,6 +103,7 @@ function buildProjectionUpdate(
   const itemPeriodEnd = sub.items?.data?.[0]?.current_period_end ?? null;
   const periodStart = sub.current_period_start ?? itemPeriodStart;
   const periodEnd = sub.current_period_end ?? itemPeriodEnd;
+  const cancelAt = subscription.cancel_at ?? null;
 
   return {
     stripe_customer_id: customerId,
@@ -74,6 +111,7 @@ function buildProjectionUpdate(
     subscription_active: isSubscriptionStatusActive(subscription.status),
     subscription_period_start: toTimestamp(periodStart),
     subscription_period_end: toTimestamp(periodEnd),
+    subscription_cancel_at: toTimestamp(cancelAt),
   };
 }
 
@@ -84,9 +122,12 @@ export function needsBillingProjectionRefresh(profile: BillingProjectionProfile 
   const isActive = profile.subscription_active;
   const hasStart = Boolean(profile.subscription_period_start);
   const hasEnd = Boolean(profile.subscription_period_end);
+  const hasCancelAt = Boolean(profile.subscription_cancel_at);
 
   if (isActive && !tier) return true;
   if (!isActive && tier) return true;
+  if (!isActive && hasCancelAt) return true;
+  if (isActive && hasCancelAt) return true;
   if (isActive && (!hasStart || !hasEnd)) return true;
 
   if (isActive && hasEnd) {
@@ -122,14 +163,23 @@ async function getCurrentStripeSubscription(customerId: string) {
     status: "active",
     limit: 5,
   });
-  if (activeSubs.data[0]) return activeSubs.data[0];
-
   const trialingSubs = await stripe.subscriptions.list({
     customer: customerId,
     status: "trialing",
     limit: 5,
   });
-  return trialingSubs.data[0] ?? null;
+
+  const merged = [...activeSubs.data, ...trialingSubs.data];
+  const candidates: ActiveSubscriptionCandidate[] = merged.map((subscription) => ({
+    subscription,
+    tier: resolveTierFromSubscription(subscription),
+  }));
+
+  return chooseCanonicalSubscription(candidates);
+}
+
+export async function getCanonicalSubscriptionForCustomer(customerId: string) {
+  return getCurrentStripeSubscription(customerId);
 }
 
 export async function syncBillingProjectionForUser(options: {
@@ -153,21 +203,40 @@ export async function syncBillingProjectionForUser(options: {
 
   if (!customerId) return null;
 
-  const subscription =
-    options.subscription === undefined
-      ? await getCurrentStripeSubscription(customerId)
-      : options.subscription;
+  const subscription = await getCurrentStripeSubscription(customerId);
 
   const update = buildProjectionUpdate(customerId, subscription ?? null);
-  await adminClient.from("profiles").update(update).eq("id", options.userId);
+  const { error: updateError } = await adminClient
+    .from("profiles")
+    .update(update)
+    .eq("id", options.userId);
+  if (updateError && isMissingCancelAtColumnError(updateError)) {
+    const { subscription_cancel_at: _ignored, ...legacyUpdate } = update;
+    await adminClient.from("profiles").update(legacyUpdate).eq("id", options.userId);
+  }
 
-  const { data: refreshed } = await adminClient
+  const { data: refreshed, error: refreshedError } = await adminClient
     .from("profiles")
     .select(
-      "id, stripe_customer_id, subscription_tier, subscription_active, subscription_period_start, subscription_period_end",
+      "id, stripe_customer_id, subscription_tier, subscription_active, subscription_period_start, subscription_period_end, subscription_cancel_at",
     )
     .eq("id", options.userId)
     .maybeSingle<BillingProjectionProfile>();
+  if (refreshedError && isMissingCancelAtColumnError(refreshedError)) {
+    const { data: legacyRefreshed } = await adminClient
+      .from("profiles")
+      .select(
+        "id, stripe_customer_id, subscription_tier, subscription_active, subscription_period_start, subscription_period_end",
+      )
+      .eq("id", options.userId)
+      .maybeSingle<
+        Omit<BillingProjectionProfile, "subscription_cancel_at">
+      >();
+
+    return legacyRefreshed
+      ? { ...legacyRefreshed, subscription_cancel_at: null }
+      : null;
+  }
 
   return refreshed ?? null;
 }

@@ -9,6 +9,7 @@ function profile(overrides: Partial<BillingProjectionProfile>): BillingProjectio
     subscription_active: false,
     subscription_period_start: null,
     subscription_period_end: null,
+    subscription_cancel_at: null,
     ...overrides,
   };
 }
@@ -45,6 +46,20 @@ describe("needsBillingProjectionRefresh", () => {
         profile({
           subscription_active: false,
           subscription_tier: "yearly",
+        }),
+      ),
+    ).toBe(true);
+  });
+
+  it("returns true for active profiles marked expiring to reconcile cancel_at", () => {
+    expect(
+      needsBillingProjectionRefresh(
+        profile({
+          subscription_active: true,
+          subscription_tier: "monthly",
+          subscription_period_start: new Date().toISOString(),
+          subscription_period_end: new Date(Date.now() + 86_400_000).toISOString(),
+          subscription_cancel_at: new Date(Date.now() + 86_400_000).toISOString(),
         }),
       ),
     ).toBe(true);
