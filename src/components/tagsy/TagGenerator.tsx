@@ -280,7 +280,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   const [paywall, setPaywall] = useState<PaywallState | null>(null);
   const [isUnlockingFromPaywall, setIsUnlockingFromPaywall] = useState(false);
   const [unlockReadyContext, setUnlockReadyContext] = useState<PendingContext | null>(null);
-  const [isUnlockConfirmOpen, setIsUnlockConfirmOpen] = useState(false);
+  const [confirmModalMode, setConfirmModalMode] = useState<"unlock" | "generate" | null>(null);
   const [activeSheenId, setActiveSheenId] = useState<number | null>(null);
   const [generationContextId, setGenerationContextId] = useState<string | null>(null);
   const [isDemoActive, setIsDemoActive] = useState(true);
@@ -792,7 +792,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     [refreshUsageLabel, setResultTags],
   );
 
-  const handleGenerate = useCallback(async () => {
+  const executeGenerate = useCallback(async () => {
     markUserInteraction();
     if (!title.trim()) return;
 
@@ -826,7 +826,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     setPaywall(null);
     setIsUnlockingFromPaywall(false);
     setUnlockReadyContext(null);
-    setIsUnlockConfirmOpen(false);
+    setConfirmModalMode(null);
     setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
     setApiTags([]);
     setVisibleTags([]);
@@ -850,6 +850,23 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     title,
     turnstileEnabled,
   ]);
+
+  const shouldConfirmFreeGeneration = useMemo(() => {
+    const normalized = usageLabel?.toLowerCase() ?? "";
+    return (
+      normalized.includes("1 free generation") &&
+      !paywall &&
+      !isUnlockingFromPaywall
+    );
+  }, [isUnlockingFromPaywall, paywall, usageLabel]);
+
+  const handleGenerate = useCallback(async () => {
+    if (shouldConfirmFreeGeneration) {
+      setConfirmModalMode("generate");
+      return;
+    }
+    await executeGenerate();
+  }, [executeGenerate, shouldConfirmFreeGeneration]);
 
   const goToLogin = () => {
     markUserInteraction();
@@ -943,7 +960,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
 
       setError("");
       setUnlockReadyContext(null);
-      setIsUnlockConfirmOpen(false);
+      setConfirmModalMode(null);
 
       refreshUsageLabel().then(({ usageLabel: nextUsageLabel, resolved }) => {
         const shouldAutoUnlock = resolved && !nextUsageLabel;
@@ -972,7 +989,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     setPaywall(null);
     setIsUnlockingFromPaywall(true);
     setUnlockReadyContext(null);
-    setIsUnlockConfirmOpen(false);
+    setConfirmModalMode(null);
     setApiTags([]);
     setVisibleTags([]);
     runGeneration(context.title, context.description, context.id).catch((err) => {
@@ -983,13 +1000,30 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
 
   const onUnlockTags = useCallback(() => {
     if (!unlockReadyContext) return;
-    setIsUnlockConfirmOpen(true);
+    setConfirmModalMode("unlock");
   }, [unlockReadyContext]);
 
-  const confirmUnlockTags = useCallback(() => {
+  const confirmModalMessage = useMemo(() => {
+    if (confirmModalMode === "generate") {
+      return "You are about to use your one free generation. Would you like to use that now?";
+    }
+    const normalized = usageLabel?.toLowerCase() ?? "";
+    if (normalized.includes("1 free generation")) {
+      return "You are about to use your one free generation. Would you like to use that now?";
+    }
+    return "Would you like to use a generation to unlock the tags?";
+  }, [confirmModalMode, usageLabel]);
+
+  const confirmModalAction = useCallback(() => {
+    if (confirmModalMode === "generate") {
+      setConfirmModalMode(null);
+      void executeGenerate();
+      return;
+    }
+
     if (!unlockReadyContext) return;
     beginUnlockFromContext(unlockReadyContext);
-  }, [beginUnlockFromContext, unlockReadyContext]);
+  }, [beginUnlockFromContext, confirmModalMode, executeGenerate, unlockReadyContext]);
 
   const handleCopyAll = async () => {
     markUserInteraction();
@@ -1020,14 +1054,6 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
       year: "numeric",
     }).format(date);
   }, [monthlyResetAt]);
-  const unlockConfirmationMessage = useMemo(() => {
-    const normalized = usageLabel?.toLowerCase() ?? "";
-    if (normalized.includes("1 free generation")) {
-      return "You are about to use your one free generation. Would you like to use that now?";
-    }
-    return "Would you like to use a generation to unlock the tags?";
-  }, [usageLabel]);
-
   return (
     <div ref={glowRef} id="generator" className="relative mx-auto max-w-2xl">
       <div className="pointer-events-none absolute -inset-8 overflow-hidden rounded-3xl">
@@ -1354,7 +1380,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
       </motion.div>
 
       <AnimatePresence>
-        {isUnlockConfirmOpen ? (
+        {confirmModalMode ? (
           <motion.div
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
             initial={{ opacity: 0 }}
@@ -1366,7 +1392,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
               type="button"
               aria-label="Close unlock confirmation"
               className="absolute inset-0 bg-stone-900/45"
-              onClick={() => setIsUnlockConfirmOpen(false)}
+              onClick={() => setConfirmModalMode(null)}
             />
             <motion.div
               role="dialog"
@@ -1377,18 +1403,18 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
               exit={{ opacity: 0, scale: 0.98, y: 6 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
             >
-              <p className="text-sm font-semibold text-stone-900">{unlockConfirmationMessage}</p>
+              <p className="text-sm font-semibold text-stone-900">{confirmModalMessage}</p>
               <div className="mt-5 flex items-center justify-end gap-2">
                 <button
                   type="button"
-                  onClick={() => setIsUnlockConfirmOpen(false)}
+                  onClick={() => setConfirmModalMode(null)}
                   className="rounded-lg border border-stone-300 bg-white px-3.5 py-2 text-sm font-semibold text-stone-700 transition-colors hover:bg-stone-50"
                 >
                   No
                 </button>
                 <button
                   type="button"
-                  onClick={confirmUnlockTags}
+                  onClick={confirmModalAction}
                   className="rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-3.5 py-2 text-sm font-semibold text-white transition-all hover:from-orange-600 hover:to-orange-700"
                 >
                   Yes
