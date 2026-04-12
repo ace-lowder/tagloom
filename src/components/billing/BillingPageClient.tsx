@@ -1,13 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import PricingCards, { PRICING_PLANS, type PricingPlanId } from "@/components/pricing/PricingCards";
 
 type BillingPageClientProps = {
   subscriptionActive: boolean;
   subscriptionTier: "monthly" | "yearly" | null;
-  nextChargeAt: string | null;
+  billingDateAt: string | null;
+  isExpiring: boolean;
+  generationsSummary: string | null;
   canManageSubscription: boolean;
+  allowStarterPurchaseWithSubscription: boolean;
+  pendingRenewalTier: "monthly" | "yearly" | null;
+  pendingRenewalAt: string | null;
 };
 
 function formatDate(isoDate: string | null) {
@@ -26,20 +32,101 @@ function formatDate(isoDate: string | null) {
 export default function BillingPageClient({
   subscriptionActive,
   subscriptionTier,
-  nextChargeAt,
+  billingDateAt,
+  isExpiring,
+  generationsSummary,
   canManageSubscription,
+  allowStarterPurchaseWithSubscription,
+  pendingRenewalTier,
+  pendingRenewalAt,
 }: BillingPageClientProps) {
+  const router = useRouter();
   const [isCreatingPortalSession, setIsCreatingPortalSession] = useState(false);
-  const [isCreatingCheckoutSession, setIsCreatingCheckoutSession] = useState(false);
+  const [redirectingPlanId, setRedirectingPlanId] = useState<PricingPlanId | null>(null);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const pendingKey = "billing_portal_pending";
+    const hasPendingPortalReturn = () => window.sessionStorage.getItem(pendingKey) === "1";
+    const refreshAfterPortalReturn = () => {
+      if (!hasPendingPortalReturn()) return;
+      window.sessionStorage.removeItem(pendingKey);
+      router.refresh();
+    };
+
+    refreshAfterPortalReturn();
+
+    const onPageShow = () => refreshAfterPortalReturn();
+    const onFocus = () => refreshAfterPortalReturn();
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refreshAfterPortalReturn();
+      }
+    };
+
+    window.addEventListener("pageshow", onPageShow);
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      window.removeEventListener("pageshow", onPageShow);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [router]);
 
   const currentPlan = useMemo(() => {
     if (!subscriptionActive || !subscriptionTier) return null;
     return PRICING_PLANS.find((plan) => plan.id === subscriptionTier) ?? null;
   }, [subscriptionActive, subscriptionTier]);
+  const renewingPlan = useMemo(() => {
+    if (!pendingRenewalTier) return null;
+    return PRICING_PLANS.find((plan) => plan.id === pendingRenewalTier) ?? null;
+  }, [pendingRenewalTier]);
 
-  const currentPrice = currentPlan ? `$${currentPlan.price}${currentPlan.period}` : "$0";
-  const nextChargeDate = currentPlan ? formatDate(nextChargeAt) : "None";
+  const displayedPricePlan = renewingPlan ?? currentPlan;
+  const currentPrice = displayedPricePlan ? `$${displayedPricePlan.price}${displayedPricePlan.period}` : "$0";
+  const billingDate = currentPlan ? formatDate(billingDateAt) : "None";
+  const planName = currentPlan
+    ? `${currentPlan.name}${isExpiring ? " (Expiring)" : ""}`
+    : "Free";
+  const billingDateLabel = isExpiring ? "Expiration Date" : "Next charge";
+  const portalActionLabel = isExpiring ? "Renew Subscription" : "Cancel Subscription";
+  const renewBaseButtonClass =
+    "self-start inline-flex items-center rounded-lg border border-stone-400/90 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 transition-colors hover:border-stone-500 hover:bg-stone-50 hover:text-stone-800 disabled:opacity-60 md:self-auto";
+  const renewLoadingClass = isCreatingPortalSession
+    ? " border-stone-500 bg-stone-50 text-stone-800"
+    : "";
+  const portalButtonClass = isExpiring
+    ? `${renewBaseButtonClass}${renewLoadingClass}`
+    : "self-start inline-flex items-center rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-600 transition-colors hover:border-rose-500 hover:text-rose-700 disabled:opacity-60 md:self-auto";
+  const spinnerClass = isExpiring
+    ? "h-3.5 w-3.5 animate-spin rounded-full border-2 border-stone-400 border-t-stone-800"
+    : "h-3.5 w-3.5 animate-spin rounded-full border-2 border-rose-200 border-t-rose-600";
+  const isAnyRedirecting = isCreatingPortalSession || Boolean(redirectingPlanId);
+  const pendingRenewalLabel = pendingRenewalAt
+    ? `Renewing on ${formatDate(pendingRenewalAt)}`
+    : "Renewing soon";
+  const hasPendingTierRenewal = Boolean(pendingRenewalTier && pendingRenewalTier !== subscriptionTier);
+  const currentTierRenewLabel = currentPlan ? `Renew ${currentPlan.name}` : "Renew Plan";
+
+  const createPortalSessionAndRedirect = async () => {
+    const response = await fetch("/api/billing/portal", {
+      method: "POST",
+    });
+    const data = (await response.json().catch(() => ({}))) as {
+      error?: string;
+      url?: string;
+    };
+
+    if (!response.ok || !data.url) {
+      throw new Error(data.error || "Could not open billing portal.");
+    }
+
+    window.sessionStorage.setItem("billing_portal_pending", "1");
+    window.location.href = data.url;
+  };
 
   const onManageStripePortal = async () => {
     if (!canManageSubscription) return;
@@ -47,30 +134,58 @@ export default function BillingPageClient({
     setError("");
     setIsCreatingPortalSession(true);
     try {
-      const response = await fetch("/api/billing/portal", {
-        method: "POST",
-      });
-      const data = (await response.json().catch(() => ({}))) as {
-        error?: string;
-        url?: string;
-      };
-
-      if (!response.ok || !data.url) {
-        throw new Error(data.error || "Could not open billing portal.");
-      }
-
-      window.location.href = data.url;
+      await createPortalSessionAndRedirect();
     } catch (portalError) {
       setError(portalError instanceof Error ? portalError.message : "Could not open billing portal.");
       setIsCreatingPortalSession(false);
     }
   };
 
+  const onCurrentPlanCardAction = async () => {
+    if (!currentPlan || !canManageSubscription) return;
+
+    setError("");
+    setRedirectingPlanId(currentPlan.id);
+    try {
+      await createPortalSessionAndRedirect();
+    } catch (portalError) {
+      setError(portalError instanceof Error ? portalError.message : "Could not open billing portal.");
+      setRedirectingPlanId(null);
+    }
+  };
+
   const onSelectPlan = async (planId: PricingPlanId) => {
     setError("");
-    setIsCreatingCheckoutSession(true);
+    setRedirectingPlanId(planId);
 
     try {
+      const isTierSwitchRequest =
+        subscriptionActive &&
+        Boolean(subscriptionTier) &&
+        (planId === "monthly" || planId === "yearly") &&
+        subscriptionTier !== planId;
+
+      if (isTierSwitchRequest) {
+        const switchResponse = await fetch("/api/billing/switch-plan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ targetTier: planId }),
+        });
+        const switchData = (await switchResponse.json().catch(() => ({}))) as {
+          ok?: boolean;
+          error?: string;
+          code?: string;
+        };
+
+        if (!switchResponse.ok || !switchData.ok) {
+          throw new Error(switchData.error || "Open Billing Portal to switch plans.");
+        }
+
+        setRedirectingPlanId(null);
+        router.refresh();
+        return;
+      }
+
       const response = await fetch("/api/checkout/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -78,13 +193,24 @@ export default function BillingPageClient({
       });
       const data = (await response.json().catch(() => ({}))) as { url?: string; error?: string };
       if (!response.ok || !data.url) {
+        if ((data as { requiresPortal?: boolean }).requiresPortal) {
+          if (!canManageSubscription) {
+            throw new Error("Open Billing Portal to switch plans.");
+          }
+          try {
+            await createPortalSessionAndRedirect();
+          } catch {
+            throw new Error("Open Billing Portal to switch plans.");
+          }
+          return;
+        }
         throw new Error(data.error || "Could not create checkout session.");
       }
 
       window.location.href = data.url;
     } catch (checkoutError) {
       setError(checkoutError instanceof Error ? checkoutError.message : "Checkout failed.");
-      setIsCreatingCheckoutSession(false);
+      setRedirectingPlanId(null);
     }
   };
 
@@ -96,20 +222,36 @@ export default function BillingPageClient({
           <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div className="space-y-1.5">
               <p className="text-lg font-semibold text-stone-900">
-                {currentPlan ? currentPlan.name : "Free"}
+                {planName}
               </p>
+              {generationsSummary ? (
+                <p className="text-sm text-stone-600">Generations: {generationsSummary}</p>
+              ) : null}
+              {renewingPlan ? (
+                <p className="text-sm text-stone-600">Renewing: {renewingPlan.name}</p>
+              ) : null}
               <p className="text-sm text-stone-600">Price: {currentPrice}</p>
-              <p className="text-sm text-stone-600">Next charge: {nextChargeDate}</p>
+              <p className="text-sm text-stone-600">{billingDateLabel}: {billingDate}</p>
             </div>
 
             {currentPlan && canManageSubscription ? (
               <button
                 type="button"
                 onClick={onManageStripePortal}
-                disabled={isCreatingPortalSession}
-                className="self-start rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-600 transition-colors hover:border-rose-500 hover:text-rose-700 disabled:opacity-60 md:self-auto"
+                disabled={isAnyRedirecting}
+                className={portalButtonClass}
               >
-                {isCreatingPortalSession ? "Opening..." : "Cancel subscription"}
+                {isCreatingPortalSession ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span
+                      aria-hidden
+                      className={spinnerClass}
+                    />
+                    Redirecting
+                  </span>
+                ) : (
+                  portalActionLabel
+                )}
               </button>
             ) : null}
           </div>
@@ -131,14 +273,20 @@ export default function BillingPageClient({
             currentTier={currentPlan ? subscriptionTier : null}
             showCurrentPlanBadge
             disableCurrentPlanAction
+            disableAllActions={isAnyRedirecting}
+            allowCurrentPlanAction={isExpiring || hasPendingTierRenewal}
+            currentPlanActionLabel={hasPendingTierRenewal ? currentTierRenewLabel : "Renew Plan"}
+            onCurrentPlanAction={onCurrentPlanCardAction}
+            isCurrentPlanActionLoading={currentPlan ? redirectingPlanId === currentPlan.id : false}
+            allowStarterPurchaseWithSubscription={allowStarterPurchaseWithSubscription}
+            loadingPlanId={redirectingPlanId}
+            renewingTier={pendingRenewalTier}
+            renewingLabel={pendingRenewalLabel}
           />
         </section>
 
         {error ? (
           <p className="mt-4 text-center text-sm text-red-700">{error}</p>
-        ) : null}
-        {isCreatingCheckoutSession ? (
-          <p className="mt-4 text-center text-sm text-stone-600">Redirecting to checkout...</p>
         ) : null}
       </div>
     </div>

@@ -72,6 +72,15 @@ type PricingCardsProps = {
   currentTier?: "monthly" | "yearly" | null;
   showCurrentPlanBadge?: boolean;
   disableCurrentPlanAction?: boolean;
+  disableAllActions?: boolean;
+  allowCurrentPlanAction?: boolean;
+  currentPlanActionLabel?: string;
+  onCurrentPlanAction?: () => void;
+  isCurrentPlanActionLoading?: boolean;
+  allowStarterPurchaseWithSubscription?: boolean;
+  loadingPlanId?: PricingPlanId | null;
+  renewingTier?: "monthly" | "yearly" | null;
+  renewingLabel?: string;
 };
 
 export default function PricingCards({
@@ -80,6 +89,15 @@ export default function PricingCards({
   currentTier = null,
   showCurrentPlanBadge = false,
   disableCurrentPlanAction = false,
+  disableAllActions = false,
+  allowCurrentPlanAction = false,
+  currentPlanActionLabel = "Current Plan",
+  onCurrentPlanAction,
+  isCurrentPlanActionLoading = false,
+  allowStarterPurchaseWithSubscription = true,
+  loadingPlanId = null,
+  renewingTier = null,
+  renewingLabel = "Renewing soon",
 }: PricingCardsProps) {
   const hasCurrentSubscription = Boolean(currentTier);
 
@@ -87,16 +105,52 @@ export default function PricingCards({
     <div className="grid gap-6 md:grid-cols-3">
       {plans.map((plan) => {
         const isSubscriptionPlan = plan.id === "monthly" || plan.id === "yearly";
+        const isStarterPlan = plan.id === "single_use";
         const isCurrent =
           showCurrentPlanBadge &&
           hasCurrentSubscription &&
           isSubscriptionPlan &&
           currentTier === plan.id;
+        const isRenewingPlan =
+          Boolean(renewingTier) &&
+          hasCurrentSubscription &&
+          isSubscriptionPlan &&
+          plan.id === renewingTier;
         const showPopularBadge =
           plan.popular && (!showCurrentPlanBadge || !hasCurrentSubscription);
         const isHighlighted = isCurrent || showPopularBadge;
-        const disableAction = isCurrent && disableCurrentPlanAction;
-        const ctaLabel = disableAction ? "Current Plan" : plan.cta;
+        const canRunCurrentPlanAction =
+          isCurrent && allowCurrentPlanAction && typeof onCurrentPlanAction === "function";
+        const shouldDisableStarterWithSubscription =
+          isStarterPlan &&
+          hasCurrentSubscription &&
+          !allowStarterPurchaseWithSubscription;
+        const isPlanActionLoading = loadingPlanId === plan.id;
+        const isRedirecting =
+          isPlanActionLoading || (isCurrent && isCurrentPlanActionLoading);
+        const disableAction =
+          disableAllActions ||
+          isPlanActionLoading ||
+          isRenewingPlan ||
+          shouldDisableStarterWithSubscription ||
+          (isCurrent && isCurrentPlanActionLoading) ||
+          (isCurrent && disableCurrentPlanAction && !canRunCurrentPlanAction);
+        const useChangePlanLabel =
+          !isCurrent && hasCurrentSubscription && isSubscriptionPlan;
+        const useOrangeChangePlanStyle = useChangePlanLabel;
+        const starterCtaLabel =
+          isStarterPlan && hasCurrentSubscription ? "Purchase Generations" : plan.cta;
+        const ctaLabel = isCurrent
+          ? (canRunCurrentPlanAction ? currentPlanActionLabel : "Current Plan")
+          : isRenewingPlan
+            ? renewingLabel
+          : useChangePlanLabel
+            ? "Change Plan"
+            : starterCtaLabel;
+
+        const redirectSpinnerClass = isHighlighted
+          ? "h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/35 border-t-white"
+          : "h-3.5 w-3.5 animate-spin rounded-full border-2 border-orange-300 border-t-orange-700";
 
         return (
           <Card
@@ -122,6 +176,13 @@ export default function PricingCards({
                 </span>
               </div>
             ) : null}
+            {isRenewingPlan ? (
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <span className="rounded-full bg-gradient-to-r from-orange-500 to-orange-600 px-3 py-1 text-xs font-semibold text-white shadow">
+                  Renewing
+                </span>
+              </div>
+            ) : null}
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-stone-400">
               {plan.name}
             </p>
@@ -138,21 +199,30 @@ export default function PricingCards({
                 </li>
               ))}
             </ul>
-            {disableAction ? null : (
-              <button
-                type="button"
-                onClick={() => onSelectPlan(plan.id)}
-                className={`relative mt-auto w-full rounded-xl py-3 text-sm font-semibold transition-all ${
-                  isHighlighted
-                    ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/20 hover:from-orange-600 hover:to-orange-700"
-                    : plan.accent
-                      ? "border border-orange-300 bg-orange-50 text-orange-700 hover:border-orange-500 hover:bg-orange-100 hover:text-orange-800"
-                      : "bg-stone-100 text-stone-800 hover:bg-stone-200"
-                }`}
-              >
-                {ctaLabel}
-              </button>
-            )}
+            <button
+              type="button"
+              disabled={disableAction}
+              onClick={() =>
+                canRunCurrentPlanAction ? onCurrentPlanAction() : onSelectPlan(plan.id)
+              }
+              className={`relative mt-auto w-full rounded-xl py-3 text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
+                isHighlighted
+                  ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/20 hover:from-orange-600 hover:to-orange-700 disabled:hover:from-orange-500 disabled:hover:to-orange-600"
+                  : plan.accent || useOrangeChangePlanStyle
+                    ? "border border-orange-300 bg-orange-50 text-orange-700 hover:border-orange-500 hover:bg-orange-100 hover:text-orange-800 disabled:hover:border-orange-300 disabled:hover:bg-orange-50 disabled:hover:text-orange-700"
+                    : "bg-stone-100 text-stone-800 hover:bg-stone-200 disabled:hover:bg-stone-100"
+              }`}
+            >
+              {isRedirecting ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <span
+                    aria-hidden
+                    className={redirectSpinnerClass}
+                  />
+                  Redirecting
+                </span>
+              ) : ctaLabel}
+            </button>
           </Card>
         );
       })}
