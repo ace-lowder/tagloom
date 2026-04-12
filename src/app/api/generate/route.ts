@@ -28,7 +28,11 @@ type ProfileRecord = {
   monthly_count_period_start: string | null;
 };
 
-function paywall(reason: "auth_required" | "payment_required" | "limit_reached", message: string, requestId: string | null) {
+function paywall(
+  reason: "auth_required" | "payment_required" | "limit_reached",
+  message: string,
+  requestId: string | null,
+) {
   return NextResponse.json({
     status: "paywall",
     reason,
