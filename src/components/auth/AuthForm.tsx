@@ -85,6 +85,7 @@ export default function AuthForm({
     mode === "signup" ? "email" : "password",
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
@@ -137,6 +138,7 @@ export default function AuthForm({
       }
 
       try {
+        setIsCheckingEmail(true);
         let exists = emailExistsCacheRef.current.get(normalizedEmail);
         if (typeof exists !== "boolean") {
           exists = await checkEmailExists(normalizedEmail);
@@ -152,6 +154,8 @@ export default function AuthForm({
         console.error("/api/auth/email-exists lookup failed", checkError);
         setError("Could not check account right now.");
         return;
+      } finally {
+        setIsCheckingEmail(false);
       }
 
       setSignupStep("password");
@@ -546,10 +550,22 @@ export default function AuthForm({
 
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || isCheckingEmail}
           className="w-full rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-3 text-sm font-semibold text-white transition-all hover:from-orange-600 hover:to-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isSubmitting ? "Please wait..." : submitLabel}
+          {isCheckingEmail ? (
+            <>
+              <span
+                className="mx-auto block h-4 w-4 animate-spin rounded-full border-2 border-white/35 border-t-white"
+                aria-hidden="true"
+              />
+              <span className="sr-only">Checking account…</span>
+            </>
+          ) : isSubmitting ? (
+            "Please wait..."
+          ) : (
+            submitLabel
+          )}
         </button>
       </form>
 
