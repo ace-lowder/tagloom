@@ -248,7 +248,7 @@ function getUsageHintText(usageLabel: string | null, monthlyResetAt?: string | n
     return "Starter generations are prepaid and decrease as you generate.";
   }
   if (normalized.includes("free")) {
-    return "New accounts include 1 free generation; when it reaches 0 you can upgrade.";
+    return "New accounts get 1 free generation. You can purchase more generations in the pricing section.";
   }
 
   return null;
@@ -1038,12 +1038,15 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
 
   const totalTags = visibleTags.length;
   const showResults = totalTags > 0 || isUnlockingFromPaywall || Boolean(paywall);
+  const areAllTagsVisible = apiTags.length > 0 && visibleTags.length === apiTags.length;
+  const canCopyAll = !paywall && !isUnlockingFromPaywall && areAllTagsVisible;
   const isClearingFade = clearPhase === "fading";
   const hasTitle = Boolean(title.trim());
   const usageHint = useMemo(
     () => getUsageHintText(usageLabel, monthlyResetAt),
     [monthlyResetAt, usageLabel],
   );
+  const isFreeUsageHint = usageLabel?.toLowerCase().includes("free") ?? false;
   const monthlyResetDateText = useMemo(() => {
     if (!monthlyResetAt) return null;
     const date = new Date(monthlyResetAt);
@@ -1054,6 +1057,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
       year: "numeric",
     }).format(date);
   }, [monthlyResetAt]);
+  const showFreeGenerationModalTitle = confirmModalMode === "generate";
   return (
     <div ref={glowRef} id="generator" className="relative mx-auto max-w-2xl">
       <div className="pointer-events-none absolute -inset-8 overflow-hidden rounded-3xl">
@@ -1137,11 +1141,28 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                           transition={{ duration: 0.16, ease: "easeOut" }}
                           className="absolute right-0 top-full z-20 mt-1.5 w-64 rounded-lg border border-stone-200 bg-white/95 px-3 py-2 text-xs leading-relaxed text-stone-600 shadow-lg backdrop-blur-sm"
                         >
-                          <p>{usageHint}</p>
+                          {isFreeUsageHint ? (
+                            <p>
+                              New accounts get 1 free generation. You can purchase more generations in the{" "}
+                              <button
+                                type="button"
+                                onClick={goToPricing}
+                                className="font-medium text-orange-700 hover:text-orange-800 hover:underline"
+                              >
+                                pricing section
+                              </button>
+                              .
+                            </p>
+                          ) : (
+                            <p>{usageHint}</p>
+                          )}
                           {usageLabel.toLowerCase().includes("/100") && monthlyResetDateText ? (
                             <p className="mt-1.5">
                               Resets on{" "}
-                              <Link href="/billing" className="font-medium text-orange-700 hover:text-orange-800">
+                              <Link
+                                href="/billing"
+                                className="font-medium text-orange-700 hover:text-orange-800 hover:underline"
+                              >
                                 {monthlyResetDateText}
                               </Link>
                               .
@@ -1282,8 +1303,12 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                     </span>
                     <button
                       onClick={handleCopyAll}
-                      disabled={Boolean(paywall)}
-                      className="flex items-center gap-1.5 rounded-lg bg-stone-100 px-3 py-1.5 text-xs font-medium text-stone-600 transition-all hover:bg-orange-100 hover:text-orange-700 disabled:opacity-50"
+                      disabled={!canCopyAll}
+                      className={`flex w-[90px] items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+                        canCopyAll
+                          ? "cursor-pointer bg-stone-100 text-stone-600 hover:bg-orange-100 hover:text-orange-700"
+                          : "cursor-not-allowed bg-stone-100 text-stone-500 opacity-50"
+                      }`}
                     >
                       {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                       {copied ? "Copied!" : "Copy All"}
@@ -1397,27 +1422,35 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
             <motion.div
               role="dialog"
               aria-modal="true"
-              className="relative z-10 w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl"
+              className="relative z-10 w-full max-w-xs rounded-2xl border border-stone-200 bg-white p-4 shadow-2xl"
               initial={{ opacity: 0, scale: 0.96, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.98, y: 6 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
             >
-              <p className="text-sm font-semibold text-stone-900">{confirmModalMessage}</p>
-              <div className="mt-5 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setConfirmModalMode(null)}
-                  className="rounded-lg border border-stone-300 bg-white px-3.5 py-2 text-sm font-semibold text-stone-700 transition-colors hover:bg-stone-50"
-                >
-                  No
-                </button>
+              {showFreeGenerationModalTitle ? (
+                <h3 className="mb-2 text-left text-base font-semibold">
+                  <span className="text-stone-900">You have </span>
+                  <span className="text-orange-700">1 Free Generation</span>
+                </h3>
+              ) : null}
+              <p className="text-left text-sm font-medium leading-relaxed text-stone-700">
+                {confirmModalMessage}
+              </p>
+              <div className="mt-4 grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={confirmModalAction}
-                  className="rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-3.5 py-2 text-sm font-semibold text-white transition-all hover:from-orange-600 hover:to-orange-700"
+                  className="w-full rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-3.5 py-2 text-sm font-semibold text-white transition-all hover:from-orange-600 hover:to-orange-700"
                 >
                   Yes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmModalMode(null)}
+                  className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-2 text-sm font-semibold text-stone-700 transition-colors hover:bg-stone-50"
+                >
+                  No
                 </button>
               </div>
             </motion.div>
