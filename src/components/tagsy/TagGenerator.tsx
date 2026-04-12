@@ -280,6 +280,8 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   const [isUsageHintOpen, setIsUsageHintOpen] = useState(false);
   const [paywall, setPaywall] = useState<PaywallState | null>(null);
   const [isUnlockingFromPaywall, setIsUnlockingFromPaywall] = useState(false);
+  const [unlockReadyContext, setUnlockReadyContext] = useState<PendingContext | null>(null);
+  const [isUnlockConfirmOpen, setIsUnlockConfirmOpen] = useState(false);
   const [activeSheenId, setActiveSheenId] = useState<number | null>(null);
   const [generationContextId, setGenerationContextId] = useState<string | null>(null);
   const [isDemoActive, setIsDemoActive] = useState(true);
@@ -461,7 +463,9 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   const refreshUsageLabel = useCallback(async () => {
     try {
       const response = await fetch("/api/account/usage", { method: "GET" });
-      if (!response.ok) return;
+      if (!response.ok) {
+        return { usageLabel: null as string | null, resolved: false };
+      }
       const data = (await response.json()) as AccountUsageResponse;
       const nextLabel = typeof data.usageLabel === "string" ? data.usageLabel.trim() : "";
       setUsageLabel(nextLabel || null);
@@ -470,9 +474,11 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
           ? data.monthlyResetAt
           : null,
       );
+      return { usageLabel: nextLabel || null, resolved: true };
     } catch {
       setUsageLabel(null);
       setMonthlyResetAt(null);
+      return { usageLabel: null as string | null, resolved: false };
     }
   }, []);
 
@@ -820,6 +826,8 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     setEntitlementUsed(null);
     setPaywall(null);
     setIsUnlockingFromPaywall(false);
+    setUnlockReadyContext(null);
+    setIsUnlockConfirmOpen(false);
     setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
     setApiTags([]);
     setVisibleTags([]);
@@ -951,19 +959,54 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
       if (!context) return;
 
       setError("");
-      setPaywall(null);
-      setIsUnlockingFromPaywall(true);
-      setApiTags([]);
-      setVisibleTags([]);
-      runGeneration(context.title, context.description, context.id).catch((err) => {
-        setIsUnlockingFromPaywall(false);
-        setError(err instanceof Error ? err.message : "Could not resume generation.");
+      setUnlockReadyContext(null);
+      setIsUnlockConfirmOpen(false);
+
+      refreshUsageLabel().then(({ usageLabel: nextUsageLabel, resolved }) => {
+        const shouldAutoUnlock = resolved && !nextUsageLabel;
+        if (shouldAutoUnlock) {
+          setPaywall(null);
+          setIsUnlockingFromPaywall(true);
+          setApiTags([]);
+          setVisibleTags([]);
+          runGeneration(context.title, context.description, context.id).catch((err) => {
+            setIsUnlockingFromPaywall(false);
+            setError(err instanceof Error ? err.message : "Could not resume generation.");
+          });
+          return;
+        }
+
+        setUnlockReadyContext(context);
       });
     };
 
     window.addEventListener(AUTH_SUCCESS_EVENT, onAuthSuccess);
     return () => window.removeEventListener(AUTH_SUCCESS_EVENT, onAuthSuccess);
-  }, [generationContextId, paywall, runGeneration, visibleTags.length]);
+  }, [generationContextId, paywall, refreshUsageLabel, runGeneration, visibleTags.length]);
+
+  const beginUnlockFromContext = useCallback((context: PendingContext) => {
+    setError("");
+    setPaywall(null);
+    setIsUnlockingFromPaywall(true);
+    setUnlockReadyContext(null);
+    setIsUnlockConfirmOpen(false);
+    setApiTags([]);
+    setVisibleTags([]);
+    runGeneration(context.title, context.description, context.id).catch((err) => {
+      setIsUnlockingFromPaywall(false);
+      setError(err instanceof Error ? err.message : "Could not resume generation.");
+    });
+  }, [runGeneration]);
+
+  const onUnlockTags = useCallback(() => {
+    if (!unlockReadyContext) return;
+    setIsUnlockConfirmOpen(true);
+  }, [unlockReadyContext]);
+
+  const confirmUnlockTags = useCallback(() => {
+    if (!unlockReadyContext) return;
+    beginUnlockFromContext(unlockReadyContext);
+  }, [beginUnlockFromContext, unlockReadyContext]);
 
   const handleCopyAll = async () => {
     markUserInteraction();
@@ -994,6 +1037,13 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
       year: "numeric",
     }).format(date);
   }, [monthlyResetAt]);
+  const unlockConfirmationMessage = useMemo(() => {
+    const normalized = usageLabel?.toLowerCase() ?? "";
+    if (normalized.includes("1 free generation")) {
+      return "You are about to use your one free generation. Would you like to use that now?";
+    }
+    return "Would you like to use a generation to unlock the tags?";
+  }, [usageLabel]);
 
   return (
     <div ref={glowRef} id="generator" className="relative mx-auto max-w-2xl">
@@ -1207,10 +1257,6 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
 
             {error ? <p className="mt-2 text-sm text-red-700">{error}</p> : null}
           <TurnstileField ref={turnstileRef} onError={setError} />
-          {entitlementUsed ? (
-            <p className="mt-2 text-xs text-stone-500">Unlocked with: {entitlementUsed.replace("_", " ")}</p>
-          ) : null}
-
           <AnimatePresence>
             {showResults && (
               <motion.div
@@ -1271,16 +1317,33 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                   <div className="mt-4 rounded-xl border border-orange-200 bg-orange-50 p-4">
                     {paywall.reason === "auth_required" ? (
                       <div className="space-y-3 text-center">
-                        <p className="text-sm font-semibold text-orange-800">
-                          Create an account or log in to unlock this generation for FREE
-                        </p>
-                        <button
-                          type="button"
-                          onClick={goToLogin}
-                          className="rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700"
-                        >
-                          Create account / Log in
-                        </button>
+                        {unlockReadyContext ? (
+                          <>
+                            <p className="text-sm font-semibold text-orange-800">
+                              You&apos;re logged in. Unlock this generation when ready.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={onUnlockTags}
+                              className="rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700"
+                            >
+                              Unlock Tags
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-sm font-semibold text-orange-800">
+                              Create an account or log in to unlock this generation for FREE
+                            </p>
+                            <button
+                              type="button"
+                              onClick={goToLogin}
+                              className="rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700"
+                            >
+                              Create account / Log in
+                            </button>
+                          </>
+                        )}
                       </div>
                     ) : (
                       <>
@@ -1328,6 +1391,52 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
 
         </div>
       </motion.div>
+
+      <AnimatePresence>
+        {isUnlockConfirmOpen ? (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.16 }}
+          >
+            <button
+              type="button"
+              aria-label="Close unlock confirmation"
+              className="absolute inset-0 bg-stone-900/45"
+              onClick={() => setIsUnlockConfirmOpen(false)}
+            />
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              className="relative z-10 w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl"
+              initial={{ opacity: 0, scale: 0.96, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: 6 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+            >
+              <p className="text-sm font-semibold text-stone-900">{unlockConfirmationMessage}</p>
+              <div className="mt-5 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsUnlockConfirmOpen(false)}
+                  className="rounded-lg border border-stone-300 bg-white px-3.5 py-2 text-sm font-semibold text-stone-700 transition-colors hover:bg-stone-50"
+                >
+                  No
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmUnlockTags}
+                  className="rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-3.5 py-2 text-sm font-semibold text-white transition-all hover:from-orange-600 hover:to-orange-700"
+                >
+                  Yes
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }
