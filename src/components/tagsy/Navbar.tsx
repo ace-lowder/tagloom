@@ -8,7 +8,6 @@ import {
   CreditCard,
   LogOut,
   Menu,
-  ShieldAlert,
   User,
   X,
 } from "lucide-react";
@@ -29,7 +28,7 @@ type NavbarProps = {
   currentUser: CurrentUser | null;
 };
 
-type AccountType = "unverified" | "verified" | "monthly" | "yearly";
+type AccountType = "verified" | "monthly" | "yearly";
 
 const NAV_LINKS: NavLink[] = [
   { label: "Features", href: "features", type: "section" },
@@ -47,14 +46,12 @@ const PROFILE_ACTION_BUTTON_CLASS =
   "inline-flex items-center justify-center gap-2.5 rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-600 transition-colors hover:border-stone-400/90 hover:bg-stone-50 hover:text-stone-700";
 
 const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
-  unverified: "Unverified",
   verified: "Verified",
   monthly: "Monthly",
   yearly: "Yearly",
 };
 
 const ACCOUNT_TYPE_STYLES: Record<AccountType, string> = {
-  unverified: "bg-amber-100 text-amber-800 ring-amber-200",
   verified: "bg-emerald-100 text-emerald-800 ring-emerald-200",
   monthly: "bg-sky-100 text-sky-800 ring-sky-200",
   yearly: "bg-violet-100 text-violet-800 ring-violet-200",
@@ -164,24 +161,11 @@ export default function Navbar({ currentUser }: NavbarProps) {
 
   const primaryAction = !accountType
     ? null
-    : accountType === "unverified"
-      ? {
-          label: "Verify",
-          icon: ShieldAlert,
-          onClick: () => {
-            closeAllMenus();
-            openAuthModal({
-              mode: "login",
-              source: "profile_verify",
-              next: pathname || "/",
-            });
-          },
-        }
-      : {
-          label: accountType === "verified" ? "View Plans" : "Manage Plan",
-          icon: CreditCard,
-          onClick: accountType === "verified" ? goToPricing : goToBilling,
-        };
+    : {
+        label: accountType === "verified" ? "View Plans" : "Manage Plan",
+        icon: CreditCard,
+        onClick: accountType === "verified" ? goToPricing : goToBilling,
+      };
   const hasProfileMenu = Boolean(currentUser && accountType && primaryAction);
 
   const renderProfileCard = (mobile = false) => {
@@ -204,13 +188,15 @@ export default function Navbar({ currentUser }: NavbarProps) {
             <p className="truncate text-sm font-semibold text-stone-900">
               {displayEmail}
             </p>
-            <span
-              className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${ACCOUNT_TYPE_STYLES[accountType]}`}
-            >
-              <span className="relative top-px">
-                {ACCOUNT_TYPE_LABELS[accountType]}
+            {accountType !== "verified" ? (
+              <span
+                className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${ACCOUNT_TYPE_STYLES[accountType]}`}
+              >
+                <span className="relative top-px">
+                  {ACCOUNT_TYPE_LABELS[accountType]}
+                </span>
               </span>
-            </span>
+            ) : null}
           </div>
         </div>
 
@@ -417,9 +403,6 @@ function resolveAccountType(currentUser: CurrentUser): AccountType {
     currentUser.subscriptionTier === "monthly"
   ) {
     return "monthly";
-  }
-  if (!currentUser.emailVerified) {
-    return "unverified";
   }
   return "verified";
 }

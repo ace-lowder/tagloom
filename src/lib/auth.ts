@@ -10,7 +10,6 @@ export type CurrentUser = {
   email: string | null;
   fullName?: string | null;
   avatarUrl?: string | null;
-  emailVerified: boolean;
   subscriptionTier: "monthly" | "yearly" | null;
   subscriptionActive: boolean;
 };
@@ -31,7 +30,6 @@ export function toCurrentUser(
     email: user.email ?? null,
     fullName,
     avatarUrl,
-    emailVerified: Boolean(user.email_confirmed_at),
     subscriptionTier: profile?.subscriptionTier ?? null,
     subscriptionActive: profile?.subscriptionActive ?? false,
   };

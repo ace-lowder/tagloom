@@ -176,7 +176,9 @@ export default function AuthForm({
           return;
         }
 
-        setNotice("Account created. Check your email to confirm your account.");
+        setNotice("Account created. You can log in now.");
+        onModeChange("login");
+        setPassword("");
         return;
       }
 
