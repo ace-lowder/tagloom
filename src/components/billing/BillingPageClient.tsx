@@ -92,7 +92,7 @@ export default function BillingPageClient({
     ? `${currentPlan.name}${isExpiring ? " (Expiring)" : ""}`
     : "Free";
   const billingDateLabel = isExpiring ? "Expiration Date" : "Next charge";
-  const portalActionLabel = isExpiring ? "Renew Subscription" : "Cancel Subscription";
+  const portalActionLabel = isExpiring ? "Renew subscription" : "Cancel subscription";
   const renewBaseButtonClass =
     "self-start inline-flex items-center rounded-lg border border-stone-400/90 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 transition-colors hover:border-stone-500 hover:bg-stone-50 hover:text-stone-800 disabled:opacity-60 md:self-auto";
   const renewLoadingClass = isCreatingPortalSession
@@ -109,7 +109,7 @@ export default function BillingPageClient({
     ? `Renewing on ${formatDate(pendingRenewalAt)}`
     : "Renewing soon";
   const hasPendingTierRenewal = Boolean(pendingRenewalTier && pendingRenewalTier !== subscriptionTier);
-  const currentTierRenewLabel = currentPlan ? `Renew ${currentPlan.name}` : "Renew Plan";
+  const currentTierRenewLabel = currentPlan ? `Renew ${currentPlan.name}` : "Renew plan";
 
   const createPortalSessionAndRedirect = async () => {
     const response = await fetch("/api/billing/portal", {
@@ -242,12 +242,12 @@ export default function BillingPageClient({
                 className={portalButtonClass}
               >
                 {isCreatingPortalSession ? (
-                  <span className="inline-flex items-center gap-1.5">
+                  <span className="inline-flex items-center justify-center">
                     <span
                       aria-hidden
                       className={spinnerClass}
                     />
-                    Redirecting
+                    <span className="sr-only">Loading</span>
                   </span>
                 ) : (
                   portalActionLabel
@@ -275,7 +275,7 @@ export default function BillingPageClient({
             disableCurrentPlanAction
             disableAllActions={isAnyRedirecting}
             allowCurrentPlanAction={isExpiring || hasPendingTierRenewal}
-            currentPlanActionLabel={hasPendingTierRenewal ? currentTierRenewLabel : "Renew Plan"}
+            currentPlanActionLabel={hasPendingTierRenewal ? currentTierRenewLabel : "Renew plan"}
             onCurrentPlanAction={onCurrentPlanCardAction}
             isCurrentPlanActionLoading={currentPlan ? redirectingPlanId === currentPlan.id : false}
             allowStarterPurchaseWithSubscription={allowStarterPurchaseWithSubscription}

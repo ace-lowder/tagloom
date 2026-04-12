@@ -391,7 +391,17 @@ export default function AuthForm({
             disabled={isSubmitting || !emailIsValid}
             className="w-full rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-3 text-sm font-semibold text-white transition-all hover:from-orange-600 hover:to-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSubmitting ? "Please wait..." : "Reset password"}
+            {isSubmitting ? (
+              <>
+                <span
+                  className="mx-auto block h-4 w-4 animate-spin rounded-full border-2 border-white/35 border-t-white"
+                  aria-hidden="true"
+                />
+                <span className="sr-only">Submitting reset request…</span>
+              </>
+            ) : (
+              "Reset password"
+            )}
           </button>
 
           <div className="text-center">
@@ -553,16 +563,14 @@ export default function AuthForm({
           disabled={isSubmitting || isCheckingEmail}
           className="w-full rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-3 text-sm font-semibold text-white transition-all hover:from-orange-600 hover:to-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isCheckingEmail ? (
+          {isCheckingEmail || isSubmitting ? (
             <>
               <span
                 className="mx-auto block h-4 w-4 animate-spin rounded-full border-2 border-white/35 border-t-white"
                 aria-hidden="true"
               />
-              <span className="sr-only">Checking account…</span>
+              <span className="sr-only">{isCheckingEmail ? "Checking account…" : "Submitting…"}</span>
             </>
-          ) : isSubmitting ? (
-            "Please wait..."
           ) : (
             submitLabel
           )}

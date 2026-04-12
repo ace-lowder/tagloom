@@ -1275,12 +1275,12 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                   transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                   className="h-4 w-4 rounded-full border-2 border-white/40 border-t-white"
                 />
-                Generating tags...
+                <span className="sr-only">Generating tags</span>
               </>
             ) : (
               <>
                 <Sparkles className="h-4 w-4" />
-                Generate 13 Tags
+                Generate 13 tags
               </>
             )}
           </button>
@@ -1311,7 +1311,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                       }`}
                     >
                       {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                      {copied ? "Copied!" : "Copy All"}
+                      {copied ? "Copied!" : "Copy all"}
                     </button>
                   </div>
                 ) : null}
@@ -1376,7 +1376,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                               onClick={goToLogin}
                               className="rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700"
                             >
-                              Create account / Log in
+                              Create account / log in
                             </button>
                           </>
                         ) : null}
@@ -1391,7 +1391,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                           onClick={goToPricing}
                           className="rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700"
                         >
-                          Get More Generations
+                          Get more generations
                         </button>
                       </div>
                     )}

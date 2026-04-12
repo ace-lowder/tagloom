@@ -234,7 +234,7 @@ describe("TagGenerator demo chips", () => {
     );
 
     await advanceToReveal(fixture.title, expected.length);
-    fireEvent.click(screen.getByRole("button", { name: "Copy All" }));
+    fireEvent.click(screen.getByRole("button", { name: "Copy all" }));
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(expected.join(", "));
   });
@@ -267,7 +267,7 @@ describe("TagGenerator demo chips", () => {
     await waitFor(() => expect(shell).toHaveAttribute("data-clear-phase", "fading"));
     expect(screen.getByTestId("results-block")).toBeInTheDocument();
     expect(screen.getByTestId("generated-tag-count")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Copy All" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Copy all" })).toBeInTheDocument();
 
     await waitFor(() => expect(shell).toHaveAttribute("data-clear-phase", "collapsing"));
     expect(shell).toHaveAttribute("data-height-locked", "true");
@@ -448,7 +448,7 @@ describe("TagGenerator auth unlock flow", () => {
         value: "Personalized Dad V-Neck T-Shirt - 100% Cotton Custom Name Shirt",
       },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Generate 13 Tags" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate 13 tags" }));
 
     await screen.findByText("Create an account or log in to unlock this generation for FREE");
     await screen.findByText("hidden keyword");
@@ -469,7 +469,9 @@ describe("TagGenerator auth unlock flow", () => {
     await waitFor(() => expect(screen.queryByText("hidden keyword")).not.toBeInTheDocument());
 
     expect(countGenerateCalls(fetchMock)).toBe(2);
-    expect(screen.getByRole("button", { name: "Copy All" })).not.toBeDisabled();
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Copy all" })).not.toBeDisabled(),
+    );
   });
 
   it("shows existing error behavior when auth rerun fails", async () => {
@@ -519,7 +521,7 @@ describe("TagGenerator auth unlock flow", () => {
         value: "Personalized Dad V-Neck T-Shirt - 100% Cotton Custom Name Shirt",
       },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Generate 13 Tags" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate 13 tags" }));
 
     await screen.findByText("Create an account or log in to unlock this generation for FREE");
     expect(screen.getByText("hidden keyword")).toBeInTheDocument();
@@ -556,7 +558,7 @@ describe("TagGenerator auth unlock flow", () => {
       "e.g. Handmade ceramic coffee mug with minimalist design",
     );
     fireEvent.change(titleInput, { target: { value: "Custom Dad Shirt Gift" } });
-    fireEvent.click(screen.getByRole("button", { name: "Generate 13 Tags" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate 13 tags" }));
 
     await screen.findByText("You have no remaining generation credits.");
 

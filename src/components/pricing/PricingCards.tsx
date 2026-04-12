@@ -29,7 +29,7 @@ export const PRICING_PLANS: PricingPlan[] = [
       "Use across multiple listings",
       "Fast checkout",
     ],
-    cta: "Start Now",
+    cta: "Start now",
     popular: false,
     accent: true,
   },
@@ -44,7 +44,7 @@ export const PRICING_PLANS: PricingPlan[] = [
       "Tag strategy explanation",
       "Priority support",
     ],
-    cta: "Go Monthly",
+    cta: "Go monthly",
     popular: true,
     accent: false,
   },
@@ -91,7 +91,7 @@ export default function PricingCards({
   disableCurrentPlanAction = false,
   disableAllActions = false,
   allowCurrentPlanAction = false,
-  currentPlanActionLabel = "Current Plan",
+  currentPlanActionLabel = "Current plan",
   onCurrentPlanAction,
   isCurrentPlanActionLoading = false,
   allowStarterPurchaseWithSubscription = true,
@@ -139,13 +139,13 @@ export default function PricingCards({
           !isCurrent && hasCurrentSubscription && isSubscriptionPlan;
         const useOrangeChangePlanStyle = useChangePlanLabel;
         const starterCtaLabel =
-          isStarterPlan && hasCurrentSubscription ? "Purchase Generations" : plan.cta;
+          isStarterPlan && hasCurrentSubscription ? "Purchase generations" : plan.cta;
         const ctaLabel = isCurrent
-          ? (canRunCurrentPlanAction ? currentPlanActionLabel : "Current Plan")
+          ? (canRunCurrentPlanAction ? currentPlanActionLabel : "Current plan")
           : isRenewingPlan
             ? renewingLabel
           : useChangePlanLabel
-            ? "Change Plan"
+            ? "Change plan"
             : starterCtaLabel;
 
         const redirectSpinnerClass = isHighlighted
@@ -214,12 +214,12 @@ export default function PricingCards({
               }`}
             >
               {isRedirecting ? (
-                <span className="inline-flex items-center gap-1.5">
+                <span className="inline-flex items-center justify-center">
                   <span
                     aria-hidden
                     className={redirectSpinnerClass}
                   />
-                  Redirecting
+                  <span className="sr-only">Loading</span>
                 </span>
               ) : ctaLabel}
             </button>
