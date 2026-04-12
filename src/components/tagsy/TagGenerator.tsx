@@ -271,7 +271,6 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   const [visibleTags, setVisibleTags] = useState<string[]>([]);
 
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
   const [entitlementUsed, setEntitlementUsed] = useState<string | null>(null);
@@ -869,42 +868,26 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     });
 
     openAuthModal({
-      mode: "login",
+      mode: "signup",
       source: "generator_paywall",
       next: `/?gen_ctx=${encodeURIComponent(contextId)}`,
     });
   };
 
-  const startCheckout = async (purchaseType: "single_use" | "monthly" | "yearly") => {
+  const goToPricing = () => {
     markUserInteraction();
-    if (!generationContextId) {
-      setError("Could not start checkout. Please try generating again.");
-      return;
-    }
+    playSheen();
 
-    setIsCheckingOut(true);
-    setError("");
-
-    try {
-      const response = await fetch("/api/checkout/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          purchaseType,
-          generationContextId,
-        }),
-      });
-
-      const data = (await response.json()) as { url?: string; error?: string };
-      if (!response.ok || !data.url) {
-        throw new Error(data.error || "Could not create checkout session.");
+    const onHome = window.location.pathname === "/";
+    if (onHome) {
+      const pricingEl = document.getElementById("pricing");
+      if (pricingEl) {
+        pricingEl.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
       }
-
-      window.location.href = data.url;
-    } catch (checkoutError) {
-      setError(checkoutError instanceof Error ? checkoutError.message : "Checkout failed.");
-      setIsCheckingOut(false);
     }
+
+    window.location.href = "/#pricing";
   };
 
   useEffect(() => {
@@ -1296,6 +1279,21 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                     </div>
                     <p className="text-sm font-semibold text-stone-700">Unlocking tags</p>
                   </div>
+                ) : paywall?.reason === "auth_required" && unlockReadyContext ? (
+                  <div className="mt-3 flex w-full flex-col items-center justify-center gap-3 rounded-xl border border-stone-200 bg-white/70 py-8">
+                    <div className="relative h-12 w-12">
+                      <div className="absolute inset-0 flex items-center justify-center rounded-full border border-orange-300 bg-white text-orange-600">
+                        <LockOpen className="h-5 w-5" />
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={onUnlockTags}
+                      className="rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700"
+                    >
+                      Unlock generated tags
+                    </button>
+                  </div>
                 ) : (
                   <div className={`flex flex-wrap gap-2 ${paywall ? "blur-sm select-none" : ""}`}>
                     {visibleTags.map((tag, i) => (
@@ -1313,24 +1311,11 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                   </div>
                 )}
 
-                {paywall ? (
+                {paywall && !(paywall.reason === "auth_required" && unlockReadyContext) ? (
                   <div className="mt-4 rounded-xl border border-orange-200 bg-orange-50 p-4">
                     {paywall.reason === "auth_required" ? (
                       <div className="space-y-3 text-center">
-                        {unlockReadyContext ? (
-                          <>
-                            <p className="text-sm font-semibold text-orange-800">
-                              You&apos;re logged in. Unlock this generation when ready.
-                            </p>
-                            <button
-                              type="button"
-                              onClick={onUnlockTags}
-                              className="rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700"
-                            >
-                              Unlock Tags
-                            </button>
-                          </>
-                        ) : (
+                        {!unlockReadyContext ? (
                           <>
                             <p className="text-sm font-semibold text-orange-800">
                               Create an account or log in to unlock this generation for FREE
@@ -1343,45 +1328,21 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                               Create account / Log in
                             </button>
                           </>
-                        )}
+                        ) : null}
                       </div>
                     ) : (
-                      <>
-                        <p className="text-sm font-medium text-orange-800">{paywall.message}</p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={goToLogin}
-                            className="rounded-lg bg-white px-3 py-2 text-xs font-semibold text-orange-700 ring-1 ring-orange-300"
-                          >
-                            Create account / Log in
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => startCheckout("single_use")}
-                            disabled={isCheckingOut}
-                            className="rounded-lg bg-orange-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
-                          >
-                            {isCheckingOut ? "Loading..." : "Buy single use"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => startCheckout("monthly")}
-                            disabled={isCheckingOut}
-                            className="rounded-lg bg-stone-800 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
-                          >
-                            Monthly (100/mo)
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => startCheckout("yearly")}
-                            disabled={isCheckingOut}
-                            className="rounded-lg bg-stone-800 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
-                          >
-                            Yearly (unlimited)
-                          </button>
-                        </div>
-                      </>
+                      <div className="space-y-3 text-center">
+                        <p className="text-sm font-semibold text-orange-800">
+                          You have no remaining generation credits.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={goToPricing}
+                          className="rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700"
+                        >
+                          Get More Generations
+                        </button>
+                      </div>
                     )}
                   </div>
                 ) : null}
