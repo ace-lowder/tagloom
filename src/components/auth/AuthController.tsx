@@ -29,7 +29,7 @@ type AuthControllerProviderProps = {
 export function AuthControllerProvider({ children }: AuthControllerProviderProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [mode, setMode] = useState<AuthMode>("login");
+  const [mode, setMode] = useState<AuthMode>("signup");
   const [next, setNext] = useState<string | undefined>(undefined);
 
   const closeAuthModal = useCallback(() => {
@@ -37,7 +37,7 @@ export function AuthControllerProvider({ children }: AuthControllerProviderProps
   }, []);
 
   const openAuthModal = useCallback((options?: OpenAuthModalOptions) => {
-    setMode(options?.mode ?? "login");
+    setMode(options?.mode ?? "signup");
     setNext(options?.next ? sanitizeNextPath(options.next) : undefined);
     setIsOpen(true);
   }, []);

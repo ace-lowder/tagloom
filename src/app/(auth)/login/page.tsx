@@ -17,7 +17,7 @@ function resolveSafeNext(rawNext: string | null) {
 export default function LoginPage() {
   const router = useRouter();
   const [next, setNext] = useState("/");
-  const [mode, setMode] = useState<AuthMode>("login");
+  const [mode, setMode] = useState<AuthMode>("signup");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);

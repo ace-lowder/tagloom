@@ -308,7 +308,6 @@ export default function Navbar({ currentUser }: NavbarProps) {
               type="button"
               onClick={() =>
                 openAuthModal({
-                  mode: "login",
                   source: "navbar",
                   next: pathname || "/",
                 })
@@ -369,7 +368,6 @@ export default function Navbar({ currentUser }: NavbarProps) {
                   onClick={() => {
                     setMobileOpen(false);
                     openAuthModal({
-                      mode: "login",
                       source: "navbar_mobile",
                       next: pathname || "/",
                     });
