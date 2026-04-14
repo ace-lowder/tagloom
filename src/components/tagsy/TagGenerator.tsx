@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, Copy, Info, LockOpen, Sparkles } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Copy, Info, LockOpen, Sparkles, X } from "lucide-react";
 import { useAuthController } from "@/components/auth/AuthController";
 import TurnstileField, { type TurnstileFieldHandle } from "@/components/security/TurnstileField";
 import { AUTH_SUCCESS_EVENT } from "@/lib/authModal";
@@ -49,6 +49,21 @@ type GenerateResponse = GenerateOkResponse | GeneratePaywallResponse;
 type AccountUsageResponse = {
   usageLabel: string | null;
   monthlyResetAt?: string | null;
+};
+type GenerationHistoryItem = {
+  id: string;
+  createdAt: string;
+  title: string;
+  description: string;
+  targetTags: string[];
+  discoveryTags: string[];
+  isDraft?: boolean;
+};
+type GenerationHistoryResponse = {
+  items: GenerationHistoryItem[];
+  page: number;
+  hasPrev: boolean;
+  hasNext: boolean;
 };
 
 type PaywallState = {
@@ -183,6 +198,8 @@ const DESCRIPTION_MAX = 6000;
 const DEFAULT_TITLE_PLACEHOLDER =
   "e.g. Handmade ceramic coffee mug with minimalist design";
 const USAGE_HINT_CLOSE_DELAY_MS = 500;
+const HISTORY_PAGE_SIZE = 4;
+const HISTORY_TRANSITION_MS = 180;
 
 function getContextStorageKey(id: string) {
   return `${CONTEXT_STORAGE_PREFIX}${id}`;
@@ -254,6 +271,30 @@ function getUsageHintText(usageLabel: string | null, monthlyResetAt?: string | n
   return null;
 }
 
+function ordinal(day: number) {
+  const mod10 = day % 10;
+  const mod100 = day % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${day}st`;
+  if (mod10 === 2 && mod100 !== 12) return `${day}nd`;
+  if (mod10 === 3 && mod100 !== 13) return `${day}rd`;
+  return `${day}th`;
+}
+
+function formatHistoryDate(isoDate: string) {
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) return "";
+  const month = new Intl.DateTimeFormat("en-US", { month: "short" }).format(date);
+  const day = ordinal(date.getDate());
+  const year = date.getFullYear();
+  return `${month} ${day}, ${year}`;
+}
+
+function truncateTitle(title: string, max = 30) {
+  const clean = title.trim();
+  if (clean.length <= max) return clean;
+  return `${clean.slice(0, max - 1)}…`;
+}
+
 export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGeneratorProps) {
   const { openAuthModal } = useAuthController();
   const turnstileRef = useRef<TurnstileFieldHandle | null>(null);
@@ -288,6 +329,16 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   const [clearPhase, setClearPhase] = useState<ClearPhase>("idle");
   const [shellHeightPx, setShellHeightPx] = useState<number | null>(null);
   const [shellHeightTransitionMs, setShellHeightTransitionMs] = useState(0);
+  const [historyItems, setHistoryItems] = useState<GenerationHistoryItem[]>([]);
+  const [historyPage, setHistoryPage] = useState(0);
+  const [historyHasPrev, setHistoryHasPrev] = useState(false);
+  const [historyHasNext, setHistoryHasNext] = useState(false);
+  const [isHistoryAuthenticated, setIsHistoryAuthenticated] = useState(false);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [historyCardsVisible, setHistoryCardsVisible] = useState(true);
+  const [historyDirection, setHistoryDirection] = useState<"left" | "right">("right");
+  const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
+  const [selectedSavedHistory, setSelectedSavedHistory] = useState<GenerationHistoryItem | null>(null);
 
   const revealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const demoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -481,6 +532,92 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     }
   }, []);
 
+  const loadHistoryPage = useCallback(
+    async ({
+      page,
+      selectNewest = false,
+    }: {
+      page: number;
+      selectNewest?: boolean;
+    }) => {
+      setIsHistoryLoading(true);
+      try {
+        const response = await fetch(
+          `/api/generations/history?limit=${HISTORY_PAGE_SIZE}&page=${page}`,
+          { method: "GET" },
+        );
+        if (response.status === 401) {
+          setIsHistoryAuthenticated(false);
+          setHistoryItems([]);
+          setHistoryHasPrev(false);
+          setHistoryHasNext(false);
+          return;
+        }
+        if (!response.ok) {
+          throw new Error("Could not load history.");
+        }
+
+        const data = (await response.json()) as GenerationHistoryResponse;
+        const nextItems = Array.isArray(data.items) ? data.items : [];
+
+        setIsHistoryAuthenticated(true);
+        setHistoryItems(nextItems);
+        setHistoryPage(data.page ?? page);
+        setHistoryHasPrev(Boolean(data.hasPrev));
+        setHistoryHasNext(Boolean(data.hasNext));
+
+        if (nextItems.length === 0) {
+          setSelectedHistoryId(null);
+          setSelectedSavedHistory(null);
+          return;
+        }
+
+        if (selectNewest) {
+          const newest = nextItems[nextItems.length - 1];
+          setSelectedHistoryId(newest.id);
+          setSelectedSavedHistory(newest);
+          return;
+        }
+
+        setSelectedHistoryId((current) => {
+          const matched = current ? nextItems.find((item) => item.id === current) : null;
+          if (matched) {
+            setSelectedSavedHistory(matched);
+            return matched.id;
+          }
+          const fallback = nextItems[nextItems.length - 1];
+          setSelectedSavedHistory(fallback);
+          return fallback.id;
+        });
+      } catch {
+        setIsHistoryAuthenticated(false);
+      } finally {
+        setIsHistoryLoading(false);
+      }
+    },
+    [],
+  );
+
+  const pageHistory = useCallback(
+    async (direction: "left" | "right") => {
+      if (isHistoryLoading) return;
+
+      const nextPage = direction === "left" ? historyPage + 1 : historyPage - 1;
+      if (nextPage < 0) return;
+
+      if (direction === "left" && !historyHasNext) return;
+      if (direction === "right" && !historyHasPrev) return;
+
+      setHistoryDirection(direction);
+      setHistoryCardsVisible(false);
+      await new Promise((resolve) => setTimeout(resolve, HISTORY_TRANSITION_MS));
+      await loadHistoryPage({ page: nextPage, selectNewest: true });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      setHistoryCardsVisible(true);
+    },
+    [historyHasNext, historyHasPrev, historyPage, isHistoryLoading, loadHistoryPage],
+  );
+
   const openUsageHint = useCallback(() => {
     if (usageHintCloseTimeoutRef.current) {
       clearTimeout(usageHintCloseTimeoutRef.current);
@@ -526,6 +663,10 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   useEffect(() => {
     void refreshUsageLabel();
   }, [refreshUsageLabel]);
+
+  useEffect(() => {
+    void loadHistoryPage({ page: 0, selectNewest: true });
+  }, [loadHistoryPage]);
 
   useEffect(() => {
     const onCta = () => {
@@ -779,6 +920,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
       setIsUnlockingFromPaywall(false);
       setResultTags(data.tags.target, data.tags.discovery);
       void refreshUsageLabel();
+      void loadHistoryPage({ page: 0, selectNewest: true });
 
       clearPendingContext(contextId);
 
@@ -789,7 +931,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
         window.history.replaceState({}, "", url.toString());
       }
     },
-    [refreshUsageLabel, setResultTags],
+    [loadHistoryPage, refreshUsageLabel, setResultTags],
   );
 
   const executeGenerate = useCallback(async () => {
@@ -943,11 +1085,12 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   useEffect(() => {
     const onAuthSuccess = () => {
       void refreshUsageLabel();
+      void loadHistoryPage({ page: 0, selectNewest: true });
     };
 
     window.addEventListener(AUTH_SUCCESS_EVENT, onAuthSuccess);
     return () => window.removeEventListener(AUTH_SUCCESS_EVENT, onAuthSuccess);
-  }, [refreshUsageLabel]);
+  }, [loadHistoryPage, refreshUsageLabel]);
 
   useEffect(() => {
     const onAuthSuccess = () => {
@@ -1025,6 +1168,52 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     beginUnlockFromContext(unlockReadyContext);
   }, [beginUnlockFromContext, confirmModalMode, executeGenerate, unlockReadyContext]);
 
+  const onSelectHistoryItem = useCallback(
+    (item: GenerationHistoryItem) => {
+      if (item.isDraft) {
+        setSelectedHistoryId("draft");
+        return;
+      }
+
+      markUserInteraction();
+      setSelectedHistoryId(item.id);
+      setSelectedSavedHistory(item);
+      setTitle(item.title);
+      setDescription(item.description);
+      setShowDescription(Boolean(item.description));
+      setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
+      setPaywall(null);
+      setIsUnlockingFromPaywall(false);
+      setUnlockReadyContext(null);
+      setConfirmModalMode(null);
+      setError("");
+      setResultTags(item.targetTags, item.discoveryTags);
+    },
+    [markUserInteraction, setResultTags],
+  );
+
+  const clearDraftCard = useCallback(() => {
+    setTitle("");
+    setDescription("");
+    setShowDescription(false);
+    setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
+    setApiTags([]);
+    setVisibleTags([]);
+    setPaywall(null);
+    setUnlockReadyContext(null);
+    setConfirmModalMode(null);
+    setIsUnlockingFromPaywall(false);
+    setError("");
+    if (historyItems.length > 0) {
+      const newest = historyItems[historyItems.length - 1];
+      setSelectedHistoryId(newest.id);
+      setSelectedSavedHistory(newest);
+    } else {
+      setSelectedHistoryId(null);
+      setSelectedSavedHistory(null);
+    }
+  }, [historyItems]);
+
   const handleCopyAll = async () => {
     markUserInteraction();
     const allTags = visibleTags;
@@ -1058,6 +1247,52 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     }).format(date);
   }, [monthlyResetAt]);
   const showFreeGenerationModalTitle = confirmModalMode === "generate";
+  const hasAnyInput = Boolean(title.trim() || description.trim());
+  const hasDraftCard = useMemo(() => {
+    if (!isHistoryAuthenticated) return false;
+    if (!hasAnyInput) return false;
+    if (!selectedSavedHistory) return true;
+    const sameTitle = selectedSavedHistory.title.trim() === title.trim();
+    const sameDescription = selectedSavedHistory.description.trim() === description.trim();
+    return !(sameTitle && sameDescription);
+  }, [description, hasAnyInput, isHistoryAuthenticated, selectedSavedHistory, title]);
+  const displayHistoryCards = useMemo(() => {
+    const cards = [...historyItems];
+    if (hasDraftCard) {
+      cards.push({
+        id: "draft",
+        createdAt: new Date().toISOString(),
+        title: title.trim() || "Draft listing",
+        description,
+        targetTags: [],
+        discoveryTags: [],
+        isDraft: true,
+      });
+    }
+    return cards;
+  }, [description, hasDraftCard, historyItems, title]);
+  const showHistoryStrip =
+    isHistoryAuthenticated && (historyItems.length > 0 || hasDraftCard);
+
+  useEffect(() => {
+    if (selectedHistoryId === "draft" && !hasDraftCard) {
+      if (historyItems.length > 0) {
+        const newest = historyItems[historyItems.length - 1];
+        setSelectedHistoryId(newest.id);
+        setSelectedSavedHistory(newest);
+      } else {
+        setSelectedHistoryId(null);
+        setSelectedSavedHistory(null);
+      }
+      return;
+    }
+
+    if (!selectedHistoryId || selectedHistoryId === "draft") return;
+    const match = historyItems.find((item) => item.id === selectedHistoryId);
+    if (match) {
+      setSelectedSavedHistory(match);
+    }
+  }, [hasDraftCard, historyItems, selectedHistoryId]);
   return (
     <div ref={glowRef} id="generator" className="relative mx-auto max-w-2xl">
       <div className="pointer-events-none absolute -inset-8 overflow-hidden rounded-3xl">
@@ -1209,6 +1444,9 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
               onChange={(e) => {
                 markUserInteraction();
                 setTitle(e.target.value);
+                if (isHistoryAuthenticated) {
+                  setSelectedHistoryId("draft");
+                }
                 if (e.target.value.length > 0) {
                   setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
                 }
@@ -1247,6 +1485,9 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                   onChange={(e) => {
                     markUserInteraction();
                     setDescription(e.target.value);
+                    if (isHistoryAuthenticated) {
+                      setSelectedHistoryId("draft");
+                    }
                   }}
                   placeholder="Add more details about your product to get more accurate tags..."
                   rows={3}
@@ -1400,6 +1641,111 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
               </motion.div>
             )}
           </AnimatePresence>
+
+          {showHistoryStrip ? (
+            <div className="mt-4 rounded-xl border border-stone-200 bg-white/70 p-3">
+              <div className="flex items-center gap-2">
+                {historyHasNext ? (
+                  <button
+                    type="button"
+                    aria-label="Show older generations"
+                    onClick={() => void pageHistory("left")}
+                    disabled={isHistoryLoading}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-stone-200 bg-white text-stone-600 transition-colors hover:border-orange-300 hover:text-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                ) : null}
+
+                <div className="min-h-[80px] flex-1 overflow-hidden">
+                  <AnimatePresence mode="wait">
+                    {historyCardsVisible ? (
+                      <motion.div
+                        key={`history-page-${historyPage}-${displayHistoryCards.map((item) => item.id).join("-")}`}
+                        initial={{
+                          opacity: 0,
+                          x: historyDirection === "left" ? 10 : -10,
+                        }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{
+                          opacity: 0,
+                          x: historyDirection === "left" ? -10 : 10,
+                        }}
+                        transition={{ duration: 0.16, ease: "easeOut" }}
+                        className="flex items-stretch gap-2"
+                      >
+                        {displayHistoryCards.map((item) => {
+                          const isSelected = selectedHistoryId === item.id || (item.isDraft && selectedHistoryId === "draft");
+                          const cardDate = item.isDraft ? "Draft" : formatHistoryDate(item.createdAt);
+                          const cardTitle = truncateTitle(item.title, 26);
+                          return (
+                            <div
+                              key={item.isDraft ? "draft-card" : item.id}
+                              role="button"
+                              tabIndex={0}
+                              onClick={() => onSelectHistoryItem(item)}
+                              onKeyDown={(event) => {
+                                if (event.key !== "Enter" && event.key !== " ") return;
+                                event.preventDefault();
+                                onSelectHistoryItem(item);
+                              }}
+                              className={`relative h-20 min-w-[148px] max-w-[148px] rounded-lg border px-2.5 py-2 text-left transition-all ${
+                                isSelected
+                                  ? "border-orange-400 bg-orange-50 shadow-sm"
+                                  : "border-stone-200 bg-white hover:border-orange-300"
+                              }`}
+                            >
+                              {item.isDraft ? (
+                                <>
+                                  <span className="inline-flex rounded-full bg-stone-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-600">
+                                    Draft
+                                  </span>
+                                  <button
+                                    type="button"
+                                    aria-label="Delete draft"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      clearDraftCard();
+                                    }}
+                                    className="absolute right-1.5 top-1.5 inline-flex h-5 w-5 items-center justify-center rounded-md text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-700"
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </button>
+                                </>
+                              ) : null}
+                              <p className="mt-1 text-[11px] font-medium text-stone-500">{cardDate}</p>
+                              <p className="mt-1 text-xs font-semibold leading-snug text-stone-700">{cardTitle}</p>
+                            </div>
+                          );
+                        })}
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key={`history-loading-${historyPage}`}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.12 }}
+                        className="h-20"
+                      />
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {historyHasPrev ? (
+                  <button
+                    type="button"
+                    aria-label="Show newer generations"
+                    onClick={() => void pageHistory("right")}
+                    disabled={isHistoryLoading}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-stone-200 bg-white text-stone-600 transition-colors hover:border-orange-300 hover:text-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
 
         </div>
       </motion.div>

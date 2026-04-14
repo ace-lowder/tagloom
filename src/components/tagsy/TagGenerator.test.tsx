@@ -123,6 +123,15 @@ function createFetchMockForGenerator(
       return mockGenerateResponse({ usageLabel: null });
     }
 
+    if (url.includes("/api/generations/history")) {
+      return mockGenerateResponse({
+        items: [],
+        page: 0,
+        hasPrev: false,
+        hasNext: false,
+      });
+    }
+
     const next = generateResponses[generateIndex];
     generateIndex += 1;
     if (!next) {
@@ -588,6 +597,14 @@ describe("TagGenerator usage label info", () => {
           monthlyResetAt: "2026-05-15T00:00:00.000Z",
         });
       }
+      if (url.includes("/api/generations/history")) {
+        return mockGenerateResponse({
+          items: [],
+          page: 0,
+          hasPrev: false,
+          hasNext: false,
+        });
+      }
       return mockGenerateResponse({ error: "Unexpected fetch call." }, false);
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -623,6 +640,14 @@ describe("TagGenerator usage label info", () => {
       const url = typeof input === "string" ? input : String(input);
       if (url.includes("/api/account/usage")) {
         return mockGenerateResponse({ usageLabel: null });
+      }
+      if (url.includes("/api/generations/history")) {
+        return mockGenerateResponse({
+          items: [],
+          page: 0,
+          hasPrev: false,
+          hasNext: false,
+        });
       }
       return mockGenerateResponse({ error: "Unexpected fetch call." }, false);
     });
