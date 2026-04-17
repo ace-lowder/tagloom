@@ -915,4 +915,66 @@ describe("TagGenerator history strip behavior", () => {
     ).toBeInTheDocument();
     expect(screen.getByDisplayValue(historyDescription)).toBeInTheDocument();
   });
+
+  it("clears pending history tags when switching to a draft card", async () => {
+    window.localStorage.setItem(
+      "tagloom:history:v1",
+      JSON.stringify({
+        page0: [
+          {
+            id: "hist_1",
+            createdAt: "2026-08-14T00:00:00.000Z",
+            title: "History title one",
+            description: "Hydrated description from history",
+            targetTags: ["tag one", "tag two", "tag three"],
+            discoveryTags: ["tag four", "tag five", "tag six"],
+          },
+        ],
+        hasPrev: false,
+        hasNext: false,
+        selectedId: null,
+        draft: {
+          title: "Draft listing",
+          description: "Draft description",
+          updatedAt: "2026-08-14T00:00:00.000Z",
+        },
+        savedAt: Date.now(),
+      }),
+    );
+
+    const fetchMock = vi.fn().mockImplementation((input: unknown) => {
+      const url = typeof input === "string" ? input : String(input);
+      if (url.includes("/api/account/usage")) {
+        return mockGenerateResponse({ usageLabel: null });
+      }
+      if (url.includes("/api/generations/history")) {
+        return mockGenerateResponse({
+          items: [
+            {
+              id: "hist_1",
+              createdAt: "2026-08-14T00:00:00.000Z",
+              title: "History title one",
+              description: "Hydrated description from history",
+              targetTags: ["tag one", "tag two", "tag three"],
+              discoveryTags: ["tag four", "tag five", "tag six"],
+            },
+          ],
+          page: 0,
+          hasPrev: false,
+          hasNext: false,
+        });
+      }
+      return mockGenerateResponse({ error: "Unexpected fetch call." }, false);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+
+    fireEvent.click(await screen.findByText("History title one"));
+    expect(await screen.findByTestId("generated-tag-chip")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("Draft"));
+    await waitFor(() => expect(screen.queryByTestId("generated-tag-chip")).not.toBeInTheDocument());
+    expect(screen.getByDisplayValue("Draft description")).toBeInTheDocument();
+  });
 });

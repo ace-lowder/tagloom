@@ -1327,6 +1327,8 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     (item: GenerationHistoryItem) => {
       if (item.isDraft) {
         markUserInteraction();
+        clearRevealTimer();
+        clearDemoTimer();
         setSelectedHistoryId("draft");
         setSelectedSavedHistory(null);
         setTitle(item.title);
@@ -1338,8 +1340,13 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
         setUnlockReadyContext(null);
         setConfirmModalMode(null);
         setError("");
+        setIsGenerating(false);
+        setEntitlementUsed(null);
         setApiTags([]);
         setVisibleTags([]);
+        setClearPhase("idle");
+        setShellHeightTransitionMs(0);
+        setShellHeightPx(null);
         return;
       }
 
