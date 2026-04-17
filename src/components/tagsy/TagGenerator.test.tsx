@@ -678,7 +678,16 @@ describe("TagGenerator usage label info", () => {
       }
       if (url.includes("/api/generations/history")) {
         return mockGenerateResponse({
-          items: [],
+          items: [
+            {
+              id: "hist_1",
+              createdAt: "2026-08-14T00:00:00.000Z",
+              title: "History title one",
+              description: "Hydrated description from history",
+              targetTags: ["tag one"],
+              discoveryTags: ["tag two"],
+            },
+          ],
           page: 0,
           hasPrev: false,
           hasNext: false,
@@ -748,7 +757,50 @@ describe("TagGenerator history strip behavior", () => {
     expect(historyCard.closest('[role="button"]')).not.toHaveClass("border-orange-400");
   });
 
-  it("restores a cached history selection on startup", async () => {
+  it("shows no selected history card while the demo is active", async () => {
+    const fetchMock = vi.fn().mockImplementation((input: unknown) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : typeof input === "object" &&
+                input !== null &&
+                "url" in input &&
+                typeof (input as { url?: unknown }).url === "string"
+              ? (input as { url: string }).url
+              : String(input);
+      if (url.includes("/api/account/usage")) {
+        return mockGenerateResponse({ usageLabel: null });
+      }
+      if (url.includes("/api/generations/history")) {
+        return mockGenerateResponse({
+          items: [
+            {
+              id: "hist_1",
+              createdAt: "2026-08-14T00:00:00.000Z",
+              title: "History title one",
+              description: "Hydrated description from history",
+              targetTags: ["tag one"],
+              discoveryTags: ["tag two"],
+            },
+          ],
+          page: 0,
+          hasPrev: false,
+          hasNext: false,
+        });
+      }
+      return mockGenerateResponse({ error: "Unexpected fetch call." }, false);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+
+    const historyCard = await screen.findByText("History title one");
+    expect(historyCard.closest('[role="button"]')).not.toHaveClass("border-orange-400");
+  });
+
+  it("does not show a cached history selection while the demo is active", async () => {
     window.localStorage.setItem(
       "tagloom:history:v1",
       JSON.stringify({
@@ -809,7 +861,7 @@ describe("TagGenerator history strip behavior", () => {
     render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     const historyCard = await screen.findByText("History title one");
-    expect(historyCard.closest('[role="button"]')).toHaveClass("border-orange-400");
+    expect(historyCard.closest('[role="button"]')).not.toHaveClass("border-orange-400");
   });
 
   it("renders draft card with single draft label and title", async () => {
@@ -976,5 +1028,88 @@ describe("TagGenerator history strip behavior", () => {
     fireEvent.click(screen.getByText("Draft"));
     await waitFor(() => expect(screen.queryByTestId("generated-tag-chip")).not.toBeInTheDocument());
     expect(screen.getByDisplayValue("Draft description")).toBeInTheDocument();
+  });
+
+  it("creates a draft from typing without auto-selecting it when another history item is selected", async () => {
+    window.localStorage.setItem(
+      "tagloom:history:v1",
+      JSON.stringify({
+        page0: [],
+        hasPrev: false,
+        hasNext: false,
+        selectedId: null,
+        draft: null,
+        savedAt: Date.now(),
+      }),
+    );
+
+    const fetchMock = vi.fn().mockImplementation((input: unknown) => {
+      const url = typeof input === "string" ? input : String(input);
+      if (url.includes("/api/account/usage")) {
+        return mockGenerateResponse({ usageLabel: null });
+      }
+      if (url.includes("/api/generations/history")) {
+        return mockGenerateResponse({
+          items: [
+            {
+              id: "hist_1",
+              createdAt: "2026-08-14T00:00:00.000Z",
+              title: "History title one",
+              description: "Hydrated description from history",
+              targetTags: ["tag one"],
+              discoveryTags: ["tag two"],
+            },
+          ],
+          page: 0,
+          hasPrev: false,
+          hasNext: false,
+        });
+      }
+      return mockGenerateResponse({ error: "Unexpected fetch call." }, false);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+
+    const historyCard = await screen.findByText("History title one");
+    fireEvent.click(historyCard);
+
+    const titleInput = screen.getByDisplayValue("History title one");
+    fireEvent.change(titleInput, { target: { value: "History title one updated" } });
+
+    expect(await screen.findByText("History title one updated")).toBeInTheDocument();
+    expect(screen.getByText("History title one updated")).toBeInTheDocument();
+    expect(historyCard.closest('[role="button"]')).toHaveClass("border-orange-400");
+  });
+
+  it("creates a new draft and selects it when nothing is selected", async () => {
+    const fetchMock = vi.fn().mockImplementation((input: unknown) => {
+      const url = typeof input === "string" ? input : String(input);
+      if (url.includes("/api/account/usage")) {
+        return mockGenerateResponse({ usageLabel: null });
+      }
+      if (url.includes("/api/generations/history")) {
+        return mockGenerateResponse({
+          items: [],
+          page: 0,
+          hasPrev: false,
+          hasNext: false,
+        });
+      }
+      return mockGenerateResponse({ error: "Unexpected fetch call." }, false);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    const titleInput = screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER);
+    fireEvent.focus(titleInput);
+    fireEvent.change(titleInput, { target: { value: "New draft title" } });
+
+    expect(await screen.findByText("New draft title")).toBeInTheDocument();
+    expect(screen.getByText("New draft title").closest('[role="button"]')).toHaveClass(
+      "border-orange-400",
+    );
   });
 });

@@ -1,11 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, ChevronLeft, ChevronRight, Copy, Info, LockOpen, Sparkles, X } from "lucide-react";
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Info,
+  LockOpen,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { useAuthController } from "@/components/auth/AuthController";
-import TurnstileField, { type TurnstileFieldHandle } from "@/components/security/TurnstileField";
+import TurnstileField, {
+  type TurnstileFieldHandle,
+} from "@/components/security/TurnstileField";
 import { AUTH_SUCCESS_EVENT } from "@/lib/authModal";
 import { GENERATOR_CTA_EVENT } from "@/lib/generatorCta";
 import GradientBackground from "./GradientBackground";
@@ -66,6 +84,7 @@ type GenerationHistoryResponse = {
   hasNext: boolean;
 };
 type DraftHistoryState = {
+  id: string;
   title: string;
   description: string;
   updatedAt: string;
@@ -75,7 +94,8 @@ type HistoryCache = {
   hasPrev: boolean;
   hasNext: boolean;
   selectedId: string | null;
-  draft: DraftHistoryState | null;
+  drafts: DraftHistoryState[];
+  selectedDraftId: string | null;
   savedAt: number;
 };
 
@@ -227,7 +247,10 @@ function generateContextId() {
 }
 
 function savePendingContext(context: PendingContext) {
-  sessionStorage.setItem(getContextStorageKey(context.id), JSON.stringify(context));
+  sessionStorage.setItem(
+    getContextStorageKey(context.id),
+    JSON.stringify(context),
+  );
 }
 
 function loadPendingContext(id: string): PendingContext | null {
@@ -277,19 +300,44 @@ function readHistoryCache(): HistoryCache | null {
       page0: parsed.page0,
       hasPrev: Boolean(parsed.hasPrev),
       hasNext: Boolean(parsed.hasNext),
-      selectedId: typeof parsed.selectedId === "string" ? parsed.selectedId : null,
-      draft:
-        parsed.draft &&
-        typeof parsed.draft.title === "string" &&
-        typeof parsed.draft.description === "string"
-          ? {
-              title: parsed.draft.title,
-              description: parsed.draft.description,
+      selectedId:
+        typeof parsed.selectedId === "string" ? parsed.selectedId : null,
+      drafts: Array.isArray(parsed.drafts)
+        ? parsed.drafts
+            .filter(
+              (draft): draft is DraftHistoryState =>
+                Boolean(draft) &&
+                typeof draft.id === "string" &&
+                typeof draft.title === "string" &&
+                typeof draft.description === "string",
+            )
+            .map((draft) => ({
+              id: draft.id,
+              title: draft.title,
+              description: draft.description,
               updatedAt:
-                typeof parsed.draft.updatedAt === "string"
-                  ? parsed.draft.updatedAt
+                typeof draft.updatedAt === "string"
+                  ? draft.updatedAt
                   : new Date().toISOString(),
-            }
+            }))
+        : parsed.draft &&
+            typeof parsed.draft.title === "string" &&
+            typeof parsed.draft.description === "string"
+          ? [
+              {
+                id: "draft",
+                title: parsed.draft.title,
+                description: parsed.draft.description,
+                updatedAt:
+                  typeof parsed.draft.updatedAt === "string"
+                    ? parsed.draft.updatedAt
+                    : new Date().toISOString(),
+              },
+            ]
+          : [],
+      selectedDraftId:
+        typeof parsed.selectedDraftId === "string"
+          ? parsed.selectedDraftId
           : null,
       savedAt: typeof parsed.savedAt === "number" ? parsed.savedAt : Date.now(),
     };
@@ -316,7 +364,10 @@ function clearHistoryCache() {
   }
 }
 
-function getUsageHintText(usageLabel: string | null, monthlyResetAt?: string | null) {
+function getUsageHintText(
+  usageLabel: string | null,
+  monthlyResetAt?: string | null,
+) {
   if (!usageLabel) return null;
   const normalized = usageLabel.toLowerCase();
 
@@ -348,7 +399,9 @@ function ordinal(day: number) {
 function formatHistoryDate(isoDate: string) {
   const date = new Date(isoDate);
   if (Number.isNaN(date.getTime())) return "";
-  const month = new Intl.DateTimeFormat("en-US", { month: "short" }).format(date);
+  const month = new Intl.DateTimeFormat("en-US", { month: "short" }).format(
+    date,
+  );
   const day = ordinal(date.getDate());
   const year = date.getFullYear();
   return `${month} ${day}, ${year}`;
@@ -360,7 +413,11 @@ function truncateTitle(title: string, max = 30) {
   return `${clean.slice(0, max - 1)}…`;
 }
 
-export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGeneratorProps) {
+export default function TagGenerator({
+  onFocus,
+  glowRef,
+  demoConfig,
+}: TagGeneratorProps) {
   const { openAuthModal } = useAuthController();
   const turnstileRef = useRef<TurnstileFieldHandle | null>(null);
   const turnstileEnabled = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
@@ -371,7 +428,9 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   );
   const [description, setDescription] = useState("");
   const [showDescription, setShowDescription] = useState(false);
-  const [focusedField, setFocusedField] = useState<"title" | "description" | null>(null);
+  const [focusedField, setFocusedField] = useState<
+    "title" | "description" | null
+  >(null);
 
   const [apiTags, setApiTags] = useState<string[]>([]);
   const [visibleTags, setVisibleTags] = useState<string[]>([]);
@@ -385,10 +444,15 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   const [isUsageHintOpen, setIsUsageHintOpen] = useState(false);
   const [paywall, setPaywall] = useState<PaywallState | null>(null);
   const [isUnlockingFromPaywall, setIsUnlockingFromPaywall] = useState(false);
-  const [unlockReadyContext, setUnlockReadyContext] = useState<PendingContext | null>(null);
-  const [confirmModalMode, setConfirmModalMode] = useState<"unlock" | "generate" | null>(null);
+  const [unlockReadyContext, setUnlockReadyContext] =
+    useState<PendingContext | null>(null);
+  const [confirmModalMode, setConfirmModalMode] = useState<
+    "unlock" | "generate" | null
+  >(null);
   const [activeSheenId, setActiveSheenId] = useState<number | null>(null);
-  const [generationContextId, setGenerationContextId] = useState<string | null>(null);
+  const [generationContextId, setGenerationContextId] = useState<string | null>(
+    null,
+  );
   const [isDemoActive, setIsDemoActive] = useState(true);
   const [demoPhase, setDemoPhase] = useState<DemoPhase>("typing");
   const [clearPhase, setClearPhase] = useState<ClearPhase>("idle");
@@ -401,10 +465,19 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   const [isHistoryAuthenticated, setIsHistoryAuthenticated] = useState(false);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [historyCardsVisible, setHistoryCardsVisible] = useState(true);
-  const [historyDirection, setHistoryDirection] = useState<"left" | "right">("right");
-  const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
-  const [, setSelectedSavedHistory] = useState<GenerationHistoryItem | null>(null);
-  const [draftHistory, setDraftHistory] = useState<DraftHistoryState | null>(null);
+  const [historyDirection, setHistoryDirection] = useState<"left" | "right">(
+    "right",
+  );
+  const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(
+    null,
+  );
+  const [, setSelectedSavedHistory] = useState<GenerationHistoryItem | null>(
+    null,
+  );
+  const [draftHistoryItems, setDraftHistoryItems] = useState<
+    DraftHistoryState[]
+  >([]);
+  const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
 
   const revealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const demoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -413,7 +486,9 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   const contentRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const requestVersionRef = useRef(0);
-  const usageHintCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const usageHintCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const demoFixtureIndexRef = useRef(0);
   const demoCharIndexRef = useRef(0);
   const shouldSkipDemoRef = useRef(false);
@@ -431,42 +506,60 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     startedAtMs: 0,
   });
 
-  const setRevealTimer = useCallback((callback: () => void, delayMs: number) => {
-    if (revealTimeoutRef.current) {
-      clearTimeout(revealTimeoutRef.current);
-      revealTimeoutRef.current = null;
-    }
-    revealTimerMetaRef.current = {
-      callback,
-      delayMs,
-      remainingMs: delayMs,
-      startedAtMs: Date.now(),
-    };
-    revealTimeoutRef.current = setTimeout(() => {
-      revealTimeoutRef.current = null;
-      const cb = revealTimerMetaRef.current.callback;
-      revealTimerMetaRef.current = { callback: null, delayMs: 0, remainingMs: 0, startedAtMs: 0 };
-      if (cb) cb();
-    }, delayMs);
-  }, []);
+  const setRevealTimer = useCallback(
+    (callback: () => void, delayMs: number) => {
+      if (revealTimeoutRef.current) {
+        clearTimeout(revealTimeoutRef.current);
+        revealTimeoutRef.current = null;
+      }
+      revealTimerMetaRef.current = {
+        callback,
+        delayMs,
+        remainingMs: delayMs,
+        startedAtMs: Date.now(),
+      };
+      revealTimeoutRef.current = setTimeout(() => {
+        revealTimeoutRef.current = null;
+        const cb = revealTimerMetaRef.current.callback;
+        revealTimerMetaRef.current = {
+          callback: null,
+          delayMs: 0,
+          remainingMs: 0,
+          startedAtMs: 0,
+        };
+        if (cb) cb();
+      }, delayMs);
+    },
+    [],
+  );
 
   const pauseRevealTimer = useCallback(() => {
-    if (!revealTimeoutRef.current || !revealTimerMetaRef.current.callback) return;
+    if (!revealTimeoutRef.current || !revealTimerMetaRef.current.callback)
+      return;
     clearTimeout(revealTimeoutRef.current);
     revealTimeoutRef.current = null;
     const elapsed = Date.now() - revealTimerMetaRef.current.startedAtMs;
-    revealTimerMetaRef.current.remainingMs = Math.max(revealTimerMetaRef.current.delayMs - elapsed, 0);
+    revealTimerMetaRef.current.remainingMs = Math.max(
+      revealTimerMetaRef.current.delayMs - elapsed,
+      0,
+    );
   }, []);
 
   const resumeRevealTimer = useCallback(() => {
-    if (revealTimeoutRef.current || !revealTimerMetaRef.current.callback) return;
+    if (revealTimeoutRef.current || !revealTimerMetaRef.current.callback)
+      return;
     const delayMs = revealTimerMetaRef.current.remainingMs;
     revealTimerMetaRef.current.delayMs = delayMs;
     revealTimerMetaRef.current.startedAtMs = Date.now();
     revealTimeoutRef.current = setTimeout(() => {
       revealTimeoutRef.current = null;
       const cb = revealTimerMetaRef.current.callback;
-      revealTimerMetaRef.current = { callback: null, delayMs: 0, remainingMs: 0, startedAtMs: 0 };
+      revealTimerMetaRef.current = {
+        callback: null,
+        delayMs: 0,
+        remainingMs: 0,
+        startedAtMs: 0,
+      };
       if (cb) cb();
     }, delayMs);
   }, []);
@@ -476,7 +569,12 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
       clearTimeout(revealTimeoutRef.current);
       revealTimeoutRef.current = null;
     }
-    revealTimerMetaRef.current = { callback: null, delayMs: 0, remainingMs: 0, startedAtMs: 0 };
+    revealTimerMetaRef.current = {
+      callback: null,
+      delayMs: 0,
+      remainingMs: 0,
+      startedAtMs: 0,
+    };
   }, []);
 
   const setDemoTimer = useCallback((callback: () => void, delayMs: number) => {
@@ -493,7 +591,12 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     demoTimeoutRef.current = setTimeout(() => {
       demoTimeoutRef.current = null;
       const cb = demoTimerMetaRef.current.callback;
-      demoTimerMetaRef.current = { callback: null, delayMs: 0, remainingMs: 0, startedAtMs: 0 };
+      demoTimerMetaRef.current = {
+        callback: null,
+        delayMs: 0,
+        remainingMs: 0,
+        startedAtMs: 0,
+      };
       if (cb) cb();
     }, delayMs);
   }, []);
@@ -503,7 +606,10 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     clearTimeout(demoTimeoutRef.current);
     demoTimeoutRef.current = null;
     const elapsed = Date.now() - demoTimerMetaRef.current.startedAtMs;
-    demoTimerMetaRef.current.remainingMs = Math.max(demoTimerMetaRef.current.delayMs - elapsed, 0);
+    demoTimerMetaRef.current.remainingMs = Math.max(
+      demoTimerMetaRef.current.delayMs - elapsed,
+      0,
+    );
   }, []);
 
   const resumeDemoTimer = useCallback(() => {
@@ -514,7 +620,12 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     demoTimeoutRef.current = setTimeout(() => {
       demoTimeoutRef.current = null;
       const cb = demoTimerMetaRef.current.callback;
-      demoTimerMetaRef.current = { callback: null, delayMs: 0, remainingMs: 0, startedAtMs: 0 };
+      demoTimerMetaRef.current = {
+        callback: null,
+        delayMs: 0,
+        remainingMs: 0,
+        startedAtMs: 0,
+      };
       if (cb) cb();
     }, delayMs);
   }, []);
@@ -524,7 +635,12 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
       clearTimeout(demoTimeoutRef.current);
       demoTimeoutRef.current = null;
     }
-    demoTimerMetaRef.current = { callback: null, delayMs: 0, remainingMs: 0, startedAtMs: 0 };
+    demoTimerMetaRef.current = {
+      callback: null,
+      delayMs: 0,
+      remainingMs: 0,
+      startedAtMs: 0,
+    };
     if (collapseRafRef.current) {
       cancelAnimationFrame(collapseRafRef.current);
       collapseRafRef.current = null;
@@ -557,7 +673,10 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     }, 20);
   }, []);
 
-  const demoFixtures = useMemo(() => demoConfig?.fixtures ?? DEMO_FIXTURES, [demoConfig?.fixtures]);
+  const demoFixtures = useMemo(
+    () => demoConfig?.fixtures ?? DEMO_FIXTURES,
+    [demoConfig?.fixtures],
+  );
   const demoTimings = useMemo<DemoTimings>(
     () => ({
       ...DEFAULT_DEMO_TIMINGS,
@@ -584,7 +703,12 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     setFocusedField("title");
     focusTitleInput();
     onFocus?.();
-  }, [focusTitleInput, getCurrentDemoFixtureTitle, markUserInteraction, onFocus]);
+  }, [
+    focusTitleInput,
+    getCurrentDemoFixtureTitle,
+    markUserInteraction,
+    onFocus,
+  ]);
 
   const refreshUsageLabel = useCallback(async () => {
     try {
@@ -593,7 +717,8 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
         return { usageLabel: null as string | null, resolved: false };
       }
       const data = (await response.json()) as AccountUsageResponse;
-      const nextLabel = typeof data.usageLabel === "string" ? data.usageLabel.trim() : "";
+      const nextLabel =
+        typeof data.usageLabel === "string" ? data.usageLabel.trim() : "";
       setUsageLabel(nextLabel || null);
       setMonthlyResetAt(
         typeof data.monthlyResetAt === "string" && data.monthlyResetAt.trim()
@@ -627,7 +752,8 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
           setHistoryItems([]);
           setHistoryHasPrev(false);
           setHistoryHasNext(false);
-          setDraftHistory(null);
+          setDraftHistoryItems([]);
+          setSelectedDraftId(null);
           setSelectedHistoryId(null);
           setSelectedSavedHistory(null);
           clearHistoryCache();
@@ -660,7 +786,9 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
         }
 
         setSelectedHistoryId((current) => {
-          const matched = current ? nextItems.find((item) => item.id === current) : null;
+          const matched = current
+            ? nextItems.find((item) => item.id === current)
+            : null;
           if (matched) {
             setSelectedSavedHistory(matched);
             return matched.id;
@@ -690,12 +818,20 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
 
       setHistoryDirection(direction);
       setHistoryCardsVisible(false);
-      await new Promise((resolve) => setTimeout(resolve, HISTORY_TRANSITION_MS));
+      await new Promise((resolve) =>
+        setTimeout(resolve, HISTORY_TRANSITION_MS),
+      );
       await loadHistoryPage({ page: nextPage, selectNewest: true });
       await new Promise((resolve) => setTimeout(resolve, 100));
       setHistoryCardsVisible(true);
     },
-    [historyHasNext, historyHasPrev, historyPage, isHistoryLoading, loadHistoryPage],
+    [
+      historyHasNext,
+      historyHasPrev,
+      historyPage,
+      isHistoryLoading,
+      loadHistoryPage,
+    ],
   );
 
   const openUsageHint = useCallback(() => {
@@ -753,16 +889,36 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
       setHistoryPage(0);
       setHistoryHasPrev(Boolean(cached.hasPrev));
       setHistoryHasNext(Boolean(cached.hasNext));
-      setDraftHistory(cached.draft);
+      const cachedDrafts = Array.isArray(cached.drafts)
+        ? cached.drafts
+        : cached.draft
+          ? [{ id: "draft", ...cached.draft }]
+          : [];
+      setDraftHistoryItems(cachedDrafts);
+      setSelectedDraftId(
+        cached.selectedDraftId &&
+          cachedDrafts.some((draft) => draft.id === cached.selectedDraftId)
+          ? cached.selectedDraftId
+          : null,
+      );
       if (cached.selectedId) {
         setSelectedHistoryId(cached.selectedId);
-        if (cached.selectedId === "draft" && cached.draft) {
-          setTitle(cached.draft.title);
-          setDescription(cached.draft.description);
-          setShowDescription(Boolean(cached.draft.description) || Boolean(cached.draft.title));
+        if (cached.selectedId === "draft" && cachedDrafts.length > 0) {
+          const selectedDraft =
+            cachedDrafts.find((draft) => draft.id === cached.selectedDraftId) ??
+            cachedDrafts[cachedDrafts.length - 1];
+          if (selectedDraft) {
+            setTitle(selectedDraft.title);
+            setDescription(selectedDraft.description);
+            setShowDescription(
+              Boolean(selectedDraft.description) ||
+                Boolean(selectedDraft.title),
+            );
+          }
           setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
         }
-        const selected = cachedItems.find((item) => item.id === cached.selectedId) ?? null;
+        const selected =
+          cachedItems.find((item) => item.id === cached.selectedId) ?? null;
         setSelectedSavedHistory(selected);
       } else {
         setSelectedHistoryId(null);
@@ -771,6 +927,12 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     }
     void loadHistoryPage({ page: 0, selectNewest: false });
   }, [loadHistoryPage]);
+
+  useEffect(() => {
+    if (!isDemoActive) return;
+    setSelectedHistoryId(null);
+    setSelectedSavedHistory(null);
+  }, [isDemoActive]);
 
   useEffect(() => {
     if (!isHistoryAuthenticated) {
@@ -784,17 +946,19 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
       hasPrev: historyHasPrev,
       hasNext: historyHasNext,
       selectedId: selectedHistoryId,
-      draft: draftHistory,
+      drafts: draftHistoryItems,
+      selectedDraftId,
       savedAt: Date.now(),
     });
   }, [
-    draftHistory,
+    draftHistoryItems,
     historyHasNext,
     historyHasPrev,
     historyItems,
     historyPage,
     isHistoryAuthenticated,
     selectedHistoryId,
+    selectedDraftId,
   ]);
 
   useEffect(() => {
@@ -805,7 +969,8 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     };
 
     window.addEventListener(GENERATOR_CTA_EVENT, onCta as EventListener);
-    return () => window.removeEventListener(GENERATOR_CTA_EVENT, onCta as EventListener);
+    return () =>
+      window.removeEventListener(GENERATOR_CTA_EVENT, onCta as EventListener);
   }, [focusTitleInput, playSheen]);
 
   useEffect(() => {
@@ -857,7 +1022,8 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     const runCycle = () => {
       if (!isDemoActive || shouldSkipDemoRef.current) return;
 
-      const fixture = demoFixtures[demoFixtureIndexRef.current % demoFixtures.length];
+      const fixture =
+        demoFixtures[demoFixtureIndexRef.current % demoFixtures.length];
       resetDemoVisualState();
       demoCharIndexRef.current = 0;
       setTitle("");
@@ -882,7 +1048,10 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
             setDemoPhase("revealing");
             setResultTags(fixture.tags.target, fixture.tags.discovery);
 
-            const revealTagCount = sanitizeMergedTags(fixture.tags.target, fixture.tags.discovery).length;
+            const revealTagCount = sanitizeMergedTags(
+              fixture.tags.target,
+              fixture.tags.discovery,
+            ).length;
             const revealDuration =
               revealTagCount * demoTimings.revealStepMs +
               demoTimings.revealTailMs +
@@ -909,7 +1078,8 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
               setDemoTimer(() => {
                 if (!isDemoActive || shouldSkipDemoRef.current) return;
                 const shell = shellRef.current;
-                const fromHeight = shell?.getBoundingClientRect().height ?? null;
+                const fromHeight =
+                  shell?.getBoundingClientRect().height ?? null;
                 if (fromHeight !== null) {
                   setShellHeightTransitionMs(0);
                   setShellHeightPx(fromHeight);
@@ -921,8 +1091,12 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                 collapseRafRef.current = requestAnimationFrame(() => {
                   collapseRafRef.current = null;
                   if (!isDemoActive || shouldSkipDemoRef.current) return;
-                  const contentHeight = contentRef.current?.getBoundingClientRect().height ?? null;
-                  const toHeight = contentHeight !== null ? Math.max(contentHeight + 2, 0) : fromHeight;
+                  const contentHeight =
+                    contentRef.current?.getBoundingClientRect().height ?? null;
+                  const toHeight =
+                    contentHeight !== null
+                      ? Math.max(contentHeight + 2, 0)
+                      : fromHeight;
                   if (fromHeight !== null && toHeight !== undefined) {
                     setShellHeightTransitionMs(demoTimings.clearCollapseMs);
                     setShellHeightPx(toHeight);
@@ -948,7 +1122,15 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     runCycle();
 
     return clearDemoTimer;
-  }, [clearDemoTimer, clearRevealTimer, demoFixtures, demoTimings, isDemoActive, setDemoTimer, setResultTags]);
+  }, [
+    clearDemoTimer,
+    clearRevealTimer,
+    demoFixtures,
+    demoTimings,
+    isDemoActive,
+    setDemoTimer,
+    setResultTags,
+  ]);
 
   useEffect(() => {
     const onVisibilityChange = () => {
@@ -962,7 +1144,11 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
           setShellHeightPx(null);
           setClearPhase("idle");
         }
-      } else if (isDemoPausedRef.current && isDemoActive && !shouldSkipDemoRef.current) {
+      } else if (
+        isDemoPausedRef.current &&
+        isDemoActive &&
+        !shouldSkipDemoRef.current
+      ) {
         isDemoPausedRef.current = false;
         resumeRevealTimer();
         resumeDemoTimer();
@@ -970,8 +1156,16 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     };
 
     document.addEventListener("visibilitychange", onVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
-  }, [clearPhase, isDemoActive, pauseDemoTimer, pauseRevealTimer, resumeDemoTimer, resumeRevealTimer]);
+    return () =>
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, [
+    clearPhase,
+    isDemoActive,
+    pauseDemoTimer,
+    pauseRevealTimer,
+    resumeDemoTimer,
+    resumeRevealTimer,
+  ]);
 
   useEffect(() => {
     if (!isDemoActive || shouldSkipDemoRef.current) return;
@@ -1001,7 +1195,13 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [isDemoActive, pauseDemoTimer, pauseRevealTimer, resumeDemoTimer, resumeRevealTimer]);
+  }, [
+    isDemoActive,
+    pauseDemoTimer,
+    pauseRevealTimer,
+    resumeDemoTimer,
+    resumeRevealTimer,
+  ]);
 
   useEffect(() => clearDemoTimer, [clearDemoTimer]);
 
@@ -1026,7 +1226,9 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
         }),
       });
 
-      const data = (await response.json()) as GenerateResponse & { error?: string };
+      const data = (await response.json()) as GenerateResponse & {
+        error?: string;
+      };
 
       if (!response.ok) {
         throw new Error(data.error || "Could not generate tags.");
@@ -1070,13 +1272,17 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     let turnstileToken: string | null = null;
     if (turnstileEnabled) {
       try {
-        turnstileToken = await turnstileRef.current?.getToken() ?? null;
+        turnstileToken = (await turnstileRef.current?.getToken()) ?? null;
         if (!turnstileToken) {
           setError("Please complete the bot check and try again.");
           return;
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Bot check failed. Please try again.");
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Bot check failed. Please try again.",
+        );
         return;
       }
     }
@@ -1205,9 +1411,13 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     if (!shouldResume) return;
 
     window.setTimeout(() => {
-      runGeneration(context.title, context.description, context.id).catch((err) => {
-        setError(err instanceof Error ? err.message : "Could not resume generation.");
-      });
+      runGeneration(context.title, context.description, context.id).catch(
+        (err) => {
+          setError(
+            err instanceof Error ? err.message : "Could not resume generation.",
+          );
+        },
+      );
     }, 120);
   }, [clearDemoTimer, clearRevealTimer, runGeneration]);
 
@@ -1241,10 +1451,16 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
           setIsUnlockingFromPaywall(true);
           setApiTags([]);
           setVisibleTags([]);
-          runGeneration(context.title, context.description, context.id).catch((err) => {
-            setIsUnlockingFromPaywall(false);
-            setError(err instanceof Error ? err.message : "Could not resume generation.");
-          });
+          runGeneration(context.title, context.description, context.id).catch(
+            (err) => {
+              setIsUnlockingFromPaywall(false);
+              setError(
+                err instanceof Error
+                  ? err.message
+                  : "Could not resume generation.",
+              );
+            },
+          );
           return;
         }
 
@@ -1254,21 +1470,34 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
 
     window.addEventListener(AUTH_SUCCESS_EVENT, onAuthSuccess);
     return () => window.removeEventListener(AUTH_SUCCESS_EVENT, onAuthSuccess);
-  }, [generationContextId, paywall, refreshUsageLabel, runGeneration, visibleTags.length]);
+  }, [
+    generationContextId,
+    paywall,
+    refreshUsageLabel,
+    runGeneration,
+    visibleTags.length,
+  ]);
 
-  const beginUnlockFromContext = useCallback((context: PendingContext) => {
-    setError("");
-    setPaywall(null);
-    setIsUnlockingFromPaywall(true);
-    setUnlockReadyContext(null);
-    setConfirmModalMode(null);
-    setApiTags([]);
-    setVisibleTags([]);
-    runGeneration(context.title, context.description, context.id).catch((err) => {
-      setIsUnlockingFromPaywall(false);
-      setError(err instanceof Error ? err.message : "Could not resume generation.");
-    });
-  }, [runGeneration]);
+  const beginUnlockFromContext = useCallback(
+    (context: PendingContext) => {
+      setError("");
+      setPaywall(null);
+      setIsUnlockingFromPaywall(true);
+      setUnlockReadyContext(null);
+      setConfirmModalMode(null);
+      setApiTags([]);
+      setVisibleTags([]);
+      runGeneration(context.title, context.description, context.id).catch(
+        (err) => {
+          setIsUnlockingFromPaywall(false);
+          setError(
+            err instanceof Error ? err.message : "Could not resume generation.",
+          );
+        },
+      );
+    },
+    [runGeneration],
+  );
 
   const onUnlockTags = useCallback(() => {
     if (!unlockReadyContext) return;
@@ -1295,7 +1524,12 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
 
     if (!unlockReadyContext) return;
     beginUnlockFromContext(unlockReadyContext);
-  }, [beginUnlockFromContext, confirmModalMode, executeGenerate, unlockReadyContext]);
+  }, [
+    beginUnlockFromContext,
+    confirmModalMode,
+    executeGenerate,
+    unlockReadyContext,
+  ]);
 
   const syncDraftFromUserInput = useCallback(
     (nextTitle: string, nextDescription: string) => {
@@ -1304,7 +1538,14 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
       const trimmedTitle = nextTitle.trim();
       const trimmedDescription = nextDescription.trim();
       if (!trimmedTitle && !trimmedDescription) {
-        setDraftHistory(null);
+        if (selectedDraftId) {
+          setDraftHistoryItems((current) =>
+            current.filter((draft) => draft.id !== selectedDraftId),
+          );
+        } else {
+          setDraftHistoryItems([]);
+        }
+        setSelectedDraftId(null);
         if (selectedHistoryId === "draft") {
           setSelectedHistoryId(null);
           setSelectedSavedHistory(null);
@@ -1312,15 +1553,33 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
         return;
       }
 
-      setDraftHistory({
+      const nextDraft = {
+        id:
+          selectedHistoryId === "draft" && selectedDraftId
+            ? selectedDraftId
+            : `draft_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
         title: nextTitle,
         description: nextDescription,
         updatedAt: new Date().toISOString(),
-      });
-      setSelectedHistoryId("draft");
-      setSelectedSavedHistory(null);
+      };
+
+      if (selectedHistoryId === "draft" && selectedDraftId) {
+        setDraftHistoryItems((current) =>
+          current.map((draft) =>
+            draft.id === selectedDraftId ? nextDraft : draft,
+          ),
+        );
+      } else {
+        setDraftHistoryItems((current) => [...current, nextDraft]);
+        setSelectedHistoryId("draft");
+        setSelectedDraftId(nextDraft.id);
+      }
+
+      if (selectedHistoryId === "draft") {
+        setSelectedSavedHistory(null);
+      }
     },
-    [isHistoryAuthenticated, selectedHistoryId],
+    [isHistoryAuthenticated, selectedDraftId, selectedHistoryId],
   );
 
   const onSelectHistoryItem = useCallback(
@@ -1330,6 +1589,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
         clearRevealTimer();
         clearDemoTimer();
         setSelectedHistoryId("draft");
+        setSelectedDraftId(item.id);
         setSelectedSavedHistory(null);
         setTitle(item.title);
         setDescription(item.description);
@@ -1352,6 +1612,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
 
       markUserInteraction();
       setSelectedHistoryId(item.id);
+      setSelectedDraftId(null);
       setSelectedSavedHistory(item);
       setTitle(item.title);
       setDescription(item.description);
@@ -1367,33 +1628,51 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     [markUserInteraction, setResultTags],
   );
 
-  const clearDraftCard = useCallback(() => {
-    setDraftHistory(null);
+  const clearDraftCard = useCallback(
+    (draftId: string) => {
+      if (!draftId) {
+        return;
+      }
 
-    if (selectedHistoryId !== "draft") {
-      return;
-    }
+      setDraftHistoryItems((current) =>
+        current.filter((draft) => draft.id !== draftId),
+      );
+      setSelectedDraftId((current) => (current === draftId ? null : current));
 
-    setTitle("");
-    setDescription("");
-    setShowDescription(false);
-    setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
-    setApiTags([]);
-    setVisibleTags([]);
-    setPaywall(null);
-    setUnlockReadyContext(null);
-    setConfirmModalMode(null);
-    setIsUnlockingFromPaywall(false);
-    setError("");
-    if (historyItems.length > 0) {
-      const newest = historyItems[historyItems.length - 1];
-      setSelectedHistoryId(newest.id);
-      setSelectedSavedHistory(newest);
-    } else {
-      setSelectedHistoryId(null);
-      setSelectedSavedHistory(null);
-    }
-  }, [historyItems, selectedHistoryId]);
+      if (selectedHistoryId === "draft" && selectedDraftId === draftId) {
+        setTitle("");
+        setDescription("");
+        setShowDescription(false);
+        setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
+        setApiTags([]);
+        setVisibleTags([]);
+        setPaywall(null);
+        setUnlockReadyContext(null);
+        setConfirmModalMode(null);
+        setIsUnlockingFromPaywall(false);
+        setError("");
+
+        const remainingDrafts = draftHistoryItems.filter(
+          (draft) => draft.id !== draftId,
+        );
+        if (remainingDrafts.length > 0) {
+          const newestDraft = remainingDrafts[remainingDrafts.length - 1];
+          setSelectedDraftId(newestDraft.id);
+          setTitle(newestDraft.title);
+          setDescription(newestDraft.description);
+          setShowDescription(true);
+        } else if (historyItems.length > 0) {
+          const newest = historyItems[historyItems.length - 1];
+          setSelectedHistoryId(newest.id);
+          setSelectedSavedHistory(newest);
+        } else {
+          setSelectedHistoryId(null);
+          setSelectedSavedHistory(null);
+        }
+      }
+    },
+    [draftHistoryItems, historyItems, selectedDraftId, selectedHistoryId],
+  );
 
   const handleCopyAll = async () => {
     markUserInteraction();
@@ -1407,8 +1686,10 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   };
 
   const totalTags = visibleTags.length;
-  const showResults = totalTags > 0 || isUnlockingFromPaywall || Boolean(paywall);
-  const areAllTagsVisible = apiTags.length > 0 && visibleTags.length === apiTags.length;
+  const showResults =
+    totalTags > 0 || isUnlockingFromPaywall || Boolean(paywall);
+  const areAllTagsVisible =
+    apiTags.length > 0 && visibleTags.length === apiTags.length;
   const canCopyAll = !paywall && !isUnlockingFromPaywall && areAllTagsVisible;
   const isClearingFade = clearPhase === "fading";
   const hasTitle = Boolean(title.trim());
@@ -1430,48 +1711,36 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   const showFreeGenerationModalTitle = confirmModalMode === "generate";
   const displayHistoryCards = useMemo(() => {
     const cards = [...historyItems];
-    if (draftHistory) {
+    for (const draft of draftHistoryItems) {
       cards.push({
-        id: "draft",
-        createdAt: draftHistory.updatedAt,
-        title: draftHistory.title.trim() || "Draft listing",
-        description: draftHistory.description,
+        id: draft.id,
+        createdAt: draft.updatedAt,
+        title: draft.title.trim() || "Draft listing",
+        description: draft.description,
         targetTags: [],
         discoveryTags: [],
         isDraft: true,
       });
     }
     return cards;
-  }, [draftHistory, historyItems]);
+  }, [draftHistoryItems, historyItems]);
   const showHistoryStrip =
-    isHistoryAuthenticated && (historyItems.length > 0 || Boolean(draftHistory));
+    isHistoryAuthenticated &&
+    (historyItems.length > 0 || draftHistoryItems.length > 0);
 
   useEffect(() => {
-    if (selectedHistoryId === "draft" && !draftHistory) {
-      if (historyItems.length > 0) {
-        const newest = historyItems[historyItems.length - 1];
-        setSelectedHistoryId(newest.id);
-        setSelectedSavedHistory(newest);
-      } else {
-        setSelectedHistoryId(null);
-        setSelectedSavedHistory(null);
-      }
-      return;
-    }
-
     if (!selectedHistoryId) {
       setSelectedSavedHistory(null);
       return;
     }
     if (selectedHistoryId === "draft") {
-      setSelectedSavedHistory(null);
       return;
     }
     const match = historyItems.find((item) => item.id === selectedHistoryId);
     if (match) {
       setSelectedSavedHistory(match);
     }
-  }, [draftHistory, historyItems, selectedHistoryId]);
+  }, [historyItems, selectedHistoryId]);
   return (
     <div ref={glowRef} id="generator" className="relative mx-auto max-w-2xl">
       <div className="pointer-events-none absolute -inset-8 overflow-hidden rounded-3xl">
@@ -1495,7 +1764,10 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
           boxShadow:
             "0 24px 84px rgba(249,115,22,0.24), 0 12px 52px rgba(168,85,247,0.18), 0 1px 0 rgba(255,255,255,0.92) inset",
           height: shellHeightPx ?? undefined,
-          transition: shellHeightPx !== null ? `height ${shellHeightTransitionMs}ms ease-out` : undefined,
+          transition:
+            shellHeightPx !== null
+              ? `height ${shellHeightTransitionMs}ms ease-out`
+              : undefined,
         }}
       >
         {activeSheenId ? (
@@ -1518,7 +1790,9 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/30">
               <Sparkles className="h-3.5 w-3.5 text-white" />
             </div>
-            <span className="text-sm font-semibold text-stone-700">Tagloom Generator</span>
+            <span className="text-sm font-semibold text-stone-700">
+              Tagloom Generator
+            </span>
             {usageLabel ? (
               <motion.div
                 key={usageLabel}
@@ -1533,7 +1807,9 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                     <button
                       type="button"
                       aria-label="Usage info"
-                      aria-describedby={isUsageHintOpen ? "usage-hint-tooltip" : undefined}
+                      aria-describedby={
+                        isUsageHintOpen ? "usage-hint-tooltip" : undefined
+                      }
                       onMouseEnter={openUsageHint}
                       onMouseLeave={queueUsageHintClose}
                       onFocus={openUsageHint}
@@ -1557,7 +1833,8 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                         >
                           {isFreeUsageHint ? (
                             <p>
-                              New accounts get 1 free generation. You can purchase more generations in the{" "}
+                              New accounts get 1 free generation. You can
+                              purchase more generations in the{" "}
                               <button
                                 type="button"
                                 onClick={goToPricing}
@@ -1570,7 +1847,8 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                           ) : (
                             <p>{usageHint}</p>
                           )}
-                          {usageLabel.toLowerCase().includes("/100") && monthlyResetDateText ? (
+                          {usageLabel.toLowerCase().includes("/100") &&
+                          monthlyResetDateText ? (
                             <p className="mt-1.5">
                               Resets on{" "}
                               <Link
@@ -1644,7 +1922,9 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                 className="mb-3 overflow-visible"
               >
                 <div className="mb-1.5 flex items-center justify-between">
-                  <label className="text-sm font-medium text-stone-700">Listing Description</label>
+                  <label className="text-sm font-medium text-stone-700">
+                    Listing Description
+                  </label>
                   {focusedField === "description" ? (
                     <span className="text-xs font-medium text-stone-500">
                       {description.length}/{DESCRIPTION_MAX}
@@ -1689,7 +1969,9 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                 : "bg-gray-300"
             }`}
             style={{
-              boxShadow: title.trim() ? "0 4px 20px rgba(249,115,22,0.35)" : "none",
+              boxShadow: title.trim()
+                ? "0 4px 20px rgba(249,115,22,0.35)"
+                : "none",
             }}
           >
             {isGenerating ? (
@@ -1709,20 +1991,28 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
             )}
           </button>
 
-            {error ? <p className="mt-2 text-sm text-red-700">{error}</p> : null}
+          {error ? <p className="mt-2 text-sm text-red-700">{error}</p> : null}
           <TurnstileField ref={turnstileRef} onError={setError} />
           <AnimatePresence>
             {showResults && (
               <motion.div
                 data-testid="results-block"
                 initial={{ opacity: 0, y: 8 }}
-                animate={isClearingFade ? { opacity: 0, y: 10 } : { opacity: 1, y: 0 }}
-                transition={{ duration: isClearingFade ? 0.16 : 0.22, ease: "easeOut" }}
+                animate={
+                  isClearingFade ? { opacity: 0, y: 10 } : { opacity: 1, y: 0 }
+                }
+                transition={{
+                  duration: isClearingFade ? 0.16 : 0.22,
+                  ease: "easeOut",
+                }}
                 className="mt-6"
               >
                 {!isUnlockingFromPaywall ? (
                   <div className="mb-3 flex items-center justify-between">
-                    <span data-testid="generated-tag-count" className="text-sm font-medium text-stone-700">
+                    <span
+                      data-testid="generated-tag-count"
+                      className="text-sm font-medium text-stone-700"
+                    >
                       {totalTags} tags generated
                     </span>
                     <button
@@ -1734,7 +2024,11 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                           : "cursor-not-allowed bg-stone-100 text-stone-500 opacity-50"
                       }`}
                     >
-                      {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                      {copied ? (
+                        <Check className="h-3.5 w-3.5" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
                       {copied ? "Copied!" : "Copy all"}
                     </button>
                   </div>
@@ -1745,16 +2039,23 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                     <div className="relative h-12 w-12">
                       <motion.div
                         animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        transition={{
+                          duration: 1,
+                          repeat: Infinity,
+                          ease: "linear",
+                        }}
                         className="absolute inset-0 rounded-full border-2 border-orange-200 border-t-orange-500"
                       />
                       <div className="absolute inset-0 flex items-center justify-center">
                         <LockOpen className="h-5 w-5 text-orange-600" />
                       </div>
                     </div>
-                    <p className="text-sm font-semibold text-stone-700">Unlocking tags</p>
+                    <p className="text-sm font-semibold text-stone-700">
+                      Unlocking tags
+                    </p>
                   </div>
-                ) : paywall?.reason === "auth_required" && unlockReadyContext ? (
+                ) : paywall?.reason === "auth_required" &&
+                  unlockReadyContext ? (
                   <div className="mt-3 flex w-full flex-col items-center justify-center gap-3 rounded-xl border border-stone-200 bg-white/70 py-8">
                     <div className="relative h-12 w-12">
                       <div className="absolute inset-0 flex items-center justify-center rounded-full border border-orange-300 bg-white text-orange-600">
@@ -1770,14 +2071,21 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                     </button>
                   </div>
                 ) : (
-                  <div className={`flex flex-wrap gap-2 ${paywall ? "blur-sm select-none" : ""}`}>
+                  <div
+                    className={`flex flex-wrap gap-2 ${paywall ? "blur-sm select-none" : ""}`}
+                  >
                     {visibleTags.map((tag, i) => (
                       <motion.span
                         key={`${tag}-${i}`}
                         data-testid="generated-tag-chip"
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: i * 0.04, type: "spring", stiffness: 300, damping: 20 }}
+                        transition={{
+                          delay: i * 0.04,
+                          type: "spring",
+                          stiffness: 300,
+                          damping: 20,
+                        }}
                         className="cursor-default rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm text-stone-700 shadow-sm"
                       >
                         {tag}
@@ -1786,14 +2094,16 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                   </div>
                 )}
 
-                {paywall && !(paywall.reason === "auth_required" && unlockReadyContext) ? (
+                {paywall &&
+                !(paywall.reason === "auth_required" && unlockReadyContext) ? (
                   <div className="mt-4 rounded-xl border border-orange-200 bg-orange-50 p-4">
                     {paywall.reason === "auth_required" ? (
                       <div className="space-y-3 text-center">
                         {!unlockReadyContext ? (
                           <>
                             <p className="text-sm font-semibold text-orange-800">
-                              Create an account or log in to unlock this generation for FREE
+                              Create an account or log in to unlock this
+                              generation for FREE
                             </p>
                             <button
                               type="button"
@@ -1858,8 +2168,13 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                         className="flex items-stretch gap-2"
                       >
                         {displayHistoryCards.map((item) => {
-                          const isSelected = selectedHistoryId === item.id || (item.isDraft && selectedHistoryId === "draft");
-                          const cardDate = item.isDraft ? null : formatHistoryDate(item.createdAt);
+                          const isSelected = item.isDraft
+                            ? selectedHistoryId === "draft" &&
+                              selectedDraftId === item.id
+                            : selectedHistoryId === item.id;
+                          const cardDate = item.isDraft
+                            ? null
+                            : formatHistoryDate(item.createdAt);
                           const cardTitle = truncateTitle(item.title, 26);
                           return (
                             <div
@@ -1868,7 +2183,8 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                               tabIndex={0}
                               onClick={() => onSelectHistoryItem(item)}
                               onKeyDown={(event) => {
-                                if (event.key !== "Enter" && event.key !== " ") return;
+                                if (event.key !== "Enter" && event.key !== " ")
+                                  return;
                                 event.preventDefault();
                                 onSelectHistoryItem(item);
                               }}
@@ -1880,7 +2196,9 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                             >
                               {item.isDraft ? (
                                 <>
-                                  <span className="inline-flex rounded-full bg-stone-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-600">
+                                  <span
+                                    className={`absolute left-2 top-2.5 inline-flex rounded-full px-2 pt-1 pb-0.5 text-[10px] tracking-wide leading-none text-stone-600 ${isSelected ? "bg-stone-200" : "bg-stone-100"}`}
+                                  >
                                     Draft
                                   </span>
                                   <button
@@ -1888,18 +2206,28 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                                     aria-label="Delete draft"
                                     onClick={(event) => {
                                       event.stopPropagation();
-                                      clearDraftCard();
+                                      clearDraftCard(item.id);
                                     }}
-                                    className="absolute right-1.5 top-1.5 inline-flex h-5 w-5 items-center justify-center rounded-md text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-700"
+                                    className={`absolute right-2 top-2 inline-flex h-5 w-5 items-center justify-center rounded-md text-stone-500 transition-colors hover:text-stone-700 ${isSelected ? "hover:bg-stone-200" : "hover:bg-stone-100"}`}
                                   >
-                                    <X className="h-3.5 w-3.5" />
+                                    <X className="h-3 w-3" />
                                   </button>
                                 </>
                               ) : null}
                               {cardDate ? (
-                                <p className="mt-1 text-[11px] font-medium text-stone-500">{cardDate}</p>
+                                <p className="mt-1 text-[11px] font-medium text-stone-500">
+                                  {cardDate}
+                                </p>
                               ) : null}
-                              <p className="mt-1 text-xs font-semibold leading-snug text-stone-700">{cardTitle}</p>
+                              <p
+                                className={
+                                  item.isDraft
+                                    ? "mt-6 text-xs font-semibold leading-snug text-stone-700"
+                                    : "mt-1 text-xs font-semibold leading-snug text-stone-700"
+                                }
+                              >
+                                {cardTitle}
+                              </p>
                             </div>
                           );
                         })}
@@ -1931,7 +2259,6 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
               </div>
             </div>
           ) : null}
-
         </div>
       </motion.div>
 
