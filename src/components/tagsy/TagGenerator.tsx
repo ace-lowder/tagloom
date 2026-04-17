@@ -65,6 +65,19 @@ type GenerationHistoryResponse = {
   hasPrev: boolean;
   hasNext: boolean;
 };
+type DraftHistoryState = {
+  title: string;
+  description: string;
+  updatedAt: string;
+};
+type HistoryCache = {
+  page0: GenerationHistoryItem[];
+  hasPrev: boolean;
+  hasNext: boolean;
+  selectedId: string | null;
+  draft: DraftHistoryState | null;
+  savedAt: number;
+};
 
 type PaywallState = {
   reason: "auth_required" | "payment_required" | "limit_reached";
@@ -200,6 +213,7 @@ const DEFAULT_TITLE_PLACEHOLDER =
 const USAGE_HINT_CLOSE_DELAY_MS = 500;
 const HISTORY_PAGE_SIZE = 4;
 const HISTORY_TRANSITION_MS = 180;
+const HISTORY_CACHE_KEY = "tagloom:history:v1";
 
 function getContextStorageKey(id: string) {
   return `${CONTEXT_STORAGE_PREFIX}${id}`;
@@ -249,6 +263,57 @@ function sanitizeTags(tags: string[]) {
 
 function sanitizeMergedTags(target: string[], discovery: string[]) {
   return sanitizeTags([...target, ...discovery]);
+}
+
+function readHistoryCache(): HistoryCache | null {
+  if (typeof window === "undefined") return null;
+  const raw = window.localStorage.getItem(HISTORY_CACHE_KEY);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as HistoryCache;
+    if (!parsed || !Array.isArray(parsed.page0)) return null;
+    return {
+      page0: parsed.page0,
+      hasPrev: Boolean(parsed.hasPrev),
+      hasNext: Boolean(parsed.hasNext),
+      selectedId: typeof parsed.selectedId === "string" ? parsed.selectedId : null,
+      draft:
+        parsed.draft &&
+        typeof parsed.draft.title === "string" &&
+        typeof parsed.draft.description === "string"
+          ? {
+              title: parsed.draft.title,
+              description: parsed.draft.description,
+              updatedAt:
+                typeof parsed.draft.updatedAt === "string"
+                  ? parsed.draft.updatedAt
+                  : new Date().toISOString(),
+            }
+          : null,
+      savedAt: typeof parsed.savedAt === "number" ? parsed.savedAt : Date.now(),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeHistoryCache(cache: HistoryCache) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(HISTORY_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // noop
+  }
+}
+
+function clearHistoryCache() {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(HISTORY_CACHE_KEY);
+  } catch {
+    // noop
+  }
 }
 
 function getUsageHintText(usageLabel: string | null, monthlyResetAt?: string | null) {
@@ -338,7 +403,8 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   const [historyCardsVisible, setHistoryCardsVisible] = useState(true);
   const [historyDirection, setHistoryDirection] = useState<"left" | "right">("right");
   const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
-  const [selectedSavedHistory, setSelectedSavedHistory] = useState<GenerationHistoryItem | null>(null);
+  const [, setSelectedSavedHistory] = useState<GenerationHistoryItem | null>(null);
+  const [draftHistory, setDraftHistory] = useState<DraftHistoryState | null>(null);
 
   const revealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const demoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -510,6 +576,16 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
       : `e.g. ${fixtureTitle}`;
   }, [demoFixtures]);
 
+  const beginDemoInteraction = useCallback(() => {
+    setTitlePlaceholder(getCurrentDemoFixtureTitle());
+    setTitle("");
+    markUserInteraction();
+    setShowDescription(true);
+    setFocusedField("title");
+    focusTitleInput();
+    onFocus?.();
+  }, [focusTitleInput, getCurrentDemoFixtureTitle, markUserInteraction, onFocus]);
+
   const refreshUsageLabel = useCallback(async () => {
     try {
       const response = await fetch("/api/account/usage", { method: "GET" });
@@ -551,6 +627,10 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
           setHistoryItems([]);
           setHistoryHasPrev(false);
           setHistoryHasNext(false);
+          setDraftHistory(null);
+          setSelectedHistoryId(null);
+          setSelectedSavedHistory(null);
+          clearHistoryCache();
           return;
         }
         if (!response.ok) {
@@ -585,12 +665,12 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
             setSelectedSavedHistory(matched);
             return matched.id;
           }
-          const fallback = nextItems[nextItems.length - 1];
-          setSelectedSavedHistory(fallback);
-          return fallback.id;
+          setSelectedSavedHistory(null);
+          return null;
         });
       } catch {
         setIsHistoryAuthenticated(false);
+        clearHistoryCache();
       } finally {
         setIsHistoryLoading(false);
       }
@@ -665,8 +745,57 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   }, [refreshUsageLabel]);
 
   useEffect(() => {
-    void loadHistoryPage({ page: 0, selectNewest: true });
+    const cached = readHistoryCache();
+    if (cached) {
+      const cachedItems = Array.isArray(cached.page0) ? cached.page0 : [];
+      setIsHistoryAuthenticated(true);
+      setHistoryItems(cachedItems);
+      setHistoryPage(0);
+      setHistoryHasPrev(Boolean(cached.hasPrev));
+      setHistoryHasNext(Boolean(cached.hasNext));
+      setDraftHistory(cached.draft);
+      if (cached.selectedId) {
+        setSelectedHistoryId(cached.selectedId);
+        if (cached.selectedId === "draft" && cached.draft) {
+          setTitle(cached.draft.title);
+          setDescription(cached.draft.description);
+          setShowDescription(Boolean(cached.draft.description) || Boolean(cached.draft.title));
+          setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
+        }
+        const selected = cachedItems.find((item) => item.id === cached.selectedId) ?? null;
+        setSelectedSavedHistory(selected);
+      } else {
+        setSelectedHistoryId(null);
+        setSelectedSavedHistory(null);
+      }
+    }
+    void loadHistoryPage({ page: 0, selectNewest: false });
   }, [loadHistoryPage]);
+
+  useEffect(() => {
+    if (!isHistoryAuthenticated) {
+      clearHistoryCache();
+      return;
+    }
+    if (historyPage !== 0) return;
+
+    writeHistoryCache({
+      page0: historyItems,
+      hasPrev: historyHasPrev,
+      hasNext: historyHasNext,
+      selectedId: selectedHistoryId,
+      draft: draftHistory,
+      savedAt: Date.now(),
+    });
+  }, [
+    draftHistory,
+    historyHasNext,
+    historyHasPrev,
+    historyItems,
+    historyPage,
+    isHistoryAuthenticated,
+    selectedHistoryId,
+  ]);
 
   useEffect(() => {
     const onCta = () => {
@@ -1168,10 +1297,49 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     beginUnlockFromContext(unlockReadyContext);
   }, [beginUnlockFromContext, confirmModalMode, executeGenerate, unlockReadyContext]);
 
+  const syncDraftFromUserInput = useCallback(
+    (nextTitle: string, nextDescription: string) => {
+      if (!isHistoryAuthenticated) return;
+
+      const trimmedTitle = nextTitle.trim();
+      const trimmedDescription = nextDescription.trim();
+      if (!trimmedTitle && !trimmedDescription) {
+        setDraftHistory(null);
+        if (selectedHistoryId === "draft") {
+          setSelectedHistoryId(null);
+          setSelectedSavedHistory(null);
+        }
+        return;
+      }
+
+      setDraftHistory({
+        title: nextTitle,
+        description: nextDescription,
+        updatedAt: new Date().toISOString(),
+      });
+      setSelectedHistoryId("draft");
+      setSelectedSavedHistory(null);
+    },
+    [isHistoryAuthenticated, selectedHistoryId],
+  );
+
   const onSelectHistoryItem = useCallback(
     (item: GenerationHistoryItem) => {
       if (item.isDraft) {
+        markUserInteraction();
         setSelectedHistoryId("draft");
+        setSelectedSavedHistory(null);
+        setTitle(item.title);
+        setDescription(item.description);
+        setShowDescription(true);
+        setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
+        setPaywall(null);
+        setIsUnlockingFromPaywall(false);
+        setUnlockReadyContext(null);
+        setConfirmModalMode(null);
+        setError("");
+        setApiTags([]);
+        setVisibleTags([]);
         return;
       }
 
@@ -1180,7 +1348,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
       setSelectedSavedHistory(item);
       setTitle(item.title);
       setDescription(item.description);
-      setShowDescription(Boolean(item.description));
+      setShowDescription(true);
       setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
       setPaywall(null);
       setIsUnlockingFromPaywall(false);
@@ -1193,6 +1361,12 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
   );
 
   const clearDraftCard = useCallback(() => {
+    setDraftHistory(null);
+
+    if (selectedHistoryId !== "draft") {
+      return;
+    }
+
     setTitle("");
     setDescription("");
     setShowDescription(false);
@@ -1212,7 +1386,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
       setSelectedHistoryId(null);
       setSelectedSavedHistory(null);
     }
-  }, [historyItems]);
+  }, [historyItems, selectedHistoryId]);
 
   const handleCopyAll = async () => {
     markUserInteraction();
@@ -1247,35 +1421,26 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
     }).format(date);
   }, [monthlyResetAt]);
   const showFreeGenerationModalTitle = confirmModalMode === "generate";
-  const hasAnyInput = Boolean(title.trim() || description.trim());
-  const hasDraftCard = useMemo(() => {
-    if (!isHistoryAuthenticated) return false;
-    if (!hasAnyInput) return false;
-    if (!selectedSavedHistory) return true;
-    const sameTitle = selectedSavedHistory.title.trim() === title.trim();
-    const sameDescription = selectedSavedHistory.description.trim() === description.trim();
-    return !(sameTitle && sameDescription);
-  }, [description, hasAnyInput, isHistoryAuthenticated, selectedSavedHistory, title]);
   const displayHistoryCards = useMemo(() => {
     const cards = [...historyItems];
-    if (hasDraftCard) {
+    if (draftHistory) {
       cards.push({
         id: "draft",
-        createdAt: new Date().toISOString(),
-        title: title.trim() || "Draft listing",
-        description,
+        createdAt: draftHistory.updatedAt,
+        title: draftHistory.title.trim() || "Draft listing",
+        description: draftHistory.description,
         targetTags: [],
         discoveryTags: [],
         isDraft: true,
       });
     }
     return cards;
-  }, [description, hasDraftCard, historyItems, title]);
+  }, [draftHistory, historyItems]);
   const showHistoryStrip =
-    isHistoryAuthenticated && (historyItems.length > 0 || hasDraftCard);
+    isHistoryAuthenticated && (historyItems.length > 0 || Boolean(draftHistory));
 
   useEffect(() => {
-    if (selectedHistoryId === "draft" && !hasDraftCard) {
+    if (selectedHistoryId === "draft" && !draftHistory) {
       if (historyItems.length > 0) {
         const newest = historyItems[historyItems.length - 1];
         setSelectedHistoryId(newest.id);
@@ -1287,12 +1452,19 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
       return;
     }
 
-    if (!selectedHistoryId || selectedHistoryId === "draft") return;
+    if (!selectedHistoryId) {
+      setSelectedSavedHistory(null);
+      return;
+    }
+    if (selectedHistoryId === "draft") {
+      setSelectedSavedHistory(null);
+      return;
+    }
     const match = historyItems.find((item) => item.id === selectedHistoryId);
     if (match) {
       setSelectedSavedHistory(match);
     }
-  }, [hasDraftCard, historyItems, selectedHistoryId]);
+  }, [draftHistory, historyItems, selectedHistoryId]);
   return (
     <div ref={glowRef} id="generator" className="relative mx-auto max-w-2xl">
       <div className="pointer-events-none absolute -inset-8 overflow-hidden rounded-3xl">
@@ -1430,8 +1602,8 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
               value={title}
               onFocus={() => {
                 if (isDemoActive) {
-                  setTitlePlaceholder(getCurrentDemoFixtureTitle());
-                  setTitle("");
+                  beginDemoInteraction();
+                  return;
                 }
                 markUserInteraction();
                 setShowDescription(true);
@@ -1443,11 +1615,10 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
               }}
               onChange={(e) => {
                 markUserInteraction();
-                setTitle(e.target.value);
-                if (isHistoryAuthenticated) {
-                  setSelectedHistoryId("draft");
-                }
-                if (e.target.value.length > 0) {
+                const nextTitle = e.target.value;
+                setTitle(nextTitle);
+                syncDraftFromUserInput(nextTitle, description);
+                if (nextTitle.length > 0) {
                   setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
                 }
               }}
@@ -1484,10 +1655,9 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                   }}
                   onChange={(e) => {
                     markUserInteraction();
-                    setDescription(e.target.value);
-                    if (isHistoryAuthenticated) {
-                      setSelectedHistoryId("draft");
-                    }
+                    const nextDescription = e.target.value;
+                    setDescription(nextDescription);
+                    syncDraftFromUserInput(title, nextDescription);
                   }}
                   placeholder="Add more details about your product to get more accurate tags..."
                   rows={3}
@@ -1498,7 +1668,13 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
           </AnimatePresence>
 
           <button
-            onClick={handleGenerate}
+            onClick={() => {
+              if (isDemoActive) {
+                beginDemoInteraction();
+                return;
+              }
+              void handleGenerate();
+            }}
             disabled={isGenerating || !title.trim()}
             className={`mt-1 flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-semibold text-white transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${
               hasTitle
@@ -1676,7 +1852,7 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                       >
                         {displayHistoryCards.map((item) => {
                           const isSelected = selectedHistoryId === item.id || (item.isDraft && selectedHistoryId === "draft");
-                          const cardDate = item.isDraft ? "Draft" : formatHistoryDate(item.createdAt);
+                          const cardDate = item.isDraft ? null : formatHistoryDate(item.createdAt);
                           const cardTitle = truncateTitle(item.title, 26);
                           return (
                             <div
@@ -1713,7 +1889,9 @@ export default function TagGenerator({ onFocus, glowRef, demoConfig }: TagGenera
                                   </button>
                                 </>
                               ) : null}
-                              <p className="mt-1 text-[11px] font-medium text-stone-500">{cardDate}</p>
+                              {cardDate ? (
+                                <p className="mt-1 text-[11px] font-medium text-stone-500">{cardDate}</p>
+                              ) : null}
                               <p className="mt-1 text-xs font-semibold leading-snug text-stone-700">{cardTitle}</p>
                             </div>
                           );
