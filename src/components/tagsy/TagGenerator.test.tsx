@@ -1079,7 +1079,10 @@ describe("TagGenerator history strip behavior", () => {
 
     expect(await screen.findByText("History title one updated")).toBeInTheDocument();
     expect(screen.getByText("History title one updated")).toBeInTheDocument();
-    expect(historyCard.closest('[role="button"]')).toHaveClass("border-orange-400");
+    expect(historyCard.closest('[role="button"]')).not.toHaveClass(
+      "border-orange-400",
+    );
+    expect(screen.getByText("Draft")).toBeInTheDocument();
   });
 
   it("creates a new draft and selects it when nothing is selected", async () => {

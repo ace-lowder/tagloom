@@ -2151,22 +2151,12 @@ export default function TagGenerator({
                 ) : null}
 
                 <div className="min-h-[80px] flex-1 overflow-hidden">
-                  <AnimatePresence mode="wait">
-                    {historyCardsVisible ? (
-                      <motion.div
-                        key={`history-page-${historyPage}-${displayHistoryCards.map((item) => item.id).join("-")}`}
-                        initial={{
-                          opacity: 0,
-                          x: historyDirection === "left" ? 10 : -10,
-                        }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{
-                          opacity: 0,
-                          x: historyDirection === "left" ? -10 : 10,
-                        }}
-                        transition={{ duration: 0.16, ease: "easeOut" }}
-                        className="flex items-stretch gap-2"
-                      >
+                  {historyCardsVisible ? (
+                    <motion.div
+                      className="flex items-stretch gap-2"
+                      initial={false}
+                    >
+                      <AnimatePresence initial={false}>
                         {displayHistoryCards.map((item) => {
                           const isSelected = item.isDraft
                             ? selectedHistoryId === "draft" &&
@@ -2177,8 +2167,8 @@ export default function TagGenerator({
                             : formatHistoryDate(item.createdAt);
                           const cardTitle = truncateTitle(item.title, 26);
                           return (
-                            <div
-                              key={item.isDraft ? "draft-card" : item.id}
+                            <motion.div
+                              key={item.isDraft ? `draft-${item.id}` : item.id}
                               role="button"
                               tabIndex={0}
                               onClick={() => onSelectHistoryItem(item)}
@@ -2188,6 +2178,11 @@ export default function TagGenerator({
                                 event.preventDefault();
                                 onSelectHistoryItem(item);
                               }}
+                              layout={false}
+                              initial={{ opacity: 0, scale: 0.96, y: 4 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.96, y: 4 }}
+                              transition={{ duration: 0.16, ease: "easeOut" }}
                               className={`relative h-20 min-w-[148px] max-w-[148px] rounded-lg border px-2.5 py-2 text-left transition-all ${
                                 isSelected
                                   ? "border-orange-400 bg-orange-50 shadow-sm"
@@ -2228,21 +2223,21 @@ export default function TagGenerator({
                               >
                                 {cardTitle}
                               </p>
-                            </div>
+                            </motion.div>
                           );
                         })}
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        key={`history-loading-${historyPage}`}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.12 }}
-                        className="h-20"
-                      />
-                    )}
-                  </AnimatePresence>
+                      </AnimatePresence>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key={`history-loading-${historyPage}`}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.12 }}
+                      className="h-20"
+                    />
+                  )}
                 </div>
 
                 {historyHasPrev ? (
