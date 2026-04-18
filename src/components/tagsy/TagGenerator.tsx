@@ -2217,7 +2217,7 @@ export default function TagGenerator({
                               <p
                                 className={
                                   item.isDraft
-                                    ? "mt-6 text-xs font-semibold leading-snug text-stone-700"
+                                    ? "mt-6 overflow-hidden text-ellipsis whitespace-nowrap text-xs font-semibold leading-snug text-stone-700"
                                     : "mt-1 text-xs font-semibold leading-snug text-stone-700"
                                 }
                               >
