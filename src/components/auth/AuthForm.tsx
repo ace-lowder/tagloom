@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { AUTH_POPUP_MESSAGE_SOURCE } from "@/lib/authModal";
+import TurnstileField, {
+  type TurnstileFieldHandle,
+} from "@/components/security/TurnstileField";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type AuthFormMode = "login" | "signup";
@@ -64,6 +67,48 @@ function centerPopup(width: number, height: number) {
   return `popup=yes,width=${width},height=${height},left=${Math.round(left)},top=${Math.round(top)}`;
 }
 
+const SIGNUP_COOLDOWN_KEY = "tagloom:signup-cooldown:v1";
+const SIGNUP_COOLDOWN_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+const SIGNUP_COOLDOWN_MESSAGE =
+  "A free trial was already started recently from this browser. Try again later or log in if you already created an account.";
+
+function hasRecentSignupCooldown() {
+  if (typeof window === "undefined") return false;
+
+  const raw = window.localStorage.getItem(SIGNUP_COOLDOWN_KEY);
+  if (!raw) return false;
+
+  const timestamp = Number(raw);
+  if (!Number.isFinite(timestamp)) return false;
+
+  return Date.now() - timestamp < SIGNUP_COOLDOWN_WINDOW_MS;
+}
+
+function writeSignupCooldown() {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(SIGNUP_COOLDOWN_KEY, String(Date.now()));
+}
+
+async function checkSignupEligibility(turnstileToken: string) {
+  const response = await fetch("/api/auth/signup-eligibility", {
+    method: "POST",
+    headers: {
+      "x-turnstile-token": turnstileToken,
+    },
+  });
+
+  const data = (await response.json().catch(() => ({}))) as {
+    ok?: boolean;
+    error?: string;
+  };
+
+  if (!response.ok) {
+    throw new Error(data.error || "Could not verify signup eligibility.");
+  }
+
+  return data.ok === true;
+}
+
 export default function AuthForm({
   mode,
   onModeChange,
@@ -90,6 +135,7 @@ export default function AuthForm({
   const [notice, setNotice] = useState("");
 
   const emailExistsCacheRef = useRef<Map<string, boolean>>(new Map());
+  const turnstileRef = useRef<TurnstileFieldHandle | null>(null);
 
   useEffect(() => {
     if (mode === "login") {
@@ -165,6 +211,17 @@ export default function AuthForm({
     setIsSubmitting(true);
     try {
       if (mode === "signup") {
+        if (hasRecentSignupCooldown()) {
+          throw new Error(SIGNUP_COOLDOWN_MESSAGE);
+        }
+
+        const turnstileToken = await turnstileRef.current?.getToken();
+        if (!turnstileToken) {
+          throw new Error("Bot check failed. Please try again.");
+        }
+
+        await checkSignupEligibility(turnstileToken);
+
         const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
@@ -176,10 +233,12 @@ export default function AuthForm({
         if (signUpError) throw signUpError;
 
         if (data.session) {
+          writeSignupCooldown();
           completeSuccess();
           return;
         }
 
+        writeSignupCooldown();
         setNotice("Account created. You can log in now.");
         onModeChange("login");
         setPassword("");
@@ -518,6 +577,10 @@ export default function AuthForm({
           </span>
           <div className="h-px flex-1 bg-stone-200" />
         </div>
+
+        {mode === "signup" ? (
+          <TurnstileField ref={turnstileRef} onError={setError} />
+        ) : null}
 
         <div>
           <label
