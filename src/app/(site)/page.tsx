@@ -66,10 +66,12 @@ async function loadHomePricingState(): Promise<HomePricingState> {
   let pendingRenewalTier: "monthly" | "yearly" | null = null;
   let pendingRenewalAt: string | null = null;
 
-  if (profile?.stripe_customer_id) {
+  const customerId = profile?.stripe_customer_id;
+  if (profile && customerId) {
+    const currentProfile = profile;
     const refreshed = await syncBillingProjectionForUser({
       userId: user.id,
-      customerId: profile.stripe_customer_id,
+      customerId,
     });
 
     if (refreshed) {
@@ -77,13 +79,13 @@ async function loadHomePricingState(): Promise<HomePricingState> {
         subscription_tier: refreshed.subscription_tier,
         subscription_active: refreshed.subscription_active,
         subscription_period_start: refreshed.subscription_period_start,
-        monthly_generation_count: profile.monthly_generation_count,
-        monthly_count_period_start: profile.monthly_count_period_start,
+        monthly_generation_count: currentProfile.monthly_generation_count,
+        monthly_count_period_start: currentProfile.monthly_count_period_start,
         stripe_customer_id: refreshed.stripe_customer_id,
       };
     }
 
-    const canonical = await getCanonicalSubscriptionForCustomer(profile.stripe_customer_id);
+    const canonical = await getCanonicalSubscriptionForCustomer(customerId);
     const scheduleId = typeof canonical?.schedule === "string" ? canonical.schedule : null;
     const stripe = getStripeClient();
     if (scheduleId && stripe) {

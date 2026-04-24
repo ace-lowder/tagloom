@@ -112,10 +112,12 @@ export default async function BillingPage() {
 
   let profile = initialProfile ?? null;
   let pendingRenewal: PendingRenewal | null = null;
-  if (profile?.stripe_customer_id) {
+  const customerId = profile?.stripe_customer_id;
+  if (profile && customerId) {
+    const currentProfile = profile;
     const refreshed = await syncBillingProjectionForUser({
       userId: user.id,
-      customerId: profile.stripe_customer_id,
+      customerId,
     });
     if (refreshed) {
       profile = {
@@ -124,15 +126,15 @@ export default async function BillingPage() {
         subscription_period_start: refreshed.subscription_period_start,
         subscription_period_end: refreshed.subscription_period_end,
         subscription_cancel_at: refreshed.subscription_cancel_at,
-        free_generation_credits: profile.free_generation_credits,
-        single_use_credits: profile.single_use_credits,
-        monthly_generation_count: profile.monthly_generation_count,
-        monthly_count_period_start: profile.monthly_count_period_start,
+        free_generation_credits: currentProfile.free_generation_credits,
+        single_use_credits: currentProfile.single_use_credits,
+        monthly_generation_count: currentProfile.monthly_generation_count,
+        monthly_count_period_start: currentProfile.monthly_count_period_start,
         stripe_customer_id: refreshed.stripe_customer_id,
       };
     }
 
-    const canonical = await getCanonicalSubscriptionForCustomer(profile.stripe_customer_id);
+    const canonical = await getCanonicalSubscriptionForCustomer(customerId);
     const scheduleId = typeof canonical?.schedule === "string" ? canonical.schedule : null;
     const stripe = getStripeClient();
     if (scheduleId && stripe) {

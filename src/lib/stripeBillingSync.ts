@@ -193,11 +193,12 @@ export async function syncBillingProjectionForUser(options: {
 
   let customerId = options.customerId ?? null;
   if (!customerId) {
-    const { data: profile } = await adminClient
+    const { data: rawProfile } = await adminClient
       .from("profiles")
       .select("stripe_customer_id")
       .eq("id", options.userId)
-      .maybeSingle<{ stripe_customer_id: string | null }>();
+      .maybeSingle();
+    const profile = rawProfile as { stripe_customer_id: string | null } | null;
     customerId = profile?.stripe_customer_id ?? null;
   }
 
@@ -215,23 +216,25 @@ export async function syncBillingProjectionForUser(options: {
     await adminClient.from("profiles").update(legacyUpdate).eq("id", options.userId);
   }
 
-  const { data: refreshed, error: refreshedError } = await adminClient
+  const { data: rawRefreshed, error: refreshedError } = await adminClient
     .from("profiles")
     .select(
       "id, stripe_customer_id, subscription_tier, subscription_active, subscription_period_start, subscription_period_end, subscription_cancel_at",
     )
     .eq("id", options.userId)
-    .maybeSingle<BillingProjectionProfile>();
+    .maybeSingle();
+  const refreshed = rawRefreshed as BillingProjectionProfile | null;
   if (refreshedError && isMissingCancelAtColumnError(refreshedError)) {
-    const { data: legacyRefreshed } = await adminClient
+    const { data: rawLegacyRefreshed } = await adminClient
       .from("profiles")
       .select(
         "id, stripe_customer_id, subscription_tier, subscription_active, subscription_period_start, subscription_period_end",
       )
       .eq("id", options.userId)
-      .maybeSingle<
-        Omit<BillingProjectionProfile, "subscription_cancel_at">
-      >();
+      .maybeSingle();
+    const legacyRefreshed = rawLegacyRefreshed as
+      | Omit<BillingProjectionProfile, "subscription_cancel_at">
+      | null;
 
     return legacyRefreshed
       ? { ...legacyRefreshed, subscription_cancel_at: null }

@@ -98,6 +98,9 @@ type HistoryCache = {
   selectedDraftId: string | null;
   savedAt: number;
 };
+type LegacyHistoryCache = Partial<HistoryCache> & {
+  draft?: Partial<DraftHistoryState> | null;
+};
 
 type PaywallState = {
   reason: "auth_required" | "payment_required" | "limit_reached";
@@ -294,8 +297,9 @@ function readHistoryCache(): HistoryCache | null {
   if (!raw) return null;
 
   try {
-    const parsed = JSON.parse(raw) as HistoryCache;
+    const parsed = JSON.parse(raw) as LegacyHistoryCache;
     if (!parsed || !Array.isArray(parsed.page0)) return null;
+    const legacyDraft = parsed.draft;
     return {
       page0: parsed.page0,
       hasPrev: Boolean(parsed.hasPrev),
@@ -320,17 +324,17 @@ function readHistoryCache(): HistoryCache | null {
                   ? draft.updatedAt
                   : new Date().toISOString(),
             }))
-        : parsed.draft &&
-            typeof parsed.draft.title === "string" &&
-            typeof parsed.draft.description === "string"
+        : legacyDraft &&
+            typeof legacyDraft.title === "string" &&
+            typeof legacyDraft.description === "string"
           ? [
               {
                 id: "draft",
-                title: parsed.draft.title,
-                description: parsed.draft.description,
+                title: legacyDraft.title,
+                description: legacyDraft.description,
                 updatedAt:
-                  typeof parsed.draft.updatedAt === "string"
-                    ? parsed.draft.updatedAt
+                  typeof legacyDraft.updatedAt === "string"
+                    ? legacyDraft.updatedAt
                     : new Date().toISOString(),
               },
             ]
@@ -889,11 +893,7 @@ export default function TagGenerator({
       setHistoryPage(0);
       setHistoryHasPrev(Boolean(cached.hasPrev));
       setHistoryHasNext(Boolean(cached.hasNext));
-      const cachedDrafts = Array.isArray(cached.drafts)
-        ? cached.drafts
-        : cached.draft
-          ? [{ id: "draft", ...cached.draft }]
-          : [];
+      const cachedDrafts = Array.isArray(cached.drafts) ? cached.drafts : [];
       setDraftHistoryItems(cachedDrafts);
       setSelectedDraftId(
         cached.selectedDraftId &&
