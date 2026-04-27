@@ -1625,7 +1625,7 @@ export default function TagGenerator({
       setError("");
       setResultTags(item.targetTags, item.discoveryTags);
     },
-    [markUserInteraction, setResultTags],
+    [clearDemoTimer, clearRevealTimer, markUserInteraction, setResultTags],
   );
 
   const clearDraftCard = useCallback(
