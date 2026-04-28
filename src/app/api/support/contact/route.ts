@@ -21,6 +21,7 @@ const MAX_NAME_LENGTH = 100;
 const MAX_EMAIL_LENGTH = 254;
 const MAX_SUBJECT_LENGTH = 160;
 const MAX_MESSAGE_LENGTH = 4000;
+const RESEND_EMAILS_URL = "https://api.resend.com/emails";
 
 function sanitizeInput(value: unknown): string {
   return String(value ?? "").trim().replace(/\s+/g, " ");
@@ -61,15 +62,62 @@ function validatePayload(payload: ContactPayload): { ok: true; value: SanitizedP
   };
 }
 
+function getSupportEmailConfig() {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.SUPPORT_FROM_EMAIL;
+  const to = process.env.SUPPORT_TO_EMAIL;
+
+  if (!apiKey || !from || !to) return null;
+  return { apiKey, from, to };
+}
+
+function buildSupportEmailText(
+  payload: SanitizedPayload,
+  meta: { ip: string | null; userAgent: string | null; timestamp: string },
+) {
+  return [
+    "New Tagloom support message",
+    "",
+    `Received: ${meta.timestamp}`,
+    `From: ${payload.name ? `${payload.name} <${payload.email}>` : payload.email}`,
+    `Reply-To: ${payload.email}`,
+    `Subject: ${payload.subject}`,
+    "",
+    "Message:",
+    payload.message,
+    "",
+    "Request metadata:",
+    `IP: ${meta.ip ?? "Unavailable"}`,
+    `User-Agent: ${meta.userAgent ?? "Unavailable"}`,
+  ].join("\n");
+}
+
 async function sendSupportMessage(payload: SanitizedPayload, meta: { ip: string | null; userAgent: string | null }) {
-  console.log(
-    JSON.stringify({
-      type: "support_contact_message",
-      timestamp: new Date().toISOString(),
-      payload,
-      meta,
+  const config = getSupportEmailConfig();
+  if (!config) {
+    throw new Error("Support email is not configured.");
+  }
+
+  const timestamp = new Date().toISOString();
+  const response = await fetch(RESEND_EMAILS_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: config.from,
+      to: config.to,
+      reply_to: payload.email,
+      subject: `Tagloom support: ${payload.subject}`,
+      text: buildSupportEmailText(payload, { ...meta, timestamp }),
     }),
-  );
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(`Resend email failed with ${response.status}.`);
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -95,10 +143,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: validation.error }, { status: 400 });
   }
 
-  await sendSupportMessage(validation.value, {
-    ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null,
-    userAgent: req.headers.get("user-agent"),
-  });
+  try {
+    await sendSupportMessage(validation.value, {
+      ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null,
+      userAgent: req.headers.get("user-agent"),
+    });
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        type: "support_contact_delivery_failed",
+        timestamp: new Date().toISOString(),
+        error: error instanceof Error ? error.message : "unknown",
+      }),
+    );
+    return NextResponse.json(
+      { ok: false, error: "Could not submit your message." },
+      { status: 500 },
+    );
+  }
 
   return NextResponse.json({ ok: true });
 }
