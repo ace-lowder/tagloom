@@ -18,10 +18,10 @@ export default function SiteFooter() {
         <BrandMark href="/" size="footer" className="justify-self-center sm:justify-self-start" />
 
         <div className="flex items-center justify-center gap-7 text-sm text-stone-400">
-          <Link href="#" className="transition-colors hover:text-stone-700">
+          <Link href="/privacy" className="transition-colors hover:text-stone-700">
             Privacy
           </Link>
-          <Link href="#" className="transition-colors hover:text-stone-700">
+          <Link href="/terms" className="transition-colors hover:text-stone-700">
             Terms
           </Link>
           {pathname === "/support" ? (
