@@ -8,6 +8,8 @@ import {
   syncBillingProjectionForUser,
 } from "@/lib/stripeBillingSync";
 
+const STARTER_GENERATION_CREDITS = 5;
+
 async function grantSingleUseCredit(userId: string, admin: ReturnType<typeof createSupabaseAdminClient>) {
   if (!admin) return;
   const adminClient = admin as any;
@@ -22,7 +24,7 @@ async function grantSingleUseCredit(userId: string, admin: ReturnType<typeof cre
   await adminClient
     .from("profiles")
     .update({
-      single_use_credits: (profile.single_use_credits || 0) + 1,
+      single_use_credits: (profile.single_use_credits || 0) + STARTER_GENERATION_CREDITS,
       starter_upgrade_discount_available: true,
     })
     .eq("id", userId);
