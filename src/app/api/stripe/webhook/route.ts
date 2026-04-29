@@ -9,6 +9,11 @@ import {
 } from "@/lib/stripeBillingSync";
 
 const STARTER_GENERATION_CREDITS = 5;
+const STRIPE_EVENT_STATUS = {
+  processing: "processing",
+  processed: "processed",
+  failed: "failed",
+} as const;
 
 async function grantSingleUseCredit(userId: string, admin: ReturnType<typeof createSupabaseAdminClient>) {
   if (!admin) return;
@@ -59,6 +64,14 @@ export async function POST(req: Request) {
     );
   }
 
+  const claim = await claimStripeEvent(admin, event);
+  if (claim === "duplicate") {
+    return NextResponse.json({ received: true });
+  }
+  if (claim === "error") {
+    return NextResponse.json({ error: "Webhook handling failed." }, { status: 500 });
+  }
+
   try {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
@@ -75,6 +88,7 @@ export async function POST(req: Request) {
           session: session.id,
           customerId,
         });
+        await markStripeEventProcessed(admin, event.id);
         return NextResponse.json({ received: true });
       }
 
@@ -134,6 +148,7 @@ export async function POST(req: Request) {
           subscriptionId: subscription.id,
           customerId,
         });
+        await markStripeEventProcessed(admin, event.id);
         return NextResponse.json({ received: true });
       }
 
@@ -159,6 +174,7 @@ export async function POST(req: Request) {
           subscriptionId: subscription.id,
           customerId,
         });
+        await markStripeEventProcessed(admin, event.id);
         return NextResponse.json({ received: true });
       }
 
@@ -206,9 +222,132 @@ export async function POST(req: Request) {
       }
     }
 
+    await markStripeEventProcessed(admin, event.id);
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("[stripe] webhook handling failed", error);
+    await markStripeEventFailed(admin, event.id, error);
     return NextResponse.json({ error: "Webhook handling failed." }, { status: 500 });
   }
+}
+
+// Stripe event idempotency
+function isDuplicateStripeEventError(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const code = "code" in error ? String((error as { code?: unknown }).code ?? "") : "";
+  return code === "23505";
+}
+
+function formatStripeEventError(error: unknown) {
+  if (error instanceof Error) return error.message.slice(0, 500);
+  if (!error || typeof error !== "object") return String(error ?? "Unknown error").slice(0, 500);
+  const message =
+    "message" in error
+      ? String((error as { message?: unknown }).message ?? "")
+      : "Webhook handling failed.";
+  return message.slice(0, 500);
+}
+
+async function claimStripeEvent(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  event: Stripe.Event,
+) {
+  if (!admin) return "error";
+  const adminClient = admin as any;
+  const { error } = await adminClient
+    .from("stripe_events")
+    .insert({
+      id: event.id,
+      type: event.type,
+      status: STRIPE_EVENT_STATUS.processing,
+    });
+
+  if (!error) return "claimed";
+  if (isDuplicateStripeEventError(error)) {
+    return reclaimExistingStripeEvent(adminClient, event);
+  }
+
+  console.error("[stripe] webhook event claim failed", {
+    eventId: event.id,
+    eventType: event.type,
+    error,
+  });
+  return "error";
+}
+
+async function reclaimExistingStripeEvent(adminClient: any, event: Stripe.Event) {
+  const { data: existing, error: readError } = await adminClient
+    .from("stripe_events")
+    .select("status")
+    .eq("id", event.id)
+    .maybeSingle();
+
+  if (readError || !existing) {
+    console.error("[stripe] webhook event lookup failed", {
+      eventId: event.id,
+      eventType: event.type,
+      error: readError,
+    });
+    return "error";
+  }
+
+  if (existing.status === STRIPE_EVENT_STATUS.failed) {
+    const { error: updateError } = await adminClient
+      .from("stripe_events")
+      .update({
+        type: event.type,
+        status: STRIPE_EVENT_STATUS.processing,
+        processed_at: null,
+        updated_at: new Date().toISOString(),
+        error: null,
+      })
+      .eq("id", event.id);
+
+    if (updateError) {
+      console.error("[stripe] webhook event reclaim failed", {
+        eventId: event.id,
+        eventType: event.type,
+        error: updateError,
+      });
+      return "error";
+    }
+
+    return "claimed";
+  }
+
+  return "duplicate";
+}
+
+async function markStripeEventProcessed(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  eventId: string,
+) {
+  if (!admin) return;
+  const adminClient = admin as any;
+  await adminClient
+    .from("stripe_events")
+    .update({
+      status: STRIPE_EVENT_STATUS.processed,
+      processed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      error: null,
+    })
+    .eq("id", eventId);
+}
+
+async function markStripeEventFailed(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  eventId: string,
+  error: unknown,
+) {
+  if (!admin) return;
+  const adminClient = admin as any;
+  await adminClient
+    .from("stripe_events")
+    .update({
+      status: STRIPE_EVENT_STATUS.failed,
+      updated_at: new Date().toISOString(),
+      error: formatStripeEventError(error),
+    })
+    .eq("id", eventId);
 }

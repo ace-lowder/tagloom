@@ -75,6 +75,18 @@ alter table public.profiles
   add column if not exists monthly_generation_count int not null default 0,
   add column if not exists monthly_count_period_start timestamptz;
 
+create table if not exists public.stripe_events (
+  id text primary key,
+  type text not null,
+  status text not null,
+  received_at timestamptz not null default now(),
+  processed_at timestamptz,
+  updated_at timestamptz not null default now(),
+  error text
+);
+
+alter table public.stripe_events enable row level security;
+
 create table if not exists public.generations (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
