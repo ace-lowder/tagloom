@@ -1,13 +1,23 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { sanitizeNextPath } from "@/lib/authModal";
+import { AUTH_CONFIG_ERROR, buildPublicUrl } from "@/lib/authRedirect";
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
   const flow = requestUrl.searchParams.get("flow");
   const safeNext = sanitizeNextPath(requestUrl.searchParams.get("next"));
-  const popupCompleteUrl = new URL("/auth/popup-complete", requestUrl.origin);
+
+  let popupCompleteUrl: URL;
+  let finalRedirectUrl: string;
+  try {
+    popupCompleteUrl = new URL(buildPublicUrl("/auth/popup-complete"));
+    finalRedirectUrl = buildPublicUrl(safeNext);
+  } catch {
+    return new Response(AUTH_CONFIG_ERROR, { status: 500 });
+  }
+
   popupCompleteUrl.searchParams.set("next", safeNext);
 
   if (code) {
@@ -37,5 +47,5 @@ export async function GET(request: Request) {
     return NextResponse.redirect(popupCompleteUrl.toString());
   }
 
-  return NextResponse.redirect(`${requestUrl.origin}${safeNext}`);
+  return NextResponse.redirect(finalRedirectUrl);
 }

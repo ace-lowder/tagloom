@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { AUTH_POPUP_MESSAGE_SOURCE } from "@/lib/authModal";
+import { buildAuthCallbackUrl } from "@/lib/authRedirect";
 import TurnstileField, {
   type TurnstileFieldHandle,
 } from "@/components/security/TurnstileField";
@@ -25,14 +26,6 @@ type PopupMessage = {
   type: "tagloom:auth-success" | "tagloom:auth-error";
   message?: string;
 };
-
-function buildCallbackUrl(next: string, flow: "popup" | "redirect") {
-  const params = new URLSearchParams({
-    next,
-    flow,
-  });
-  return `${window.location.origin}/auth/callback?${params.toString()}`;
-}
 
 function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
@@ -226,7 +219,7 @@ export default function AuthForm({
           email,
           password,
           options: {
-            emailRedirectTo: buildCallbackUrl(next, "redirect"),
+            emailRedirectTo: buildAuthCallbackUrl(next, "redirect"),
           },
         });
 
@@ -269,7 +262,7 @@ export default function AuthForm({
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: buildCallbackUrl(next, "redirect"),
+        redirectTo: buildAuthCallbackUrl(next, "redirect"),
       },
     });
 
@@ -282,7 +275,7 @@ export default function AuthForm({
     const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: buildCallbackUrl(next, "popup"),
+        redirectTo: buildAuthCallbackUrl(next, "popup"),
         skipBrowserRedirect: true,
       },
     });
@@ -396,7 +389,7 @@ export default function AuthForm({
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(
         email,
         {
-          redirectTo: `${window.location.origin}/login`,
+          redirectTo: buildAuthCallbackUrl("/reset-password"),
         },
       );
 

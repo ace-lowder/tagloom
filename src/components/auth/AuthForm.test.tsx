@@ -90,6 +90,7 @@ async function moveSignupToPasswordStep() {
 describe("AuthForm signup guard", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "http://localhost:3000");
     vi.stubGlobal("fetch", setupFetchMock());
     window.localStorage.clear();
     window.sessionStorage.clear();
@@ -104,6 +105,7 @@ describe("AuthForm signup guard", () => {
     signUpMock.mockResolvedValue({ data: {}, error: null });
     signInWithPasswordMock.mockResolvedValue({ error: null });
     signInWithOAuthMock.mockResolvedValue({ error: null, data: {} });
+    resetPasswordForEmailMock.mockResolvedValue({ error: null });
   });
 
   it("blocks final signup submit from localStorage cooldown", async () => {
@@ -231,6 +233,88 @@ describe("AuthForm signup guard", () => {
         String(input).includes("/api/auth/signup-eligibility"),
       ),
     ).toBe(false);
+  });
+
+  it("sends forgot-password emails through the reset callback route", async () => {
+    render(<AuthForm mode="login" onModeChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Reset password" }));
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "person@example.com" },
+    });
+    fireEvent.submit(
+      screen.getByRole("button", { name: "Reset password" }).closest("form")!,
+    );
+
+    await waitFor(() =>
+      expect(resetPasswordForEmailMock).toHaveBeenCalledWith(
+        "person@example.com",
+        {
+          redirectTo:
+            "http://localhost:3000/auth/callback?next=%2Freset-password",
+        },
+      ),
+    );
+  });
+
+  it("does not send forgot-password emails when site URL config is missing", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "");
+    render(<AuthForm mode="login" onModeChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Reset password" }));
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "person@example.com" },
+    });
+    fireEvent.submit(
+      screen.getByRole("button", { name: "Reset password" }).closest("form")!,
+    );
+
+    expect(
+      await screen.findByText(
+        "Auth is not configured correctly. Please contact support.",
+      ),
+    ).toBeInTheDocument();
+    expect(resetPasswordForEmailMock).not.toHaveBeenCalled();
+  });
+
+  it("does not send forgot-password emails when site URL config is invalid", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "not-a-url");
+    render(<AuthForm mode="login" onModeChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Reset password" }));
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "person@example.com" },
+    });
+    fireEvent.submit(
+      screen.getByRole("button", { name: "Reset password" }).closest("form")!,
+    );
+
+    expect(
+      await screen.findByText(
+        "Auth is not configured correctly. Please contact support.",
+      ),
+    ).toBeInTheDocument();
+    expect(resetPasswordForEmailMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects 0.0.0.0 for forgot-password redirects", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "http://0.0.0.0:3000");
+    render(<AuthForm mode="login" onModeChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Reset password" }));
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "person@example.com" },
+    });
+    fireEvent.submit(
+      screen.getByRole("button", { name: "Reset password" }).closest("form")!,
+    );
+
+    expect(
+      await screen.findByText(
+        "Auth is not configured correctly. Please contact support.",
+      ),
+    ).toBeInTheDocument();
+    expect(resetPasswordForEmailMock).not.toHaveBeenCalled();
   });
 
   it("leaves Google OAuth flow unaffected", async () => {
