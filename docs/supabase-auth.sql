@@ -87,6 +87,128 @@ create table if not exists public.stripe_events (
 
 alter table public.stripe_events enable row level security;
 
+create or replace function public.consume_generation_entitlement(p_user_id uuid)
+returns table (
+  allowed boolean,
+  entitlement_used text,
+  reason text
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  profile_row public.profiles%rowtype;
+begin
+  if auth.uid() is distinct from p_user_id then
+    return query select false, null::text, 'profile_not_found';
+    return;
+  end if;
+
+  select *
+  into profile_row
+  from public.profiles
+  where id = p_user_id
+  for update;
+
+  if not found then
+    return query select false, null::text, 'profile_not_found';
+    return;
+  end if;
+
+  if profile_row.free_generation_credits > 0 then
+    update public.profiles
+    set free_generation_credits = free_generation_credits - 1
+    where id = p_user_id;
+
+    return query select true, 'free_credit'::text, null::text;
+    return;
+  end if;
+
+  if profile_row.single_use_credits > 0 then
+    update public.profiles
+    set single_use_credits = single_use_credits - 1
+    where id = p_user_id;
+
+    return query select true, 'single_use'::text, null::text;
+    return;
+  end if;
+
+  if profile_row.subscription_active and profile_row.subscription_tier = 'yearly' then
+    return query select true, 'subscription_yearly'::text, null::text;
+    return;
+  end if;
+
+  if profile_row.subscription_active and profile_row.subscription_tier = 'monthly' then
+    if profile_row.subscription_period_start is not null
+      and profile_row.monthly_count_period_start is distinct from profile_row.subscription_period_start then
+      profile_row.monthly_generation_count := 0;
+
+      update public.profiles
+      set
+        monthly_generation_count = 0,
+        monthly_count_period_start = profile_row.subscription_period_start
+      where id = p_user_id;
+    end if;
+
+    if profile_row.monthly_generation_count < 100 then
+      update public.profiles
+      set
+        monthly_generation_count = monthly_generation_count + 1,
+        monthly_count_period_start = coalesce(monthly_count_period_start, subscription_period_start)
+      where id = p_user_id;
+
+      return query select true, 'subscription_monthly'::text, null::text;
+      return;
+    end if;
+
+    return query select false, null::text, 'monthly_limit'::text;
+    return;
+  end if;
+
+  return query select false, null::text, 'no_entitlement'::text;
+end;
+$$;
+
+create or replace function public.refund_generation_entitlement(
+  p_user_id uuid,
+  p_entitlement_used text
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is distinct from p_user_id then
+    return;
+  end if;
+
+  perform 1
+  from public.profiles
+  where id = p_user_id
+  for update;
+
+  if not found then
+    return;
+  end if;
+
+  if p_entitlement_used = 'free_credit' then
+    update public.profiles
+    set free_generation_credits = free_generation_credits + 1
+    where id = p_user_id;
+  elsif p_entitlement_used = 'single_use' then
+    update public.profiles
+    set single_use_credits = single_use_credits + 1
+    where id = p_user_id;
+  elsif p_entitlement_used = 'subscription_monthly' then
+    update public.profiles
+    set monthly_generation_count = greatest(0, monthly_generation_count - 1)
+    where id = p_user_id;
+  end if;
+end;
+$$;
+
 create table if not exists public.generations (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,

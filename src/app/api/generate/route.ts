@@ -16,8 +16,6 @@ type GenerateRequest = {
 
 type ProfileRecord = {
   id: string;
-  free_generation_credits: number;
-  single_use_credits: number;
   stripe_customer_id: string | null;
   subscription_tier: "monthly" | "yearly" | null;
   subscription_active: boolean;
@@ -26,6 +24,18 @@ type ProfileRecord = {
   subscription_cancel_at?: string | null;
   monthly_generation_count: number;
   monthly_count_period_start: string | null;
+};
+
+type EntitlementUsed =
+  | "free_credit"
+  | "single_use"
+  | "subscription_monthly"
+  | "subscription_yearly";
+
+type EntitlementResult = {
+  allowed: boolean;
+  entitlement_used: EntitlementUsed | null;
+  reason: string | null;
 };
 
 function paywall(
@@ -39,6 +49,21 @@ function paywall(
     requestId,
     message,
     placeholders: getPlaceholderTags(),
+  });
+}
+
+function normalizeEntitlementResult(data: EntitlementResult | EntitlementResult[] | null) {
+  return Array.isArray(data) ? data[0] ?? null : data;
+}
+
+async function refundGenerationEntitlement(
+  supabase: NonNullable<ReturnType<typeof createSupabaseServerClient>>,
+  userId: string,
+  entitlementUsed: EntitlementUsed,
+) {
+  await supabase.rpc("refund_generation_entitlement", {
+    p_user_id: userId,
+    p_entitlement_used: entitlementUsed,
   });
 }
 
@@ -107,7 +132,7 @@ export async function POST(req: NextRequest) {
   const { data: rawProfile, error: profileError } = await supabase
     .from("profiles")
     .select(
-      "id, free_generation_credits, single_use_credits, stripe_customer_id, subscription_tier, subscription_active, subscription_period_start, subscription_period_end, monthly_generation_count, monthly_count_period_start",
+      "id, stripe_customer_id, subscription_tier, subscription_active, subscription_period_start, subscription_period_end, monthly_generation_count, monthly_count_period_start",
     )
     .eq("id", user.id)
     .single<ProfileRecord>();
@@ -149,68 +174,16 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const resolveEntitlement = (inputProfile: ProfileRecord) => {
-    const mutableProfile: ProfileRecord = { ...inputProfile };
-    const updates: Partial<ProfileRecord> = {};
-    let used:
-      | "free_credit"
-      | "single_use"
-      | "subscription_monthly"
-      | "subscription_yearly"
-      | null = null;
+  let { data: entitlementData, error: entitlementError } = await supabase.rpc(
+    "consume_generation_entitlement",
+    { p_user_id: user.id },
+  );
+  let entitlement = normalizeEntitlementResult(entitlementData as EntitlementResult | EntitlementResult[] | null);
 
-    if (mutableProfile.free_generation_credits > 0) {
-      used = "free_credit";
-      updates.free_generation_credits = Math.max(
-        0,
-        mutableProfile.free_generation_credits - 1,
-      );
-      return { used, updates, limitReached: false };
-    }
-
-    if (mutableProfile.single_use_credits > 0) {
-      used = "single_use";
-      updates.single_use_credits = Math.max(
-        0,
-        mutableProfile.single_use_credits - 1,
-      );
-      return { used, updates, limitReached: false };
-    }
-
-    if (mutableProfile.subscription_active && mutableProfile.subscription_tier === "yearly") {
-      used = "subscription_yearly";
-      return { used, updates, limitReached: false };
-    }
-
-    if (mutableProfile.subscription_active && mutableProfile.subscription_tier === "monthly") {
-      const periodStart = mutableProfile.subscription_period_start;
-      const countPeriodStart = mutableProfile.monthly_count_period_start;
-
-      if (periodStart && countPeriodStart !== periodStart) {
-        mutableProfile.monthly_generation_count = 0;
-        updates.monthly_generation_count = 0;
-        updates.monthly_count_period_start = periodStart;
-      }
-
-      if (mutableProfile.monthly_generation_count < 100) {
-        used = "subscription_monthly";
-        updates.monthly_generation_count = mutableProfile.monthly_generation_count + 1;
-        if (!updates.monthly_count_period_start && periodStart) {
-          updates.monthly_count_period_start = periodStart;
-        }
-        return { used, updates, limitReached: false };
-      }
-
-      return { used: null, updates, limitReached: true };
-    }
-
-    return { used, updates, limitReached: false };
-  };
-
-  let { used: entitlementUsed, updates: profileUpdates, limitReached } =
-    resolveEntitlement(profile);
-
-  if (!entitlementUsed && !limitReached && profile.stripe_customer_id) {
+  if (
+    (!entitlement || (!entitlement.allowed && entitlement.reason !== "monthly_limit")) &&
+    profile.stripe_customer_id
+  ) {
     const refreshed = await syncBillingProjectionForUser({
       userId: profile.id,
       customerId: profile.stripe_customer_id,
@@ -225,12 +198,22 @@ export async function POST(req: NextRequest) {
         subscription_cancel_at: refreshed.subscription_cancel_at,
         stripe_customer_id: refreshed.stripe_customer_id,
       };
-      ({ used: entitlementUsed, updates: profileUpdates, limitReached } =
-        resolveEntitlement(profile));
+      ({ data: entitlementData, error: entitlementError } = await supabase.rpc(
+        "consume_generation_entitlement",
+        { p_user_id: user.id },
+      ));
+      entitlement = normalizeEntitlementResult(entitlementData as EntitlementResult | EntitlementResult[] | null);
     }
   }
 
-  if (limitReached) {
+  if (entitlementError || !entitlement) {
+    return NextResponse.json(
+      { error: "Could not reserve generation entitlement." },
+      { status: 500 },
+    );
+  }
+
+  if (!entitlement.allowed && entitlement.reason === "monthly_limit") {
     return paywall(
       "limit_reached",
       "Monthly generation limit reached (100). Upgrade to yearly or wait for your next Stripe billing period.",
@@ -238,7 +221,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (!entitlementUsed) {
+  if (!entitlement.allowed || !entitlement.entitlement_used) {
     return paywall(
       "payment_required",
       "You have no remaining generation credits. Purchase single use or subscribe to keep generating tags.",
@@ -246,22 +229,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const entitlementUsed = entitlement.entitlement_used;
+
   try {
     const generated = await generateTags(title, description);
-
-    if (Object.keys(profileUpdates).length > 0) {
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update(profileUpdates)
-        .eq("id", user.id);
-
-      if (updateError) {
-        return NextResponse.json(
-          { error: "Could not update usage credits." },
-          { status: 500 },
-        );
-      }
-    }
 
     const { error: insertError } = await supabase.from("generations").insert({
       user_id: user.id,
@@ -274,6 +245,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (insertError) {
+      await refundGenerationEntitlement(supabase, user.id, entitlementUsed);
       return NextResponse.json(
         { error: "Could not save generation." },
         { status: 500 },
@@ -288,6 +260,7 @@ export async function POST(req: NextRequest) {
       entitlementUsed,
     });
   } catch {
+    await refundGenerationEntitlement(supabase, user.id, entitlementUsed);
     return NextResponse.json(
       { error: "Tag generation failed." },
       { status: 500 },
