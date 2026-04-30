@@ -5,6 +5,7 @@ coverage
 .auth/
 test-results/
 playwright-report/
+supabase/.temp/
 .env*
 !.env.example
 
