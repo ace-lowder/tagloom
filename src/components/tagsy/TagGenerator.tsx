@@ -234,9 +234,11 @@ const DESCRIPTION_MAX = 6000;
 const DEFAULT_TITLE_PLACEHOLDER =
   "e.g. Handmade ceramic coffee mug with minimalist design";
 const USAGE_HINT_CLOSE_DELAY_MS = 500;
-const HISTORY_PAGE_SIZE = 4;
-const HISTORY_TRANSITION_MS = 180;
+const HISTORY_PAGE_SIZE = 8;
+const HISTORY_CARDS_PER_PAGE = 4;
 const HISTORY_CACHE_KEY = "tagloom:history:v1";
+const GENERATED_TAG_CHIP_CLASSNAME =
+  "cursor-default rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm text-stone-700 shadow-sm";
 
 function getContextStorageKey(id: string) {
   return `${CONTEXT_STORAGE_PREFIX}${id}`;
@@ -411,10 +413,22 @@ function formatHistoryDate(isoDate: string) {
   return `${month} ${day}, ${year}`;
 }
 
-function truncateTitle(title: string, max = 30) {
-  const clean = title.trim();
+function truncateHistoryText(value: string, max = 30, fallback = "") {
+  const clean = value.trim() || fallback;
   if (clean.length <= max) return clean;
   return `${clean.slice(0, max - 1)}…`;
+}
+
+function getHistoryPageStart(page: number, cardCount: number) {
+  if (cardCount <= HISTORY_CARDS_PER_PAGE) return 0;
+  return Math.min(
+    page * HISTORY_CARDS_PER_PAGE,
+    cardCount - HISTORY_CARDS_PER_PAGE,
+  );
+}
+
+function getHistoryPageCount(cardCount: number) {
+  return Math.max(1, Math.ceil(cardCount / HISTORY_CARDS_PER_PAGE));
 }
 
 export default function TagGenerator({
@@ -438,6 +452,7 @@ export default function TagGenerator({
 
   const [apiTags, setApiTags] = useState<string[]>([]);
   const [visibleTags, setVisibleTags] = useState<string[]>([]);
+  const [shouldAnimateTagChips, setShouldAnimateTagChips] = useState(false);
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -463,14 +478,11 @@ export default function TagGenerator({
   const [shellHeightPx, setShellHeightPx] = useState<number | null>(null);
   const [shellHeightTransitionMs, setShellHeightTransitionMs] = useState(0);
   const [historyItems, setHistoryItems] = useState<GenerationHistoryItem[]>([]);
-  const [historyPage, setHistoryPage] = useState(0);
-  const [historyHasPrev, setHistoryHasPrev] = useState(false);
-  const [historyHasNext, setHistoryHasNext] = useState(false);
+  const [historyCardPage, setHistoryCardPage] = useState(0);
   const [isHistoryAuthenticated, setIsHistoryAuthenticated] = useState(false);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
-  const [historyCardsVisible, setHistoryCardsVisible] = useState(true);
-  const [historyDirection, setHistoryDirection] = useState<"left" | "right">(
-    "right",
+  const [historyDirection, setHistoryDirection] = useState<"newer" | "older">(
+    "older",
   );
   const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(
     null,
@@ -495,6 +507,8 @@ export default function TagGenerator({
   );
   const demoFixtureIndexRef = useRef(0);
   const demoCharIndexRef = useRef(0);
+  const draftHistoryCountRef = useRef(0);
+  const previousDraftHistoryCountRef = useRef(0);
   const shouldSkipDemoRef = useRef(false);
   const isDemoPausedRef = useRef(false);
   const demoTimerMetaRef = useRef<TimerMeta>({
@@ -509,6 +523,52 @@ export default function TagGenerator({
     remainingMs: 0,
     startedAtMs: 0,
   });
+  const displayHistoryCards = useMemo(() => {
+    const cards = [...historyItems];
+    for (const draft of draftHistoryItems) {
+      cards.push({
+        id: draft.id,
+        createdAt: draft.updatedAt,
+        title: draft.title,
+        description: draft.description,
+        targetTags: [],
+        discoveryTags: [],
+        isDraft: true,
+      });
+    }
+    return cards;
+  }, [draftHistoryItems, historyItems]);
+  const historyCardPageCount = getHistoryPageCount(displayHistoryCards.length);
+  const historyPageStart = getHistoryPageStart(
+    historyCardPage,
+    displayHistoryCards.length,
+  );
+  const visibleHistoryCards = displayHistoryCards.slice(
+    historyPageStart,
+    historyPageStart + HISTORY_CARDS_PER_PAGE,
+  );
+  const visibleHistoryDotPages = useMemo(() => {
+    const dotCount = Math.min(5, historyCardPageCount);
+    const maxStart = Math.max(0, historyCardPageCount - dotCount);
+    const start = Math.min(
+      Math.max(0, historyCardPage - Math.floor(dotCount / 2)),
+      maxStart,
+    );
+    return Array.from({ length: dotCount }, (_, index) => start + index);
+  }, [historyCardPage, historyCardPageCount]);
+
+  useEffect(() => {
+    const newestPage = Math.max(0, historyCardPageCount - 1);
+    setHistoryCardPage((current) => Math.min(current, newestPage));
+  }, [historyCardPageCount]);
+
+  useEffect(() => {
+    draftHistoryCountRef.current = draftHistoryItems.length;
+    if (draftHistoryItems.length > previousDraftHistoryCountRef.current) {
+      setHistoryCardPage(Math.max(0, historyCardPageCount - 1));
+    }
+    previousDraftHistoryCountRef.current = draftHistoryItems.length;
+  }, [draftHistoryItems.length, historyCardPageCount]);
 
   const setRevealTimer = useCallback(
     (callback: () => void, delayMs: number) => {
@@ -663,6 +723,7 @@ export default function TagGenerator({
     setShellHeightPx(null);
     setApiTags([]);
     setVisibleTags([]);
+    setShouldAnimateTagChips(false);
     setIsGenerating(false);
   }, [clearDemoTimer, clearRevealTimer, isDemoActive]);
 
@@ -737,16 +798,14 @@ export default function TagGenerator({
     }
   }, []);
 
-  const loadHistoryPage = useCallback(
-    async ({
-      page,
-      selectNewest = false,
-    }: {
-      page: number;
-      selectNewest?: boolean;
-    }) => {
-      setIsHistoryLoading(true);
-      try {
+  const loadHistory = useCallback(async () => {
+    setIsHistoryLoading(true);
+    try {
+      const fetchedPages: GenerationHistoryItem[][] = [];
+      let page = 0;
+      let hasNext = true;
+
+      while (hasNext) {
         const response = await fetch(
           `/api/generations/history?limit=${HISTORY_PAGE_SIZE}&page=${page}`,
           { method: "GET" },
@@ -754,8 +813,7 @@ export default function TagGenerator({
         if (response.status === 401) {
           setIsHistoryAuthenticated(false);
           setHistoryItems([]);
-          setHistoryHasPrev(false);
-          setHistoryHasNext(false);
+          setHistoryCardPage(0);
           setDraftHistoryItems([]);
           setSelectedDraftId(null);
           setSelectedHistoryId(null);
@@ -768,73 +826,79 @@ export default function TagGenerator({
         }
 
         const data = (await response.json()) as GenerationHistoryResponse;
-        const nextItems = Array.isArray(data.items) ? data.items : [];
+        fetchedPages.push(Array.isArray(data.items) ? data.items : []);
+        hasNext = Boolean(data.hasNext);
+        page += 1;
+      }
 
-        setIsHistoryAuthenticated(true);
-        setHistoryItems(nextItems);
-        setHistoryPage(data.page ?? page);
-        setHistoryHasPrev(Boolean(data.hasPrev));
-        setHistoryHasNext(Boolean(data.hasNext));
+      const seen = new Set<string>();
+      const nextItems: GenerationHistoryItem[] = [];
+      for (const item of fetchedPages.reverse().flat()) {
+        if (!item?.id || seen.has(item.id)) continue;
+        seen.add(item.id);
+        nextItems.push(item);
+      }
 
-        if (nextItems.length === 0) {
-          setSelectedHistoryId(null);
-          setSelectedSavedHistory(null);
-          return;
-        }
+      setIsHistoryAuthenticated(true);
+      setHistoryItems(nextItems);
+      setHistoryCardPage(
+        Math.max(
+          0,
+          getHistoryPageCount(nextItems.length + draftHistoryCountRef.current) - 1,
+        ),
+      );
 
-        if (selectNewest) {
-          const newest = nextItems[nextItems.length - 1];
-          setSelectedHistoryId(newest.id);
-          setSelectedSavedHistory(newest);
-          return;
-        }
-
-        setSelectedHistoryId((current) => {
-          const matched = current
-            ? nextItems.find((item) => item.id === current)
-            : null;
-          if (matched) {
-            setSelectedSavedHistory(matched);
-            return matched.id;
-          }
+      setSelectedHistoryId((current) => {
+        if (!current) {
           setSelectedSavedHistory(null);
           return null;
-        });
-      } catch {
-        setIsHistoryAuthenticated(false);
-        clearHistoryCache();
-      } finally {
-        setIsHistoryLoading(false);
-      }
+        }
+        if (current === "draft") {
+          setSelectedSavedHistory(null);
+          return current;
+        }
+        const matched = nextItems.find((item) => item.id === current) ?? null;
+        setSelectedSavedHistory(matched);
+        return matched ? matched.id : null;
+      });
+    } catch {
+      setIsHistoryAuthenticated(false);
+      clearHistoryCache();
+    } finally {
+      setIsHistoryLoading(false);
+    }
+  }, []);
+
+  const goToHistoryCardPage = useCallback(
+    (nextPage: number) => {
+      if (isHistoryLoading) return;
+      const clampedPage = Math.max(
+        0,
+        Math.min(nextPage, historyCardPageCount - 1),
+      );
+      if (clampedPage === historyCardPage) return;
+
+      setHistoryDirection(clampedPage > historyCardPage ? "older" : "newer");
+      setHistoryCardPage(clampedPage);
     },
-    [],
+    [historyCardPage, historyCardPageCount, isHistoryLoading],
   );
 
   const pageHistory = useCallback(
-    async (direction: "left" | "right") => {
+    (direction: "newer" | "older") => {
       if (isHistoryLoading) return;
 
-      const nextPage = direction === "left" ? historyPage + 1 : historyPage - 1;
-      if (nextPage < 0) return;
-
-      if (direction === "left" && !historyHasNext) return;
-      if (direction === "right" && !historyHasPrev) return;
-
-      setHistoryDirection(direction);
-      setHistoryCardsVisible(false);
-      await new Promise((resolve) =>
-        setTimeout(resolve, HISTORY_TRANSITION_MS),
-      );
-      await loadHistoryPage({ page: nextPage, selectNewest: true });
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      setHistoryCardsVisible(true);
+      const localNextPage =
+        direction === "older" ? historyCardPage + 1 : historyCardPage - 1;
+      if (localNextPage >= 0 && localNextPage < historyCardPageCount) {
+        setHistoryDirection(direction);
+        setHistoryCardPage(localNextPage);
+      }
     },
     [
-      historyHasNext,
-      historyHasPrev,
-      historyPage,
+      historyCardPage,
+      historyCardPageCount,
       isHistoryLoading,
-      loadHistoryPage,
     ],
   );
 
@@ -890,11 +954,16 @@ export default function TagGenerator({
       const cachedItems = Array.isArray(cached.page0) ? cached.page0 : [];
       setIsHistoryAuthenticated(true);
       setHistoryItems(cachedItems);
-      setHistoryPage(0);
-      setHistoryHasPrev(Boolean(cached.hasPrev));
-      setHistoryHasNext(Boolean(cached.hasNext));
       const cachedDrafts = Array.isArray(cached.drafts) ? cached.drafts : [];
+      draftHistoryCountRef.current = cachedDrafts.length;
+      previousDraftHistoryCountRef.current = cachedDrafts.length;
       setDraftHistoryItems(cachedDrafts);
+      setHistoryCardPage(
+        Math.max(
+          0,
+          getHistoryPageCount(cachedItems.length + cachedDrafts.length) - 1,
+        ),
+      );
       setSelectedDraftId(
         cached.selectedDraftId &&
           cachedDrafts.some((draft) => draft.id === cached.selectedDraftId)
@@ -925,8 +994,8 @@ export default function TagGenerator({
         setSelectedSavedHistory(null);
       }
     }
-    void loadHistoryPage({ page: 0, selectNewest: false });
-  }, [loadHistoryPage]);
+    void loadHistory();
+  }, [loadHistory]);
 
   useEffect(() => {
     if (!isDemoActive) return;
@@ -939,12 +1008,10 @@ export default function TagGenerator({
       clearHistoryCache();
       return;
     }
-    if (historyPage !== 0) return;
-
     writeHistoryCache({
       page0: historyItems,
-      hasPrev: historyHasPrev,
-      hasNext: historyHasNext,
+      hasPrev: false,
+      hasNext: false,
       selectedId: selectedHistoryId,
       drafts: draftHistoryItems,
       selectedDraftId,
@@ -952,10 +1019,7 @@ export default function TagGenerator({
     });
   }, [
     draftHistoryItems,
-    historyHasNext,
-    historyHasPrev,
     historyItems,
-    historyPage,
     isHistoryAuthenticated,
     selectedHistoryId,
     selectedDraftId,
@@ -994,9 +1058,22 @@ export default function TagGenerator({
       requestVersionRef.current = requestVersion;
 
       setApiTags(cleanTags);
+      setShouldAnimateTagChips(true);
       animateApiTagsIn(cleanTags, requestVersion);
     },
     [animateApiTagsIn],
+  );
+
+  const setResultTagsImmediately = useCallback(
+    (target: string[], discovery: string[]) => {
+      const cleanTags = sanitizeMergedTags(target, discovery);
+      requestVersionRef.current += 1;
+      clearRevealTimer();
+      setApiTags(cleanTags);
+      setVisibleTags(cleanTags);
+      setShouldAnimateTagChips(false);
+    },
+    [clearRevealTimer],
   );
 
   useEffect(() => {
@@ -1013,6 +1090,7 @@ export default function TagGenerator({
       setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
       setApiTags([]);
       setVisibleTags([]);
+      setShouldAnimateTagChips(false);
       setIsUnlockingFromPaywall(false);
       setClearPhase("idle");
       setIsGenerating(false);
@@ -1086,6 +1164,7 @@ export default function TagGenerator({
                 }
                 setVisibleTags([]);
                 setApiTags([]);
+                setShouldAnimateTagChips(false);
                 setClearPhase("collapsing");
 
                 collapseRafRef.current = requestAnimationFrame(() => {
@@ -1251,7 +1330,7 @@ export default function TagGenerator({
       setIsUnlockingFromPaywall(false);
       setResultTags(data.tags.target, data.tags.discovery);
       void refreshUsageLabel();
-      void loadHistoryPage({ page: 0, selectNewest: true });
+      void loadHistory();
 
       clearPendingContext(contextId);
 
@@ -1262,7 +1341,7 @@ export default function TagGenerator({
         window.history.replaceState({}, "", url.toString());
       }
     },
-    [loadHistoryPage, refreshUsageLabel, setResultTags],
+    [loadHistory, refreshUsageLabel, setResultTags],
   );
 
   const executeGenerate = useCallback(async () => {
@@ -1307,6 +1386,7 @@ export default function TagGenerator({
     setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
     setApiTags([]);
     setVisibleTags([]);
+    setShouldAnimateTagChips(false);
     setClearPhase("idle");
     setShellHeightTransitionMs(0);
     setShellHeightPx(null);
@@ -1424,12 +1504,12 @@ export default function TagGenerator({
   useEffect(() => {
     const onAuthSuccess = () => {
       void refreshUsageLabel();
-      void loadHistoryPage({ page: 0, selectNewest: true });
+      void loadHistory();
     };
 
     window.addEventListener(AUTH_SUCCESS_EVENT, onAuthSuccess);
     return () => window.removeEventListener(AUTH_SUCCESS_EVENT, onAuthSuccess);
-  }, [loadHistoryPage, refreshUsageLabel]);
+  }, [loadHistory, refreshUsageLabel]);
 
   useEffect(() => {
     const onAuthSuccess = () => {
@@ -1451,6 +1531,7 @@ export default function TagGenerator({
           setIsUnlockingFromPaywall(true);
           setApiTags([]);
           setVisibleTags([]);
+          setShouldAnimateTagChips(false);
           runGeneration(context.title, context.description, context.id).catch(
             (err) => {
               setIsUnlockingFromPaywall(false);
@@ -1487,6 +1568,7 @@ export default function TagGenerator({
       setConfirmModalMode(null);
       setApiTags([]);
       setVisibleTags([]);
+      setShouldAnimateTagChips(false);
       runGeneration(context.title, context.description, context.id).catch(
         (err) => {
           setIsUnlockingFromPaywall(false);
@@ -1604,6 +1686,7 @@ export default function TagGenerator({
         setEntitlementUsed(null);
         setApiTags([]);
         setVisibleTags([]);
+        setShouldAnimateTagChips(false);
         setClearPhase("idle");
         setShellHeightTransitionMs(0);
         setShellHeightPx(null);
@@ -1623,9 +1706,14 @@ export default function TagGenerator({
       setUnlockReadyContext(null);
       setConfirmModalMode(null);
       setError("");
-      setResultTags(item.targetTags, item.discoveryTags);
+      setResultTagsImmediately(item.targetTags, item.discoveryTags);
     },
-    [clearDemoTimer, clearRevealTimer, markUserInteraction, setResultTags],
+    [
+      clearDemoTimer,
+      clearRevealTimer,
+      markUserInteraction,
+      setResultTagsImmediately,
+    ],
   );
 
   const clearDraftCard = useCallback(
@@ -1646,6 +1734,7 @@ export default function TagGenerator({
         setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
         setApiTags([]);
         setVisibleTags([]);
+        setShouldAnimateTagChips(false);
         setPaywall(null);
         setUnlockReadyContext(null);
         setConfirmModalMode(null);
@@ -1709,24 +1798,12 @@ export default function TagGenerator({
     }).format(date);
   }, [monthlyResetAt]);
   const showFreeGenerationModalTitle = confirmModalMode === "generate";
-  const displayHistoryCards = useMemo(() => {
-    const cards = [...historyItems];
-    for (const draft of draftHistoryItems) {
-      cards.push({
-        id: draft.id,
-        createdAt: draft.updatedAt,
-        title: draft.title.trim() || "Draft listing",
-        description: draft.description,
-        targetTags: [],
-        discoveryTags: [],
-        isDraft: true,
-      });
-    }
-    return cards;
-  }, [draftHistoryItems, historyItems]);
   const showHistoryStrip =
     isHistoryAuthenticated &&
     (historyItems.length > 0 || draftHistoryItems.length > 0);
+  const canShowOlderHistory =
+    historyCardPage < historyCardPageCount - 1;
+  const canShowNewerHistory = historyCardPage > 0;
 
   useEffect(() => {
     if (!selectedHistoryId) {
@@ -2074,23 +2151,35 @@ export default function TagGenerator({
                   <div
                     className={`flex flex-wrap gap-2 ${paywall ? "blur-sm select-none" : ""}`}
                   >
-                    {visibleTags.map((tag, i) => (
-                      <motion.span
-                        key={`${tag}-${i}`}
-                        data-testid="generated-tag-chip"
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{
-                          delay: i * 0.04,
-                          type: "spring",
-                          stiffness: 300,
-                          damping: 20,
-                        }}
-                        className="cursor-default rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm text-stone-700 shadow-sm"
-                      >
-                        {tag}
-                      </motion.span>
-                    ))}
+                    {visibleTags.map((tag, i) =>
+                      shouldAnimateTagChips ? (
+                        <motion.span
+                          key={`${tag}-${i}`}
+                          data-testid="generated-tag-chip"
+                          data-animation="reveal"
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{
+                            delay: i * 0.04,
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 20,
+                          }}
+                          className={GENERATED_TAG_CHIP_CLASSNAME}
+                        >
+                          {tag}
+                        </motion.span>
+                      ) : (
+                        <span
+                          key={`${tag}-${i}`}
+                          data-testid="generated-tag-chip"
+                          data-animation="none"
+                          className={GENERATED_TAG_CHIP_CLASSNAME}
+                        >
+                          {tag}
+                        </span>
+                      ),
+                    )}
                   </div>
                 )}
 
@@ -2138,120 +2227,145 @@ export default function TagGenerator({
           {showHistoryStrip ? (
             <div className="mt-4 rounded-xl border border-stone-200 bg-white/70 p-3">
               <div className="flex items-center gap-2">
-                {historyHasNext ? (
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center">
                   <button
                     type="button"
-                    aria-label="Show older generations"
-                    onClick={() => void pageHistory("left")}
-                    disabled={isHistoryLoading}
+                    aria-label="Show newer generations"
+                    onClick={() => void pageHistory("newer")}
+                    disabled={isHistoryLoading || !canShowNewerHistory}
                     className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-stone-200 bg-white text-stone-600 transition-colors hover:border-orange-300 hover:text-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </button>
-                ) : null}
-
-                <div className="min-h-[80px] flex-1 overflow-hidden">
-                  {historyCardsVisible ? (
-                    <motion.div
-                      className="flex items-stretch gap-2"
-                      initial={false}
-                    >
-                      <AnimatePresence initial={false}>
-                        {displayHistoryCards.map((item) => {
-                          const isSelected = item.isDraft
-                            ? selectedHistoryId === "draft" &&
-                              selectedDraftId === item.id
-                            : selectedHistoryId === item.id;
-                          const cardDate = item.isDraft
-                            ? null
-                            : formatHistoryDate(item.createdAt);
-                          const cardTitle = truncateTitle(item.title, 26);
-                          return (
-                            <motion.div
-                              key={item.isDraft ? `draft-${item.id}` : item.id}
-                              role="button"
-                              tabIndex={0}
-                              onClick={() => onSelectHistoryItem(item)}
-                              onKeyDown={(event) => {
-                                if (event.key !== "Enter" && event.key !== " ")
-                                  return;
-                                event.preventDefault();
-                                onSelectHistoryItem(item);
-                              }}
-                              layout={false}
-                              initial={{ opacity: 0, scale: 0.96, y: 4 }}
-                              animate={{ opacity: 1, scale: 1, y: 0 }}
-                              exit={{ opacity: 0, scale: 0.96, y: 4 }}
-                              transition={{ duration: 0.16, ease: "easeOut" }}
-                              className={`relative h-20 min-w-[148px] max-w-[148px] rounded-lg border px-2.5 py-2 text-left transition-all ${
-                                isSelected
-                                  ? "border-orange-400 bg-orange-50 shadow-sm"
-                                  : "border-stone-200 bg-white hover:border-orange-300"
-                              }`}
-                            >
-                              {item.isDraft ? (
-                                <>
-                                  <span
-                                    className={`absolute left-2 top-2.5 inline-flex rounded-full px-2 pt-1 pb-0.5 text-[10px] tracking-wide leading-none text-stone-600 ${isSelected ? "bg-stone-200" : "bg-stone-100"}`}
-                                  >
-                                    Draft
-                                  </span>
-                                  <button
-                                    type="button"
-                                    aria-label="Delete draft"
-                                    onClick={(event) => {
-                                      event.stopPropagation();
-                                      clearDraftCard(item.id);
-                                    }}
-                                    className={`absolute right-2 top-2 inline-flex h-5 w-5 items-center justify-center rounded-md text-stone-500 transition-colors hover:text-stone-700 ${isSelected ? "hover:bg-stone-200" : "hover:bg-stone-100"}`}
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </button>
-                                </>
-                              ) : null}
-                              {cardDate ? (
-                                <p className="mt-1 text-[11px] font-medium text-stone-500">
-                                  {cardDate}
-                                </p>
-                              ) : null}
-                              <p
-                                className={
-                                  item.isDraft
-                                    ? "mt-6 overflow-hidden text-ellipsis whitespace-nowrap text-xs font-semibold leading-snug text-stone-700"
-                                    : "mt-1 text-xs font-semibold leading-snug text-stone-700"
-                                }
-                              >
-                                {cardTitle}
-                              </p>
-                            </motion.div>
-                          );
-                        })}
-                      </AnimatePresence>
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key={`history-loading-${historyPage}`}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.12 }}
-                      className="h-20"
-                    />
-                  )}
                 </div>
 
-                {historyHasPrev ? (
+                <div className="min-h-[88px] flex-1 overflow-hidden">
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.div
+                      key={`history-cards-${historyCardPage}`}
+                      className="grid grid-cols-4 gap-2"
+                    >
+                      {visibleHistoryCards.map((item, cardIndex) => {
+                        const staggerIndex =
+                          historyDirection === "older"
+                            ? cardIndex
+                            : visibleHistoryCards.length - cardIndex - 1;
+                        const isSelected = item.isDraft
+                          ? selectedHistoryId === "draft" &&
+                            selectedDraftId === item.id
+                          : selectedHistoryId === item.id;
+                        const cardDate = item.isDraft
+                          ? ""
+                          : formatHistoryDate(item.createdAt);
+                        const cardTitle = truncateHistoryText(
+                          item.title,
+                          30,
+                          "Untitled listing",
+                        );
+                        const cardDescription = truncateHistoryText(
+                          item.description,
+                          42,
+                          "No description yet",
+                        );
+                        return (
+                          <motion.div
+                            key={item.isDraft ? `draft-${item.id}` : item.id}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => onSelectHistoryItem(item)}
+                            onKeyDown={(event) => {
+                              if (event.key !== "Enter" && event.key !== " ")
+                                return;
+                              event.preventDefault();
+                              onSelectHistoryItem(item);
+                            }}
+                            layout={false}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{
+                              duration: 0.16,
+                              ease: "easeOut",
+                              delay: staggerIndex * 0.025,
+                            }}
+                            className={`relative h-[88px] min-w-0 rounded-lg border px-2.5 py-2 text-left transition-all ${
+                              isSelected
+                                ? "border-orange-400 bg-orange-50 shadow-sm"
+                                : "border-stone-200 bg-white hover:border-orange-300"
+                            }`}
+                          >
+                            {item.isDraft ? (
+                              <div className="flex items-start justify-between gap-2">
+                                <span
+                                  className={`inline-flex rounded-full px-2 pt-1 pb-0.5 text-[10px] tracking-wide leading-none text-stone-600 ${isSelected ? "bg-stone-200" : "bg-stone-100"}`}
+                                >
+                                  Draft
+                                </span>
+                                <button
+                                  type="button"
+                                  aria-label="Delete draft"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    clearDraftCard(item.id);
+                                  }}
+                                  className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-stone-500 transition-colors hover:text-stone-700 ${isSelected ? "hover:bg-stone-200" : "hover:bg-stone-100"}`}
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ) : null}
+                            {cardDate ? (
+                              <p className="overflow-hidden text-ellipsis whitespace-nowrap text-[10px] font-medium leading-snug text-stone-400">
+                                {cardDate}
+                              </p>
+                            ) : null}
+                            <p
+                              className={`overflow-hidden text-ellipsis whitespace-nowrap text-xs font-semibold leading-snug text-stone-700 ${item.isDraft ? "mt-2" : "mt-1.5"}`}
+                            >
+                              {cardTitle}
+                            </p>
+                            <p className="mt-1 overflow-hidden text-ellipsis whitespace-nowrap text-[11px] leading-snug text-stone-500">
+                              {cardDescription}
+                            </p>
+                          </motion.div>
+                        );
+                      })}
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center">
                   <button
                     type="button"
-                    aria-label="Show newer generations"
-                    onClick={() => void pageHistory("right")}
-                    disabled={isHistoryLoading}
+                    aria-label="Show older generations"
+                    onClick={() => void pageHistory("older")}
+                    disabled={isHistoryLoading || !canShowOlderHistory}
                     className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-stone-200 bg-white text-stone-600 transition-colors hover:border-orange-300 hover:text-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <ChevronRight className="h-4 w-4" />
                   </button>
-                ) : null}
+                </div>
               </div>
+              {historyCardPageCount > 1 ? (
+                <div className="mt-2 flex justify-center gap-1.5">
+                  {visibleHistoryDotPages.map((page) => {
+                    const isCurrent = page === historyCardPage;
+                    return (
+                      <button
+                        key={page}
+                        type="button"
+                        aria-label={`Show history page ${page + 1}`}
+                        aria-current={isCurrent ? "page" : undefined}
+                        onClick={() => goToHistoryCardPage(page)}
+                        disabled={isHistoryLoading}
+                        className={`h-2 w-2 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                          isCurrent ? "bg-orange-500" : "bg-stone-300"
+                        }`}
+                      />
+                    );
+                  })}
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>
