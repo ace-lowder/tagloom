@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
+import { ToastProvider } from "@/components/toasts/ToastProvider";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -24,7 +25,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${outfit.variable} ${inter.variable} bg-[#F7F7F5] text-black`}>{children}</body>
+      <body className={`${outfit.variable} ${inter.variable} bg-surface-lower text-ink`}>
+        <ToastProvider>{children}</ToastProvider>
+      </body>
     </html>
   );
 }

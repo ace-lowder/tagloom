@@ -20,7 +20,10 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
+import { toastMessages } from "@/components/toasts/toastMessages";
+import { useToast } from "@/components/toasts/toasts";
 import { useAuthController } from "@/components/auth/AuthController";
+import { Button } from "@/components/ui/button";
 import TurnstileField, {
   type TurnstileFieldHandle,
 } from "@/components/security/TurnstileField";
@@ -437,6 +440,7 @@ export default function TagGenerator({
   demoConfig,
 }: TagGeneratorProps) {
   const { openAuthModal } = useAuthController();
+  const { showToast } = useToast();
   const turnstileRef = useRef<TurnstileFieldHandle | null>(null);
   const turnstileEnabled = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
@@ -456,7 +460,6 @@ export default function TagGenerator({
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [error, setError] = useState("");
   const [entitlementUsed, setEntitlementUsed] = useState<string | null>(null);
   const [usageLabel, setUsageLabel] = useState<string | null>(null);
   const [monthlyResetAt, setMonthlyResetAt] = useState<string | null>(null);
@@ -864,10 +867,11 @@ export default function TagGenerator({
     } catch {
       setIsHistoryAuthenticated(false);
       clearHistoryCache();
+      showToast(toastMessages.historyLoadFailed);
     } finally {
       setIsHistoryLoading(false);
     }
-  }, []);
+  }, [showToast]);
 
   const goToHistoryCardPage = useCallback(
     (nextPage: number) => {
@@ -1083,7 +1087,6 @@ export default function TagGenerator({
     clearRevealTimer();
     const resetDemoVisualState = () => {
       setDemoPhase("typing");
-      setError("");
       setPaywall(null);
       setEntitlementUsed(null);
       setDescription("");
@@ -1353,15 +1356,17 @@ export default function TagGenerator({
       try {
         turnstileToken = (await turnstileRef.current?.getToken()) ?? null;
         if (!turnstileToken) {
-          setError("Please complete the bot check and try again.");
+          showToast(toastMessages.botCheckFailed);
           return;
         }
       } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Bot check failed. Please try again.",
-        );
+        showToast({
+          ...toastMessages.botCheckFailed,
+          body:
+            err instanceof Error
+              ? err.message
+              : toastMessages.botCheckFailed.body,
+        });
         return;
       }
     }
@@ -1376,7 +1381,6 @@ export default function TagGenerator({
     });
 
     clearRevealTimer();
-    setError("");
     setIsGenerating(true);
     setEntitlementUsed(null);
     setPaywall(null);
@@ -1394,7 +1398,11 @@ export default function TagGenerator({
     try {
       await runGeneration(title, description, contextId, turnstileToken);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      showToast({
+        ...toastMessages.generationFailed,
+        body:
+          err instanceof Error ? err.message : toastMessages.generationFailed.body,
+      });
     } finally {
       setIsGenerating(false);
     }
@@ -1404,6 +1412,7 @@ export default function TagGenerator({
     generationContextId,
     markUserInteraction,
     runGeneration,
+    showToast,
     title,
     turnstileEnabled,
   ]);
@@ -1428,7 +1437,7 @@ export default function TagGenerator({
   const goToLogin = () => {
     markUserInteraction();
     if (!title.trim()) {
-      setError("Enter a listing title first.");
+      showToast(toastMessages.missingListingTitle);
       return;
     }
 
@@ -1493,13 +1502,17 @@ export default function TagGenerator({
     window.setTimeout(() => {
       runGeneration(context.title, context.description, context.id).catch(
         (err) => {
-          setError(
-            err instanceof Error ? err.message : "Could not resume generation.",
-          );
+          showToast({
+            ...toastMessages.generationResumeFailed,
+            body:
+              err instanceof Error
+                ? err.message
+                : toastMessages.generationResumeFailed.body,
+          });
         },
       );
     }, 120);
-  }, [clearDemoTimer, clearRevealTimer, runGeneration]);
+  }, [clearDemoTimer, clearRevealTimer, runGeneration, showToast]);
 
   useEffect(() => {
     const onAuthSuccess = () => {
@@ -1520,7 +1533,6 @@ export default function TagGenerator({
       const context = loadPendingContext(generationContextId);
       if (!context) return;
 
-      setError("");
       setUnlockReadyContext(null);
       setConfirmModalMode(null);
 
@@ -1535,11 +1547,13 @@ export default function TagGenerator({
           runGeneration(context.title, context.description, context.id).catch(
             (err) => {
               setIsUnlockingFromPaywall(false);
-              setError(
-                err instanceof Error
-                  ? err.message
-                  : "Could not resume generation.",
-              );
+              showToast({
+                ...toastMessages.generationResumeFailed,
+                body:
+                  err instanceof Error
+                    ? err.message
+                    : toastMessages.generationResumeFailed.body,
+              });
             },
           );
           return;
@@ -1556,12 +1570,12 @@ export default function TagGenerator({
     paywall,
     refreshUsageLabel,
     runGeneration,
+    showToast,
     visibleTags.length,
   ]);
 
   const beginUnlockFromContext = useCallback(
     (context: PendingContext) => {
-      setError("");
       setPaywall(null);
       setIsUnlockingFromPaywall(true);
       setUnlockReadyContext(null);
@@ -1572,13 +1586,17 @@ export default function TagGenerator({
       runGeneration(context.title, context.description, context.id).catch(
         (err) => {
           setIsUnlockingFromPaywall(false);
-          setError(
-            err instanceof Error ? err.message : "Could not resume generation.",
-          );
+          showToast({
+            ...toastMessages.generationResumeFailed,
+            body:
+              err instanceof Error
+                ? err.message
+                : toastMessages.generationResumeFailed.body,
+          });
         },
       );
     },
-    [runGeneration],
+    [runGeneration, showToast],
   );
 
   const onUnlockTags = useCallback(() => {
@@ -1681,7 +1699,6 @@ export default function TagGenerator({
         setIsUnlockingFromPaywall(false);
         setUnlockReadyContext(null);
         setConfirmModalMode(null);
-        setError("");
         setIsGenerating(false);
         setEntitlementUsed(null);
         setApiTags([]);
@@ -1705,7 +1722,6 @@ export default function TagGenerator({
       setIsUnlockingFromPaywall(false);
       setUnlockReadyContext(null);
       setConfirmModalMode(null);
-      setError("");
       setResultTagsImmediately(item.targetTags, item.discoveryTags);
     },
     [
@@ -1739,7 +1755,6 @@ export default function TagGenerator({
         setUnlockReadyContext(null);
         setConfirmModalMode(null);
         setIsUnlockingFromPaywall(false);
-        setError("");
 
         const remainingDrafts = draftHistoryItems.filter(
           (draft) => draft.id !== draftId,
@@ -2031,7 +2046,7 @@ export default function TagGenerator({
             )}
           </AnimatePresence>
 
-          <button
+          <Button
             onClick={() => {
               if (isDemoActive) {
                 beginDemoInteraction();
@@ -2040,6 +2055,9 @@ export default function TagGenerator({
               void handleGenerate();
             }}
             disabled={isGenerating || !title.trim()}
+            isLoading={isGenerating}
+            loadingLabel="Generating tags"
+            leftIcon={<Sparkles className="h-4 w-4" />}
             className={`mt-1 flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-semibold text-white transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${
               hasTitle
                 ? "bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
@@ -2051,25 +2069,10 @@ export default function TagGenerator({
                 : "none",
             }}
           >
-            {isGenerating ? (
-              <>
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  className="h-4 w-4 rounded-full border-2 border-white/40 border-t-white"
-                />
-                <span className="sr-only">Generating tags</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4" />
-                Generate 13 tags
-              </>
-            )}
-          </button>
+            Generate 13 tags
+          </Button>
 
-          {error ? <p className="mt-2 text-sm text-red-700">{error}</p> : null}
-          <TurnstileField ref={turnstileRef} onError={setError} />
+          <TurnstileField ref={turnstileRef} onError={(message) => showToast({ ...toastMessages.botCheckFailed, body: message })} />
           <AnimatePresence>
             {showResults && (
               <motion.div

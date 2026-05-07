@@ -1,6 +1,7 @@
 "use client";
 
 import { Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 export type PricingPlanId = "single_use" | "monthly" | "yearly";
@@ -148,9 +149,11 @@ export default function PricingCards({
             ? "Change plan"
             : starterCtaLabel;
 
-        const redirectSpinnerClass = isHighlighted
-          ? "h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/35 border-t-white"
-          : "h-3.5 w-3.5 animate-spin rounded-full border-2 border-orange-300 border-t-orange-700";
+        const buttonVariant = isHighlighted
+          ? "primary"
+          : plan.accent || useOrangeChangePlanStyle
+            ? "secondary"
+            : "ghost";
 
         return (
           <Card
@@ -199,13 +202,16 @@ export default function PricingCards({
                 </li>
               ))}
             </ul>
-            <button
+            <Button
               type="button"
               disabled={disableAction}
+              isLoading={isRedirecting}
+              loadingLabel="Loading"
+              variant={buttonVariant}
               onClick={() =>
                 canRunCurrentPlanAction ? onCurrentPlanAction() : onSelectPlan(plan.id)
               }
-              className={`relative mt-auto w-full rounded-xl py-3 text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
+              className={`mt-auto w-full ${
                 isHighlighted
                   ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/20 hover:from-orange-600 hover:to-orange-700 disabled:hover:from-orange-500 disabled:hover:to-orange-600"
                   : plan.accent || useOrangeChangePlanStyle
@@ -213,16 +219,8 @@ export default function PricingCards({
                     : "bg-stone-100 text-stone-800 hover:bg-stone-200 disabled:hover:bg-stone-100"
               }`}
             >
-              {isRedirecting ? (
-                <span className="inline-flex items-center justify-center">
-                  <span
-                    aria-hidden
-                    className={redirectSpinnerClass}
-                  />
-                  <span className="sr-only">Loading</span>
-                </span>
-              ) : ctaLabel}
-            </button>
+              {ctaLabel}
+            </Button>
           </Card>
         );
       })}

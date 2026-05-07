@@ -1,6 +1,7 @@
 import React from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ToastProvider } from "@/components/toasts/ToastProvider";
 import ResetPasswordForm from "./ResetPasswordForm";
 
 const pushMock = vi.fn();
@@ -25,7 +26,7 @@ vi.mock("@/lib/supabase/client", () => ({
 }));
 
 async function renderWithSession() {
-  render(<ResetPasswordForm />);
+  render(<ToastProvider><ResetPasswordForm /></ToastProvider>);
   await screen.findByRole("heading", { name: "Set a new password" });
 }
 
@@ -65,12 +66,25 @@ describe("ResetPasswordForm", () => {
   it("shows a helpful message when there is no active reset session", async () => {
     getSessionMock.mockResolvedValue({ data: { session: null }, error: null });
 
-    render(<ResetPasswordForm />);
+    render(<ToastProvider><ResetPasswordForm /></ToastProvider>);
 
     expect(await screen.findByText("Reset link expired")).toBeInTheDocument();
     expect(
       screen.getByText(/Request a new password reset email/i),
     ).toBeInTheDocument();
+  });
+
+  it("uses a reset-link check toast for session check errors", async () => {
+    getSessionMock.mockResolvedValue({
+      data: { session: null },
+      error: new Error("Reset token could not be read."),
+    });
+
+    render(<ToastProvider><ResetPasswordForm /></ToastProvider>);
+
+    expect(await screen.findByText("Reset link check failed")).toBeInTheDocument();
+    expect(await screen.findByText("Reset token could not be read.")).toBeInTheDocument();
+    expect(screen.queryByText("Login failed")).not.toBeInTheDocument();
   });
 
   it("rejects a missing password", async () => {
@@ -126,7 +140,7 @@ describe("ResetPasswordForm", () => {
       }),
     );
     expect(
-      await screen.findByText("Your password has been updated."),
+      await screen.findByText("Password updated"),
     ).toBeInTheDocument();
   });
 
@@ -147,7 +161,7 @@ describe("ResetPasswordForm", () => {
 
     deferred.resolve({ error: null });
     expect(
-      await screen.findByText("Your password has been updated."),
+      await screen.findByText("Password updated"),
     ).toBeInTheDocument();
   });
 
@@ -167,7 +181,7 @@ describe("ResetPasswordForm", () => {
 
     deferred.resolve({ error: null });
     expect(
-      await screen.findByText("Your password has been updated."),
+      await screen.findByText("Password updated"),
     ).toBeInTheDocument();
   });
 
@@ -180,7 +194,7 @@ describe("ResetPasswordForm", () => {
     );
 
     expect(
-      await screen.findByText("Your password has been updated."),
+      await screen.findByText("Password updated"),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("New password")).toBeDisabled();
     expect(screen.getByLabelText("Confirm password")).toBeDisabled();
@@ -199,6 +213,7 @@ describe("ResetPasswordForm", () => {
     expect(
       await screen.findByText("Password should be different from the old password."),
     ).toBeInTheDocument();
+    expect(screen.getByText("Password update failed")).toBeInTheDocument();
     expect(pushMock).not.toHaveBeenCalled();
   });
 
@@ -216,6 +231,7 @@ describe("ResetPasswordForm", () => {
     expect(
       await screen.findByText("Password should be different from the old password."),
     ).toBeInTheDocument();
+    expect(screen.getByText("Password update failed")).toBeInTheDocument();
     expect(screen.getByLabelText("New password")).not.toBeDisabled();
     expect(screen.getByLabelText("Confirm password")).not.toBeDisabled();
     expect(screen.getByRole("button", { name: "Update password" })).not.toBeDisabled();

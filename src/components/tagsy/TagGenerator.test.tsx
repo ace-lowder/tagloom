@@ -1,11 +1,16 @@
 import React from "react";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ToastProvider } from "@/components/toasts/ToastProvider";
 import TagGenerator from "./TagGenerator";
+
+function renderWithToasts(ui: React.ReactElement) {
+  return render(<ToastProvider>{ui}</ToastProvider>);
+}
 
 vi.mock("framer-motion", async () => {
   const ReactModule = await import("react");
-  const stripMotionProps = (props: ReactModule.HTMLAttributes<HTMLElement> & Record<string, unknown>) => {
+  const stripMotionProps = (props: React.HTMLAttributes<HTMLElement> & Record<string, unknown>) => {
     const {
       animate,
       initial,
@@ -32,14 +37,14 @@ vi.mock("framer-motion", async () => {
     return { ...rest, ...motionData };
   };
 
-  const MotionDiv = ReactModule.forwardRef<HTMLDivElement, ReactModule.HTMLAttributes<HTMLDivElement>>(
+  const MotionDiv = ReactModule.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
     ({ children, ...props }, ref) => (
       <div ref={ref} {...stripMotionProps(props)}>
         {children}
       </div>
     ),
   );
-  const MotionSpan = ReactModule.forwardRef<HTMLSpanElement, ReactModule.HTMLAttributes<HTMLSpanElement>>(
+  const MotionSpan = ReactModule.forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>(
     ({ children, ...props }, ref) => (
       <span ref={ref} {...stripMotionProps(props)}>
         {children}
@@ -180,7 +185,7 @@ describe("TagGenerator demo chips", () => {
     };
     const expected = sanitizeExpectedTags(fixture.tags.target, fixture.tags.discovery);
 
-    render(
+    renderWithToasts(
       <TagGenerator
         demoConfig={{
           timings: TEST_TIMINGS,
@@ -214,7 +219,7 @@ describe("TagGenerator demo chips", () => {
     };
     const expected = sanitizeExpectedTags(fixture.tags.target, fixture.tags.discovery);
 
-    render(
+    renderWithToasts(
       <TagGenerator
         demoConfig={{
           timings: TEST_TIMINGS,
@@ -243,7 +248,7 @@ describe("TagGenerator demo chips", () => {
     };
     const expected = sanitizeExpectedTags(fixture.tags.target, fixture.tags.discovery);
 
-    render(
+    renderWithToasts(
       <TagGenerator
         demoConfig={{
           timings: TEST_TIMINGS,
@@ -268,7 +273,7 @@ describe("TagGenerator demo chips", () => {
     };
     const expected = sanitizeExpectedTags(fixture.tags.target, fixture.tags.discovery);
 
-    render(
+    renderWithToasts(
       <TagGenerator
         demoConfig={{
           timings: CLEAR_TEST_TIMINGS,
@@ -308,7 +313,7 @@ describe("TagGenerator demo chips", () => {
       },
     };
 
-    render(
+    renderWithToasts(
       <TagGenerator
         demoConfig={{
           timings: TEST_TIMINGS,
@@ -341,7 +346,7 @@ describe("TagGenerator demo chips", () => {
       },
     };
 
-    render(
+    renderWithToasts(
       <TagGenerator
         demoConfig={{
           timings: CLEAR_TEST_TIMINGS,
@@ -364,7 +369,7 @@ describe("TagGenerator demo chips", () => {
   });
 
   it("keeps default placeholder when refocusing after user interaction", async () => {
-    render(
+    renderWithToasts(
       <TagGenerator
         demoConfig={{
           timings: TEST_TIMINGS,
@@ -401,7 +406,7 @@ describe("TagGenerator demo chips", () => {
       },
     };
 
-    render(
+    renderWithToasts(
       <TagGenerator
         demoConfig={{
           timings: TEST_TIMINGS,
@@ -487,7 +492,7 @@ describe("TagGenerator auth unlock flow", () => {
 
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     const titleInput = screen.getByPlaceholderText(
       "e.g. Handmade ceramic coffee mug with minimalist design",
@@ -564,7 +569,7 @@ describe("TagGenerator auth unlock flow", () => {
 
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     const titleInput = screen.getByPlaceholderText(
       "e.g. Handmade ceramic coffee mug with minimalist design",
@@ -605,7 +610,7 @@ describe("TagGenerator auth unlock flow", () => {
 
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     const titleInput = screen.getByPlaceholderText(
       "e.g. Handmade ceramic coffee mug with minimalist design",
@@ -653,7 +658,7 @@ describe("TagGenerator usage label info", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     expect(await screen.findByText("76/100 generations remaining")).toBeInTheDocument();
 
@@ -706,7 +711,7 @@ describe("TagGenerator usage label info", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalled();
@@ -833,7 +838,7 @@ describe("TagGenerator history strip behavior", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     const historyCard = await screen.findByText("History title one");
     expect(historyCard.closest('[role="button"]')).not.toHaveClass("border-orange-400");
@@ -876,7 +881,7 @@ describe("TagGenerator history strip behavior", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     const title = await screen.findByText("Sterling silver hoop earrings");
     const card = title.closest('[role="button"]');
@@ -919,7 +924,7 @@ describe("TagGenerator history strip behavior", () => {
     );
     mockHistoryFetch(Array.from({ length: 4 }, (_, index) => historyItem(index + 1)));
 
-    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     expect(await screen.findByText("Newest draft title")).toBeInTheDocument();
     expect(screen.queryByText("History title 1")).not.toBeInTheDocument();
@@ -931,7 +936,7 @@ describe("TagGenerator history strip behavior", () => {
   it("renders only four history cards per local page", async () => {
     mockHistoryFetch(Array.from({ length: 5 }, (_, index) => historyItem(index + 1)));
 
-    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     expect(await screen.findByText("History title 2")).toBeInTheDocument();
     expect(screen.getByText("History title 3")).toBeInTheDocument();
@@ -943,7 +948,7 @@ describe("TagGenerator history strip behavior", () => {
   it("paginates without selecting or hydrating history cards", async () => {
     mockHistoryFetch(Array.from({ length: 8 }, (_, index) => historyItem(index + 1)));
 
-    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     expect(await screen.findByText("History title 5")).toBeInTheDocument();
     expect(screen.queryByText("History title 1")).not.toBeInTheDocument();
@@ -961,7 +966,7 @@ describe("TagGenerator history strip behavior", () => {
   it("stops arrows at valid local page bounds", async () => {
     mockHistoryFetch(Array.from({ length: 5 }, (_, index) => historyItem(index + 1)));
 
-    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     expect(await screen.findByText("History title 5")).toBeInTheDocument();
     expect(screen.getByLabelText("Show older generations")).toBeDisabled();
@@ -979,7 +984,7 @@ describe("TagGenerator history strip behavior", () => {
   it("renders sliding pagination dots and jumps to a clicked dot", async () => {
     mockHistoryFetch(Array.from({ length: 24 }, (_, index) => historyItem(index + 1)));
 
-    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     expect(await screen.findByText("History title 21")).toBeInTheDocument();
     const dots = screen.getAllByRole("button", { name: /Show history page/ });
@@ -1004,7 +1009,7 @@ describe("TagGenerator history strip behavior", () => {
       1: [historyItem(1), historyItem(2), historyItem(3), historyItem(5)],
     });
 
-    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     expect(await screen.findByText("History title 5")).toBeInTheDocument();
     expect(screen.getByText("History title 6")).toBeInTheDocument();
@@ -1028,7 +1033,7 @@ describe("TagGenerator history strip behavior", () => {
       1: Array.from({ length: 4 }, (_, index) => historyItem(index + 1)),
     });
 
-    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     expect(await screen.findByText("History title 5")).toBeInTheDocument();
     const dots = screen.getAllByRole("button", { name: /Show history page/ });
@@ -1048,7 +1053,7 @@ describe("TagGenerator history strip behavior", () => {
       1: Array.from({ length: 4 }, (_, index) => historyItem(index + 1)),
     });
 
-    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     expect(await screen.findByText("History title 5")).toBeInTheDocument();
     fireEvent.click(screen.getByLabelText("Show history page 1"));
@@ -1067,7 +1072,7 @@ describe("TagGenerator history strip behavior", () => {
   it("uses staggered fade-only card animation", async () => {
     mockHistoryFetch(Array.from({ length: 5 }, (_, index) => historyItem(index + 1)));
 
-    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     const card = (await screen.findByText("History title 2")).closest(
       '[role="button"]',
@@ -1117,7 +1122,7 @@ describe("TagGenerator history strip behavior", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     const historyCard = await screen.findByText("History title one");
     expect(historyCard.closest('[role="button"]')).not.toHaveClass("border-orange-400");
@@ -1181,7 +1186,7 @@ describe("TagGenerator history strip behavior", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     const historyCard = await screen.findByText("History title one");
     expect(historyCard.closest('[role="button"]')).not.toHaveClass("border-orange-400");
@@ -1235,7 +1240,7 @@ describe("TagGenerator history strip behavior", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     const title = await screen.findByText("My saved draft title");
     const card = title.closest('[role="button"]');
@@ -1298,7 +1303,7 @@ describe("TagGenerator history strip behavior", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     expect(
       screen.queryByPlaceholderText("Add more details about your product to get more accurate tags..."),
@@ -1349,7 +1354,7 @@ describe("TagGenerator history strip behavior", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     fireEvent.click(await screen.findByText("History title one"));
 
@@ -1417,7 +1422,7 @@ describe("TagGenerator history strip behavior", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     fireEvent.click(await screen.findByText("History title one"));
     expect(await screen.findAllByTestId("generated-tag-chip")).toHaveLength(6);
@@ -1466,7 +1471,7 @@ describe("TagGenerator history strip behavior", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     const historyCard = await screen.findByText("History title one");
     fireEvent.click(historyCard);
@@ -1500,7 +1505,7 @@ describe("TagGenerator history strip behavior", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     const titleInput = screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER);

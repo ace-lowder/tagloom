@@ -1,7 +1,12 @@
 import React from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ToastProvider } from "@/components/toasts/ToastProvider";
 import AuthForm from "./AuthForm";
+
+function renderWithToasts(ui: React.ReactElement) {
+  return render(<ToastProvider>{ui}</ToastProvider>);
+}
 
 const pushMock = vi.fn();
 const refreshMock = vi.fn();
@@ -114,7 +119,7 @@ describe("AuthForm signup guard", () => {
       String(Date.now()),
     );
 
-    render(
+    renderWithToasts(
       <AuthForm
         mode="signup"
         onModeChange={vi.fn()}
@@ -144,7 +149,7 @@ describe("AuthForm signup guard", () => {
     const fetchMock = setupFetchMock();
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<AuthForm mode="signup" onModeChange={vi.fn()} />);
+    renderWithToasts(<AuthForm mode="signup" onModeChange={vi.fn()} />);
 
     await moveSignupToPasswordStep();
     fireEvent.change(screen.getByLabelText("Password"), {
@@ -199,7 +204,7 @@ describe("AuthForm signup guard", () => {
       }),
     );
 
-    render(<AuthForm mode="signup" onModeChange={vi.fn()} />);
+    renderWithToasts(<AuthForm mode="signup" onModeChange={vi.fn()} />);
 
     await moveSignupToPasswordStep();
     fireEvent.change(screen.getByLabelText("Password"), {
@@ -217,7 +222,7 @@ describe("AuthForm signup guard", () => {
     const fetchMock = setupFetchMock();
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<AuthForm mode="login" onModeChange={vi.fn()} />);
+    renderWithToasts(<AuthForm mode="login" onModeChange={vi.fn()} />);
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "person@example.com" },
@@ -236,7 +241,7 @@ describe("AuthForm signup guard", () => {
   });
 
   it("sends forgot-password emails through the reset callback route", async () => {
-    render(<AuthForm mode="login" onModeChange={vi.fn()} />);
+    renderWithToasts(<AuthForm mode="login" onModeChange={vi.fn()} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Reset password" }));
     fireEvent.change(screen.getByLabelText("Email"), {
@@ -257,9 +262,30 @@ describe("AuthForm signup guard", () => {
     );
   });
 
+  it("uses a password reset failure toast instead of login failure", async () => {
+    resetPasswordForEmailMock.mockResolvedValue({
+      error: new Error("Reset service is temporarily unavailable."),
+    });
+    renderWithToasts(<AuthForm mode="login" onModeChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Reset password" }));
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "person@example.com" },
+    });
+    fireEvent.submit(
+      screen.getByRole("button", { name: "Reset password" }).closest("form")!,
+    );
+
+    expect(await screen.findByText("Password reset failed")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Reset service is temporarily unavailable."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Login failed")).not.toBeInTheDocument();
+  });
+
   it("does not send forgot-password emails when site URL config is missing", async () => {
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "");
-    render(<AuthForm mode="login" onModeChange={vi.fn()} />);
+    renderWithToasts(<AuthForm mode="login" onModeChange={vi.fn()} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Reset password" }));
     fireEvent.change(screen.getByLabelText("Email"), {
@@ -279,7 +305,7 @@ describe("AuthForm signup guard", () => {
 
   it("does not send forgot-password emails when site URL config is invalid", async () => {
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "not-a-url");
-    render(<AuthForm mode="login" onModeChange={vi.fn()} />);
+    renderWithToasts(<AuthForm mode="login" onModeChange={vi.fn()} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Reset password" }));
     fireEvent.change(screen.getByLabelText("Email"), {
@@ -299,7 +325,7 @@ describe("AuthForm signup guard", () => {
 
   it("rejects 0.0.0.0 for forgot-password redirects", async () => {
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "http://0.0.0.0:3000");
-    render(<AuthForm mode="login" onModeChange={vi.fn()} />);
+    renderWithToasts(<AuthForm mode="login" onModeChange={vi.fn()} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Reset password" }));
     fireEvent.change(screen.getByLabelText("Email"), {
@@ -321,7 +347,7 @@ describe("AuthForm signup guard", () => {
     const fetchMock = setupFetchMock();
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<AuthForm mode="signup" onModeChange={vi.fn()} />);
+    renderWithToasts(<AuthForm mode="signup" onModeChange={vi.fn()} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
 
@@ -333,10 +359,25 @@ describe("AuthForm signup guard", () => {
     ).toBe(false);
   });
 
+  it("uses a Google sign-in failure toast instead of login failure", async () => {
+    signInWithOAuthMock.mockResolvedValue({
+      error: new Error("Provider is unavailable."),
+      data: {},
+    });
+
+    renderWithToasts(<AuthForm mode="signup" onModeChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
+
+    expect(await screen.findByText("Google sign-in failed")).toBeInTheDocument();
+    expect(await screen.findByText("Provider is unavailable.")).toBeInTheDocument();
+    expect(screen.queryByText("Login failed")).not.toBeInTheDocument();
+  });
+
   it("writes cooldown to localStorage when signup succeeds", async () => {
     signUpMock.mockResolvedValue({ data: { session: { access_token: "x" } }, error: null });
 
-    render(<AuthForm mode="signup" onModeChange={vi.fn()} />);
+    renderWithToasts(<AuthForm mode="signup" onModeChange={vi.fn()} />);
 
     await moveSignupToPasswordStep();
     fireEvent.change(screen.getByLabelText("Password"), {
@@ -355,7 +396,7 @@ describe("AuthForm signup guard", () => {
       error: new Error("Signup failed."),
     });
 
-    render(<AuthForm mode="signup" onModeChange={vi.fn()} />);
+    renderWithToasts(<AuthForm mode="signup" onModeChange={vi.fn()} />);
 
     await moveSignupToPasswordStep();
     fireEvent.change(screen.getByLabelText("Password"), {
@@ -363,7 +404,9 @@ describe("AuthForm signup guard", () => {
     });
     fireEvent.submit(screen.getByRole("button", { name: "Create account" }).closest("form")!);
 
+    expect(await screen.findByText("Signup failed")).toBeInTheDocument();
     expect(await screen.findByText("Signup failed.")).toBeInTheDocument();
+    expect(screen.queryByText("Login failed")).not.toBeInTheDocument();
     expect(window.localStorage.getItem("tagloom:signup-cooldown:v1")).toBeNull();
   });
 });

@@ -2,6 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toastMessages } from "@/components/toasts/toastMessages";
+import { useToast } from "@/components/toasts/toasts";
+import { Button } from "@/components/ui/button";
 import PricingCards, { PRICING_PLANS, type PricingPlanId } from "@/components/pricing/PricingCards";
 
 type BillingPageClientProps = {
@@ -41,9 +44,9 @@ export default function BillingPageClient({
   pendingRenewalAt,
 }: BillingPageClientProps) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [isCreatingPortalSession, setIsCreatingPortalSession] = useState(false);
   const [redirectingPlanId, setRedirectingPlanId] = useState<PricingPlanId | null>(null);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -101,9 +104,6 @@ export default function BillingPageClient({
   const portalButtonClass = isExpiring
     ? `${renewBaseButtonClass}${renewLoadingClass}`
     : "self-start inline-flex items-center rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-600 transition-colors hover:border-rose-500 hover:text-rose-700 disabled:opacity-60 md:self-auto";
-  const spinnerClass = isExpiring
-    ? "h-3.5 w-3.5 animate-spin rounded-full border-2 border-stone-400 border-t-stone-800"
-    : "h-3.5 w-3.5 animate-spin rounded-full border-2 border-rose-200 border-t-rose-600";
   const isAnyRedirecting = isCreatingPortalSession || Boolean(redirectingPlanId);
   const pendingRenewalLabel = pendingRenewalAt
     ? `Renewing on ${formatDate(pendingRenewalAt)}`
@@ -131,12 +131,17 @@ export default function BillingPageClient({
   const onManageStripePortal = async () => {
     if (!canManageSubscription) return;
 
-    setError("");
     setIsCreatingPortalSession(true);
     try {
       await createPortalSessionAndRedirect();
     } catch (portalError) {
-      setError(portalError instanceof Error ? portalError.message : "Could not open billing portal.");
+      showToast({
+        ...toastMessages.billingPortalFailed,
+        body:
+          portalError instanceof Error
+            ? portalError.message
+            : toastMessages.billingPortalFailed.body,
+      });
       setIsCreatingPortalSession(false);
     }
   };
@@ -144,18 +149,22 @@ export default function BillingPageClient({
   const onCurrentPlanCardAction = async () => {
     if (!currentPlan || !canManageSubscription) return;
 
-    setError("");
     setRedirectingPlanId(currentPlan.id);
     try {
       await createPortalSessionAndRedirect();
     } catch (portalError) {
-      setError(portalError instanceof Error ? portalError.message : "Could not open billing portal.");
+      showToast({
+        ...toastMessages.billingPortalFailed,
+        body:
+          portalError instanceof Error
+            ? portalError.message
+            : toastMessages.billingPortalFailed.body,
+      });
       setRedirectingPlanId(null);
     }
   };
 
   const onSelectPlan = async (planId: PricingPlanId) => {
-    setError("");
     setRedirectingPlanId(planId);
 
     try {
@@ -209,7 +218,13 @@ export default function BillingPageClient({
 
       window.location.href = data.url;
     } catch (checkoutError) {
-      setError(checkoutError instanceof Error ? checkoutError.message : "Checkout failed.");
+      showToast({
+        ...toastMessages.checkoutFailed,
+        body:
+          checkoutError instanceof Error
+            ? checkoutError.message
+            : toastMessages.checkoutFailed.body,
+      });
       setRedirectingPlanId(null);
     }
   };
@@ -235,24 +250,18 @@ export default function BillingPageClient({
             </div>
 
             {currentPlan && canManageSubscription ? (
-              <button
+              <Button
                 type="button"
                 onClick={onManageStripePortal}
                 disabled={isAnyRedirecting}
+                variant={isExpiring ? "secondary" : "danger"}
+                size="sm"
+                isLoading={isCreatingPortalSession}
+                loadingLabel="Loading"
                 className={portalButtonClass}
               >
-                {isCreatingPortalSession ? (
-                  <span className="inline-flex items-center justify-center">
-                    <span
-                      aria-hidden
-                      className={spinnerClass}
-                    />
-                    <span className="sr-only">Loading</span>
-                  </span>
-                ) : (
-                  portalActionLabel
-                )}
-              </button>
+                {portalActionLabel}
+              </Button>
             ) : null}
           </div>
         </div>
@@ -284,10 +293,6 @@ export default function BillingPageClient({
             renewingLabel={pendingRenewalLabel}
           />
         </section>
-
-        {error ? (
-          <p className="mt-4 text-center text-sm text-red-700">{error}</p>
-        ) : null}
       </div>
     </div>
   );

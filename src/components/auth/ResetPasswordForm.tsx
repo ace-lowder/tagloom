@@ -2,6 +2,10 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { toastMessages } from "@/components/toasts/toastMessages";
+import { useToast } from "@/components/toasts/toasts";
+import { Button } from "@/components/ui/button";
+import { FieldLabel, FieldMessage, TextInput } from "@/components/ui/form";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const MIN_PASSWORD_LENGTH = 6;
@@ -9,6 +13,7 @@ const MIN_PASSWORD_LENGTH = 6;
 export default function ResetPasswordForm() {
   const router = useRouter();
   const supabase = createSupabaseBrowserClient();
+  const { showToast } = useToast();
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -17,7 +22,6 @@ export default function ResetPasswordForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUpdateComplete, setIsUpdateComplete] = useState(false);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
   const submitLockedRef = useRef(false);
 
   useEffect(() => {
@@ -26,7 +30,7 @@ export default function ResetPasswordForm() {
     async function checkSession() {
       if (!supabase) {
         if (!isMounted) return;
-        setError("Auth is not configured.");
+        showToast(toastMessages.authNotConfigured);
         setIsCheckingSession(false);
         return;
       }
@@ -35,7 +39,10 @@ export default function ResetPasswordForm() {
       if (!isMounted) return;
 
       if (sessionError) {
-        setError(sessionError.message);
+        showToast({
+          ...toastMessages.resetLinkCheckFailed,
+          body: sessionError.message,
+        });
       }
 
       setHasSession(Boolean(data.session));
@@ -47,17 +54,16 @@ export default function ResetPasswordForm() {
     return () => {
       isMounted = false;
     };
-  }, [supabase]);
+  }, [showToast, supabase]);
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (submitLockedRef.current || isSubmitting || isUpdateComplete) return;
 
     setError("");
-    setNotice("");
 
     if (!supabase) {
-      setError("Auth is not configured.");
+      showToast(toastMessages.authNotConfigured);
       return;
     }
 
@@ -86,17 +92,19 @@ export default function ResetPasswordForm() {
       if (updateError) throw updateError;
 
       setIsUpdateComplete(true);
-      setNotice("Your password has been updated.");
+      showToast(toastMessages.passwordUpdated);
       window.setTimeout(() => {
         router.push("/");
         router.refresh();
       }, 1000);
     } catch (updateError) {
-      setError(
-        updateError instanceof Error
-          ? updateError.message
-          : "Could not update password.",
-      );
+      showToast({
+        ...toastMessages.passwordUpdateFailed,
+        body:
+          updateError instanceof Error
+            ? updateError.message
+            : toastMessages.passwordUpdateFailed.body,
+      });
       submitLockedRef.current = false;
       setIsSubmitting(false);
     } finally {
@@ -128,14 +136,14 @@ export default function ResetPasswordForm() {
             your inbox.
           </p>
         </div>
-        <button
+        <Button
           type="button"
           onClick={() => router.push("/login")}
-          className="w-full rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-3 text-sm font-semibold text-white transition-all hover:from-orange-600 hover:to-orange-700"
+          className="w-full"
         >
           Back to log in
-        </button>
-        {error ? <p className="text-xs text-red-700">{error}</p> : null}
+        </Button>
+        {error ? <FieldMessage tone="error">{error}</FieldMessage> : null}
       </div>
     );
   }
@@ -151,13 +159,12 @@ export default function ResetPasswordForm() {
 
       <form onSubmit={onSubmit} className="space-y-4">
         <div>
-          <label
+          <FieldLabel
             htmlFor="new-password"
-            className="mb-1.5 block text-sm font-medium text-stone-700"
           >
             New password
-          </label>
-          <input
+          </FieldLabel>
+          <TextInput
             id="new-password"
             type="password"
             required
@@ -165,19 +172,17 @@ export default function ResetPasswordForm() {
             disabled={formDisabled}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 placeholder-stone-400 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
             placeholder="At least 6 characters"
           />
         </div>
 
         <div>
-          <label
+          <FieldLabel
             htmlFor="confirm-password"
-            className="mb-1.5 block text-sm font-medium text-stone-700"
           >
             Confirm password
-          </label>
-          <input
+          </FieldLabel>
+          <TextInput
             id="confirm-password"
             type="password"
             required
@@ -185,35 +190,23 @@ export default function ResetPasswordForm() {
             disabled={formDisabled}
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
-            className="w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 placeholder-stone-400 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
             placeholder="Re-enter password"
           />
         </div>
 
-        <button
+        <Button
           type="submit"
           disabled={formDisabled}
-          className="w-full rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-3 text-sm font-semibold text-white transition-all hover:from-orange-600 hover:to-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
+          isLoading={isSubmitting || isUpdateComplete}
+          loadingLabel={isUpdateComplete ? "Redirecting..." : "Updating..."}
+          className="w-full"
         >
-          {isUpdateComplete ? (
-            "Redirecting..."
-          ) : isSubmitting ? (
-            <>
-              <span
-                className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/35 border-t-white align-[-3px]"
-                aria-hidden="true"
-              />
-              Updating...
-            </>
-          ) : (
-            "Update password"
-          )}
-        </button>
+          Update password
+        </Button>
       </form>
 
       <div className="mt-4 text-center">
-        {error ? <p className="text-xs text-red-700">{error}</p> : null}
-        {notice ? <p className="text-xs text-green-700">{notice}</p> : null}
+        {error ? <FieldMessage tone="error">{error}</FieldMessage> : null}
       </div>
     </div>
   );

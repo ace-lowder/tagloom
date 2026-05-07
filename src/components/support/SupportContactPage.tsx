@@ -3,8 +3,12 @@
 import { FormEvent, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Mail } from "lucide-react";
+import { toastMessages } from "@/components/toasts/toastMessages";
+import { useToast } from "@/components/toasts/toasts";
 import TurnstileField, { type TurnstileFieldHandle } from "@/components/security/TurnstileField";
 import SiteFooter from "@/components/shared/SiteFooter";
+import { Button } from "@/components/ui/button";
+import { FieldLabel, TextArea, TextInput } from "@/components/ui/form";
 
 type SupportContactPageProps = {
   initialEmail: string;
@@ -12,18 +16,15 @@ type SupportContactPageProps = {
 
 export default function SupportContactPage({ initialEmail }: SupportContactPageProps) {
   const turnstileRef = useRef<TurnstileFieldHandle | null>(null);
+  const { showToast } = useToast();
   const [name, setName] = useState("");
   const [email, setEmail] = useState(initialEmail);
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setError("");
-    setSuccess(false);
     setIsSubmitting(true);
 
     try {
@@ -31,7 +32,8 @@ export default function SupportContactPage({ initialEmail }: SupportContactPageP
       if (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY) {
         turnstileToken = (await turnstileRef.current?.getToken()) ?? null;
         if (!turnstileToken) {
-          throw new Error("Please complete the bot check and try again.");
+          showToast(toastMessages.botCheckFailed);
+          return;
         }
       }
 
@@ -55,12 +57,18 @@ export default function SupportContactPage({ initialEmail }: SupportContactPageP
         throw new Error(data.error || "Could not submit your message.");
       }
 
-      setSuccess(true);
+      showToast(toastMessages.supportMessageSent);
       setName("");
       setSubject("");
       setMessage("");
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Could not submit your message.");
+      showToast({
+        ...toastMessages.supportMessageFailed,
+        body:
+          submitError instanceof Error
+            ? submitError.message
+            : toastMessages.supportMessageFailed.body,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -92,78 +100,70 @@ export default function SupportContactPage({ initialEmail }: SupportContactPageP
 
           <form onSubmit={onSubmit} className="space-y-4">
             <div>
-              <label htmlFor="name" className="mb-1.5 block text-sm font-medium text-stone-700">
+              <FieldLabel htmlFor="name">
                 Name <span className="text-stone-400">(optional)</span>
-              </label>
-              <input
+              </FieldLabel>
+              <TextInput
                 id="name"
                 type="text"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                className="w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 placeholder-stone-400 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
                 placeholder="Your name"
               />
             </div>
 
             <div>
-              <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-stone-700">
+              <FieldLabel htmlFor="email">
                 Email
-              </label>
-              <input
+              </FieldLabel>
+              <TextInput
                 id="email"
                 type="email"
                 required
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                className="w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 placeholder-stone-400 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
                 placeholder="you@example.com"
               />
             </div>
 
             <div>
-              <label htmlFor="subject" className="mb-1.5 block text-sm font-medium text-stone-700">
+              <FieldLabel htmlFor="subject">
                 Subject
-              </label>
-              <input
+              </FieldLabel>
+              <TextInput
                 id="subject"
                 type="text"
                 required
                 value={subject}
                 onChange={(event) => setSubject(event.target.value)}
-                className="w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 placeholder-stone-400 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
                 placeholder="What do you need help with?"
               />
             </div>
 
             <div>
-              <label htmlFor="message" className="mb-1.5 block text-sm font-medium text-stone-700">
+              <FieldLabel htmlFor="message">
                 Message
-              </label>
-              <textarea
+              </FieldLabel>
+              <TextArea
                 id="message"
                 required
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
                 rows={6}
-                className="w-full resize-y rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 placeholder-stone-400 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
+                className="resize-y"
                 placeholder="Tell us what happened and what you are trying to do."
               />
             </div>
 
-            {error ? <p className="text-sm text-red-700">{error}</p> : null}
-            {success ? <p className="text-sm text-green-700">Thanks, your message was sent.</p> : null}
-            <TurnstileField ref={turnstileRef} onError={setError} />
+            <TurnstileField ref={turnstileRef} onError={(message) => showToast({ ...toastMessages.botCheckFailed, body: message })} />
 
-            <button
+            <Button
               type="submit"
-              disabled={isSubmitting}
-              className="rounded-xl px-5 py-3 text-sm font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-60"
-              style={{
-                background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
-              }}
+              isLoading={isSubmitting}
+              loadingLabel="Sending..."
             >
-              {isSubmitting ? "Sending..." : "Send message"}
-            </button>
+              Send message
+            </Button>
           </form>
         </div>
       </div>

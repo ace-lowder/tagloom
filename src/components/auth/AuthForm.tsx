@@ -7,6 +7,10 @@ import { buildAuthCallbackUrl } from "@/lib/authRedirect";
 import TurnstileField, {
   type TurnstileFieldHandle,
 } from "@/components/security/TurnstileField";
+import { toastMessages } from "@/components/toasts/toastMessages";
+import { useToast, type ToastInput } from "@/components/toasts/toasts";
+import { Button } from "@/components/ui/button";
+import { FieldMessage, FieldLabel, TextInput } from "@/components/ui/form";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type AuthFormMode = "login" | "signup";
@@ -62,9 +66,6 @@ function centerPopup(width: number, height: number) {
 
 const SIGNUP_COOLDOWN_KEY = "tagloom:signup-cooldown:v1";
 const SIGNUP_COOLDOWN_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
-const SIGNUP_COOLDOWN_MESSAGE =
-  "A free trial was already started recently from this browser. Try again later or log in if you already created an account.";
-
 function hasRecentSignupCooldown() {
   if (typeof window === "undefined") return false;
 
@@ -113,6 +114,7 @@ export default function AuthForm({
 }: AuthFormProps) {
   const router = useRouter();
   const supabase = createSupabaseBrowserClient();
+  const { showToast } = useToast();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -125,7 +127,6 @@ export default function AuthForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
 
   const emailExistsCacheRef = useRef<Map<string, boolean>>(new Map());
   const turnstileRef = useRef<TurnstileFieldHandle | null>(null);
@@ -160,13 +161,19 @@ export default function AuthForm({
     router.refresh();
   };
 
+  const showAuthFailure = (baseToast: ToastInput, authError: unknown) => {
+    showToast({
+      ...baseToast,
+      body: authError instanceof Error ? authError.message : baseToast.body,
+    });
+  };
+
   const onEmailAuth = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
-    setNotice("");
 
     if (!supabase) {
-      setError("Auth is not configured.");
+      showToast(toastMessages.authNotConfigured);
       return;
     }
 
@@ -186,12 +193,17 @@ export default function AuthForm({
 
         if (exists) {
           onModeChange("login");
-          setNotice("");
           return;
         }
       } catch (checkError) {
         console.error("/api/auth/email-exists lookup failed", checkError);
-        setError("Could not check account right now.");
+        showToast({
+          ...toastMessages.accountCheckFailed,
+          body:
+            checkError instanceof Error
+              ? checkError.message
+              : toastMessages.accountCheckFailed.body,
+        });
         return;
       } finally {
         setIsCheckingEmail(false);
@@ -205,12 +217,14 @@ export default function AuthForm({
     try {
       if (mode === "signup") {
         if (hasRecentSignupCooldown()) {
-          throw new Error(SIGNUP_COOLDOWN_MESSAGE);
+          showToast(toastMessages.signupBlockedCooldown);
+          return;
         }
 
         const turnstileToken = await turnstileRef.current?.getToken();
         if (!turnstileToken) {
-          throw new Error("Bot check failed. Please try again.");
+          showToast(toastMessages.botCheckFailed);
+          return;
         }
 
         await checkSignupEligibility(turnstileToken);
@@ -232,7 +246,7 @@ export default function AuthForm({
         }
 
         writeSignupCooldown();
-        setNotice("Account created. You can log in now.");
+        showToast(toastMessages.accountCreated);
         onModeChange("login");
         setPassword("");
         return;
@@ -246,10 +260,9 @@ export default function AuthForm({
       if (signInError) throw signInError;
       completeSuccess();
     } catch (authError) {
-      setError(
-        authError instanceof Error
-          ? authError.message
-          : "Authentication failed.",
+      showAuthFailure(
+        mode === "signup" ? toastMessages.signupFailed : toastMessages.loginFailed,
+        authError,
       );
     } finally {
       setIsSubmitting(false);
@@ -340,12 +353,12 @@ export default function AuthForm({
 
   const onGoogleAuth = async () => {
     setError("");
-    setNotice("");
     setIsSubmitting(true);
 
     try {
       if (!supabase) {
-        throw new Error("Auth is not configured.");
+        showToast(toastMessages.authNotConfigured);
+        return;
       }
 
       if (preferGooglePopup) {
@@ -358,9 +371,7 @@ export default function AuthForm({
 
       await fallbackGoogleRedirect();
     } catch (authError) {
-      setError(
-        authError instanceof Error ? authError.message : "Google login failed.",
-      );
+      showAuthFailure(toastMessages.googleLoginFailed, authError);
       setIsSubmitting(false);
     }
   };
@@ -374,16 +385,17 @@ export default function AuthForm({
 
   const onResetPassword = async () => {
     setError("");
-    setNotice("");
     setIsSubmitting(true);
 
     try {
       if (!supabase) {
-        throw new Error("Auth is not configured.");
+        showToast(toastMessages.authNotConfigured);
+        return;
       }
 
       if (!emailIsValid) {
-        throw new Error("Enter a valid email first.");
+        setError("Enter a valid email first.");
+        return;
       }
 
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(
@@ -395,13 +407,9 @@ export default function AuthForm({
 
       if (resetError) throw resetError;
       setView("reset_password_sent");
-      setNotice("");
+      showToast(toastMessages.resetPasswordEmailSent);
     } catch (authError) {
-      setError(
-        authError instanceof Error
-          ? authError.message
-          : "Could not reset password.",
-      );
+      showAuthFailure(toastMessages.resetPasswordRequestFailed, authError);
     } finally {
       setIsSubmitting(false);
     }
@@ -421,44 +429,33 @@ export default function AuthForm({
           className="space-y-4"
         >
           <div>
-            <label
+            <FieldLabel
               htmlFor="reset-email"
-              className="mb-1.5 block text-sm font-medium text-stone-700"
             >
               Email
-            </label>
-            <input
+            </FieldLabel>
+            <TextInput
               id="reset-email"
               type="email"
               required
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 placeholder-stone-400 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
               placeholder="you@example.com"
             />
           </div>
 
-          <button
+          <Button
             type="submit"
             disabled={isSubmitting || !emailIsValid}
-            className="w-full rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-3 text-sm font-semibold text-white transition-all hover:from-orange-600 hover:to-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
+            isLoading={isSubmitting}
+            loadingLabel="Submitting reset request..."
+            className="w-full"
           >
-            {isSubmitting ? (
-              <>
-                <span
-                  className="mx-auto block h-4 w-4 animate-spin rounded-full border-2 border-white/35 border-t-white"
-                  aria-hidden="true"
-                />
-                <span className="sr-only">Submitting reset request…</span>
-              </>
-            ) : (
-              "Reset password"
-            )}
-          </button>
+            Reset password
+          </Button>
 
           <div className="text-center">
-            {error ? <p className="text-xs text-red-700">{error}</p> : null}
-            {notice ? <p className="text-xs text-green-700">{notice}</p> : null}
+            {error ? <FieldMessage tone="error">{error}</FieldMessage> : null}
           </div>
         </form>
 
@@ -468,7 +465,6 @@ export default function AuthForm({
             onClick={() => {
               setView("auth");
               setError("");
-              setNotice("");
             }}
             className="font-medium text-orange-600 hover:text-orange-700"
           >
@@ -496,7 +492,6 @@ export default function AuthForm({
               setView("auth");
               onModeChange("login");
               setError("");
-              setNotice("");
             }}
             className="text-xs font-medium text-orange-600 hover:text-orange-700"
           >
@@ -576,66 +571,53 @@ export default function AuthForm({
         ) : null}
 
         <div>
-          <label
+          <FieldLabel
             htmlFor="email"
-            className="mb-1.5 block text-sm font-medium text-stone-700"
           >
             Email
-          </label>
-          <input
+          </FieldLabel>
+          <TextInput
             id="email"
             type="email"
             required
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 placeholder-stone-400 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
             placeholder="you@example.com"
           />
         </div>
 
         {mode === "login" || signupStep === "password" ? (
           <div>
-            <label
+            <FieldLabel
               htmlFor="password"
-              className="mb-1.5 block text-sm font-medium text-stone-700"
             >
               Password
-            </label>
-            <input
+            </FieldLabel>
+            <TextInput
               id="password"
               type="password"
               required
               minLength={6}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 placeholder-stone-400 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
               placeholder="At least 6 characters"
             />
           </div>
         ) : null}
 
-        <button
+        <Button
           type="submit"
           disabled={isSubmitting || isCheckingEmail}
-          className="w-full rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-3 text-sm font-semibold text-white transition-all hover:from-orange-600 hover:to-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
+          isLoading={isCheckingEmail || isSubmitting}
+          loadingLabel={isCheckingEmail ? "Checking account..." : "Submitting..."}
+          className="w-full"
         >
-          {isCheckingEmail || isSubmitting ? (
-            <>
-              <span
-                className="mx-auto block h-4 w-4 animate-spin rounded-full border-2 border-white/35 border-t-white"
-                aria-hidden="true"
-              />
-              <span className="sr-only">{isCheckingEmail ? "Checking account…" : "Submitting…"}</span>
-            </>
-          ) : (
-            submitLabel
-          )}
-        </button>
+          {submitLabel}
+        </Button>
       </form>
 
       <div className="mt-2 text-center">
-        {error ? <p className="text-xs text-red-700">{error}</p> : null}
-        {notice ? <p className="text-xs text-green-700">{notice}</p> : null}
+        {error ? <FieldMessage tone="error">{error}</FieldMessage> : null}
       </div>
 
       <div className="mt-5 flex flex-col items-center gap-3 text-xs">
@@ -644,7 +626,6 @@ export default function AuthForm({
             type="button"
             onClick={() => {
               setError("");
-              setNotice("");
               setView("reset_password");
             }}
             className="font-medium text-orange-600 hover:text-orange-700"
@@ -660,7 +641,6 @@ export default function AuthForm({
             onClick={() => {
               onModeChange(mode === "signup" ? "login" : "signup");
               setError("");
-              setNotice("");
             }}
             className="font-medium text-orange-600 hover:text-orange-700"
           >
