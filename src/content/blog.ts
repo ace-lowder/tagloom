@@ -27,8 +27,10 @@ export type BlogPost = {
   sections: BlogSection[];
 };
 
-const BLOG_IMAGE_1 = `<img src="/blog-inline-1.svg" alt="Tag strategy planning board" />`;
-const BLOG_IMAGE_2 = `<img src="/blog-inline-2.svg" alt="Etsy search trend dashboard" />`;
+const BLOG_IMAGE_CHOOSE_SPECIFIC_PHRASES = `<img src="/blog-choose-specific-phrases.png" alt="Specific Etsy tag phrase examples grouped by buyer intent" />`;
+const BLOG_IMAGE_UNDERESTIMATING_PROCESSING_TIME = `<img src="/blog-underestimating-processing-time.png" alt="Processing time and order preparation planning for Etsy sellers" />`;
+const BLOG_IMAGE_FORGETTING_ABOUT_MOBILE = `<img src="/blog-forgetting-about-mobile.png" alt="Mobile Etsy listing preview with product photo and title visibility" />`;
+const BLOG_IMAGE_BUYER_FRICTION = `<img src="/blog-buyer-friction.png" alt="Checkout friction points for Etsy buyers including price and shipping clarity" />`;
 const BLOG_IMAGE_PHOTOS = `<img src="/blog-photos-photos-photos.png" alt="Abstract listing photo composition example" />`;
 const BLOG_IMAGE_ETSY_ALGO_SEARCH_FILTER = `<img src="/blog-etsy-algorithm-search-filter.png" alt="Etsy search filtering and listing match concept" />`;
 const BLOG_IMAGE_ETSY_ALGO_SHIPMENT = `<img src="/blog-etsy-algorithm-shipment.png" alt="Shipping and delivery experience concept for Etsy orders" />`;
@@ -313,7 +315,7 @@ export const BLOG_POSTS: BlogPost[] = [
         <li>Make sure the product fills the frame and is easy to recognize.</li>
         <li>Remove distracting props that compete with the product itself.</li>
       </ul>
-      ${BLOG_IMAGE_1}
+      ${BLOG_IMAGE_FORGETTING_ABOUT_MOBILE}
 
       <h2 id="wasting-tag-slots">Wasting Tag Slots</h2>
       <p>Tags still matter for getting found, but many new sellers waste tag slots without realizing it. They repeat near-duplicate phrases, skip all 13 tags, or copy one tag set across every listing even when products are different. Your goal is useful coverage, not repetition, because if five tags all say almost the same thing, you are using space without opening new search paths.</p>
@@ -335,7 +337,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>When processing times are realistic, buyers feel informed, support messages go down, and review quality often improves. That is better for repeat sales and better for long term ranking.</p>
       <p>If you are unsure what processing time to set, track your last ten orders and average your real prep days. Then add a small buffer for busy weeks. This gives you a time frame you can keep, which protects both your buyer experience and your sanity.</p>
       <p>Late shipment stress usually costs more than a slightly longer processing window. Clear timing sets better expectations, and clear expectations lead to better reviews.</p>
-      ${BLOG_IMAGE_2}
+      ${BLOG_IMAGE_UNDERESTIMATING_PROCESSING_TIME}
 
       <h2 id="hiding-important-details-in-the-description">Hiding Important Details in the Description</h2>
       <p>Many listings lose sales because the details buyers need most are buried at the bottom of the description. If a shopper cannot quickly find size, material, what is included, and delivery expectations, they hesitate. Hesitation hurts conversion, which means turning a visitor into a buyer, and a conversion rate is simply the percent of visitors who buy. If 100 people visit and 2 buy, your conversion rate is 2 percent.</p>
@@ -407,7 +409,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>Specific phrases usually outperform broad single words because they match buyer intent. Buyer intent means what a shopper is trying to buy right now, not just the category they are browsing. Someone searching <em>teacher appreciation gift mug</em> is closer to purchase than someone searching <em>gift</em>.</p>
       <p>Qualified traffic means visitors who are actually likely to buy, not just click. That is why specific phrases often lead to stronger conversion rates over time.</p>
       <p>If you are choosing between a broad phrase and a specific phrase, choose the one that sounds like a real shopping query. New sellers often underestimate how specific buyers are once they are close to purchase, and specific phrases also help your photos and description work harder. A simple check is to say your tag out loud and ask, “Would a real buyer type this exact phrase when they are ready to order?” If the answer is yes, keep it. If not, rewrite it.</p>
-      ${BLOG_IMAGE_1}
+      ${BLOG_IMAGE_CHOOSE_SPECIFIC_PHRASES}
 
       <h2 id="tags-titles-and-descriptions">Tags, Titles, and Descriptions</h2>
       <p>Your tags work best when your title and description support the same idea. If your tags suggest one product and your title suggests another, buyers get confused and conversion drops. Conversion means a visitor becomes a buyer, and conversion rate means the percentage of visitors who purchase.</p>
@@ -477,7 +479,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>Friction also appears when buyers must do too much mental math. If price, shipping, and delivery timing are scattered across the listing, checkout feels uncertain. Clear numbers in clear places reduce that stress, especially when buyers are comparing multiple listings.</p>
       <p>If your item price is higher than similar listings, explain the value clearly. Better materials, custom work, and more durable construction can justify higher pricing when buyers can see the difference, not just read a claim. The goal is not to be cheapest, it is to make the value obvious enough that the buyer feels good saying yes.</p>
       <p>When buyers compare listings, they are making fast trust decisions. Clear shipping windows and simple pricing language make your listing feel safer and easier to commit to.</p>
-      ${BLOG_IMAGE_2}
+      ${BLOG_IMAGE_BUYER_FRICTION}
 
       <h2 id="expectations-vs-reality">Expectations vs Reality</h2>
       <p>Many lost sales come from expectation mismatch. The title promises one thing, photos suggest another, and the description leaves out key details like size, material, or what is included. Put must-know facts near the top of your description.</p>
