@@ -52,7 +52,7 @@ h3 {
 }
 
 .brand-link:hover .brand-logo {
-  animation: brand-mark-jiggle 420ms ease-out 1;
+  animation: brand-mark-jiggle 210ms ease-out 1;
 }
 
 .brand-link .brand-text {

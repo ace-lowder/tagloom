@@ -4,17 +4,13 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  CreditCard,
-  LogOut,
-  Menu,
-  User,
-  X,
-} from "lucide-react";
+import { CreditCard, LogOut, Menu, User, X } from "lucide-react";
 import BrandMark from "@/components/brand/BrandMark";
 import { useAuthController } from "@/components/auth/AuthController";
-import { sanitizeNextPath } from "@/lib/authModal";
+import { AUTH_SUCCESS_EVENT, sanitizeNextPath } from "@/lib/authModal";
 import { triggerGeneratorCta } from "@/lib/generatorCta";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import type { CurrentUser } from "@/lib/auth";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -39,11 +35,11 @@ const NAV_LINKS: NavLink[] = [
 ];
 
 const DESKTOP_NAV_LINK_CLASS =
-  "relative pb-0.5 text-sm font-medium text-stone-600 transition-colors hover:text-stone-900 after:absolute after:bottom-[-4px] after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-orange-500 after:transition-transform after:duration-250 hover:after:scale-x-100";
+  "-m-2 px-2 py-2 text-sm font-medium text-stone-600 transition-colors hover:text-stone-900";
+const DESKTOP_NAV_LABEL_CLASS =
+  "relative pb-0.5 after:absolute after:bottom-[-4px] after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-orange-500 after:transition-transform after:duration-[250ms] group-hover:after:scale-x-100";
 const MOBILE_NAV_LINK_CLASS =
   "block rounded-lg px-3 py-2.5 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50";
-const PROFILE_ACTION_BUTTON_CLASS =
-  "inline-flex items-center justify-center gap-2.5 rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-600 transition-colors hover:border-stone-400/90 hover:bg-stone-50 hover:text-stone-700";
 
 const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   verified: "Verified",
@@ -52,20 +48,22 @@ const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
 };
 
 const ACCOUNT_TYPE_STYLES: Record<AccountType, string> = {
-  verified: "bg-emerald-100 text-emerald-800 ring-emerald-200",
-  monthly: "bg-sky-100 text-sky-800 ring-sky-200",
-  yearly: "bg-violet-100 text-violet-800 ring-violet-200",
+  verified: "bg-green-100 text-green-700 ring-green-200",
+  monthly: "bg-blue-100 text-blue-700 ring-blue-200",
+  yearly: "bg-red-100 text-red-700 ring-red-200",
 };
 
 export default function Navbar({ currentUser }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isAuthResolving, setIsAuthResolving] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { openAuthModal } = useAuthController();
   const supabase = createSupabaseBrowserClient();
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const authResolvingTimeoutRef = useRef<number | null>(null);
 
   const closeAllMenus = () => {
     setMobileOpen(false);
@@ -155,6 +153,37 @@ export default function Navbar({ currentUser }: NavbarProps) {
     return () => window.removeEventListener("mousedown", onMouseDown);
   }, [profileOpen]);
 
+  useEffect(() => {
+    if (currentUser) {
+      setIsAuthResolving(false);
+      if (authResolvingTimeoutRef.current) {
+        window.clearTimeout(authResolvingTimeoutRef.current);
+        authResolvingTimeoutRef.current = null;
+      }
+      return;
+    }
+
+    const onAuthSuccess = () => {
+      setIsAuthResolving(true);
+      if (authResolvingTimeoutRef.current) {
+        window.clearTimeout(authResolvingTimeoutRef.current);
+      }
+      authResolvingTimeoutRef.current = window.setTimeout(() => {
+        setIsAuthResolving(false);
+        authResolvingTimeoutRef.current = null;
+      }, 7000);
+    };
+
+    window.addEventListener(AUTH_SUCCESS_EVENT, onAuthSuccess);
+    return () => {
+      if (authResolvingTimeoutRef.current) {
+        window.clearTimeout(authResolvingTimeoutRef.current);
+        authResolvingTimeoutRef.current = null;
+      }
+      window.removeEventListener(AUTH_SUCCESS_EVENT, onAuthSuccess);
+    };
+  }, [currentUser, pathname]);
+
   const accountType = currentUser ? resolveAccountType(currentUser) : null;
   const displayEmail = currentUser?.email || "Account";
   const avatarInitials = getAvatarInitials(currentUser?.email ?? null);
@@ -166,62 +195,74 @@ export default function Navbar({ currentUser }: NavbarProps) {
         icon: CreditCard,
         onClick: accountType === "verified" ? goToPricing : goToBilling,
       };
-  const hasProfileMenu = Boolean(currentUser && accountType && primaryAction);
+  const hasProfileMenu = Boolean(
+    (currentUser && accountType && primaryAction) || isAuthResolving,
+  );
 
   const renderProfileCard = (mobile = false) => {
+    if (isAuthResolving && !currentUser) {
+      return (
+        <Card className={mobile ? "border-stone-100 p-4" : "p-4 shadow-xl"}>
+          <div className="flex items-center gap-3">
+            <div className="h-11 w-11 shrink-0 animate-pulse rounded-xl bg-orange-100" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="h-4 w-32 animate-pulse rounded bg-stone-100" />
+              <div className="h-3 w-24 animate-pulse rounded bg-stone-100" />
+            </div>
+          </div>
+          <div className="mt-4 h-9 animate-pulse rounded-xl bg-stone-100" />
+        </Card>
+      );
+    }
+
     if (!currentUser || !accountType || !primaryAction) return null;
     const PrimaryIcon = primaryAction.icon;
 
     return (
-      <div
-        className={
-          mobile
-            ? "p-0"
-            : "rounded-2xl border border-stone-200 bg-white p-4 shadow-xl"
-        }
-      >
+      <Card className={mobile ? "border-stone-100 p-4" : "p-4 shadow-xl"}>
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-stone-200 to-stone-300 text-sm font-semibold text-stone-700">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-sm font-semibold text-orange-700 ring-1 ring-orange-200">
             {avatarInitials}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-stone-900">
               {displayEmail}
             </p>
             {accountType !== "verified" ? (
               <span
-                className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${ACCOUNT_TYPE_STYLES[accountType]}`}
+                className={`mt-1 inline-flex items-center rounded-full px-1.5 py-0.5 text-[11px] font-semibold leading-none ring-1 ${ACCOUNT_TYPE_STYLES[accountType]}`}
               >
-                <span className="relative top-px">
-                  {ACCOUNT_TYPE_LABELS[accountType]}
-                </span>
+                {ACCOUNT_TYPE_LABELS[accountType]}
               </span>
             ) : null}
           </div>
         </div>
 
         <div className="mt-4 grid grid-cols-[1fr_auto] gap-2">
-          <button
+          <Button
             type="button"
             onClick={primaryAction.onClick}
-            className={PROFILE_ACTION_BUTTON_CLASS}
+            variant="secondary"
+            size="md"
+            className="px-3 py-2.5"
           >
             <PrimaryIcon className="h-3.5 w-3.5" />
-            <span className="relative -top-px">{primaryAction.label}</span>
-          </button>
-          <button
+            <span>{primaryAction.label}</span>
+          </Button>
+          <Button
             type="button"
             onClick={onSignOut}
-            disabled={isLoggingOut}
-            className={`${PROFILE_ACTION_BUTTON_CLASS} disabled:opacity-60`}
+            variant="secondary"
+            size="md"
+            isLoading={isLoggingOut}
+            loadingLabel="Logging out"
+            className="px-3 py-2.5"
           >
             <LogOut className="h-3.5 w-3.5" />
-            <span className="relative -top-px">
-              {isLoggingOut ? "Logging out..." : "Log out"}
-            </span>
-          </button>
+            <span>Log out</span>
+          </Button>
         </div>
-      </div>
+      </Card>
     );
   };
 
@@ -234,9 +275,13 @@ export default function Navbar({ currentUser }: NavbarProps) {
           key={link.label}
           type="button"
           onClick={() => goToSection(link.href)}
-          className={className}
+          className={mobile ? className : `group ${className}`}
         >
-          {link.label}
+          {mobile ? (
+            link.label
+          ) : (
+            <span className={DESKTOP_NAV_LABEL_CLASS}>{link.label}</span>
+          )}
         </button>
       );
     }
@@ -247,9 +292,13 @@ export default function Navbar({ currentUser }: NavbarProps) {
           key={link.label}
           type="button"
           onClick={goToSupport}
-          className={className}
+          className={mobile ? className : `group ${className}`}
         >
-          {link.label}
+          {mobile ? (
+            link.label
+          ) : (
+            <span className={DESKTOP_NAV_LABEL_CLASS}>{link.label}</span>
+          )}
         </button>
       );
     }
@@ -259,9 +308,13 @@ export default function Navbar({ currentUser }: NavbarProps) {
         key={link.label}
         href={link.href}
         onClick={closeAllMenus}
-        className={className}
+        className={mobile ? className : `group ${className}`}
       >
-        {link.label}
+        {mobile ? (
+          link.label
+        ) : (
+          <span className={DESKTOP_NAV_LABEL_CLASS}>{link.label}</span>
+        )}
       </Link>
     );
   };
@@ -284,9 +337,9 @@ export default function Navbar({ currentUser }: NavbarProps) {
                 aria-expanded={profileOpen}
                 aria-controls="navbar-profile-menu"
                 onClick={() => setProfileOpen((open) => !open)}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-700 shadow-sm transition-colors hover:border-orange-300 hover:text-orange-600"
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-700 shadow-sm transition-colors hover:border-orange-300 hover:text-orange-600"
               >
-                <User className="h-4 w-4" />
+                <User className="h-4 w-4" aria-hidden="true" />
               </button>
               <AnimatePresence>
                 {profileOpen ? (
@@ -317,12 +370,14 @@ export default function Navbar({ currentUser }: NavbarProps) {
               Log in
             </button>
           )}
-          <button
+          <Button
+            type="button"
             onClick={startGeneratorFlow}
-            className="rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700"
+            size="sm"
+            className="rounded-lg px-4 py-2 shadow-[0_3px_14px_rgba(249,115,22,0.3)]"
           >
             Get Tags
-          </button>
+          </Button>
         </div>
 
         <button
@@ -348,15 +403,16 @@ export default function Navbar({ currentUser }: NavbarProps) {
           >
             <div className="space-y-1">
               {NAV_LINKS.map((link) => renderNavLink(link, true))}
-              <button
+              <Button
+                type="button"
                 onClick={() => {
                   startGeneratorFlow();
                   setMobileOpen(false);
                 }}
-                className="mt-3 w-full rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 py-2.5 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700"
+                className="mt-3 w-full rounded-lg py-2.5 shadow-[0_3px_14px_rgba(249,115,22,0.3)]"
               >
                 Get Tags
-              </button>
+              </Button>
             </div>
 
             <div className="mt-auto flex flex-col gap-3 pt-5">

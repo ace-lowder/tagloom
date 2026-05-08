@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { AUTH_POPUP_MESSAGE_SOURCE } from "@/lib/authModal";
+import { AUTH_POPUP_MESSAGE_SOURCE, dispatchAuthSuccess } from "@/lib/authModal";
 import { buildAuthCallbackUrl } from "@/lib/authRedirect";
 import TurnstileField, {
   type TurnstileFieldHandle,
@@ -157,6 +157,7 @@ export default function AuthForm({
       return;
     }
 
+    dispatchAuthSuccess();
     router.push(next);
     router.refresh();
   };
