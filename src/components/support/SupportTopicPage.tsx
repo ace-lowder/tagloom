@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, ChevronRight, Mail } from "lucide-react";
 import type { SupportArticle, SupportTopic } from "@/content/support";
 import SiteFooter from "@/components/shared/SiteFooter";
+import { ButtonLink } from "@/components/ui/button";
 
 type SupportTopicPageProps = {
   topic: SupportTopic;
@@ -61,16 +62,12 @@ export default function SupportTopicPage({ topic, articles }: SupportTopicPagePr
               <p className="text-sm text-stone-500">We typically reply within a few hours on weekdays.</p>
             </div>
           </div>
-          <Link
+          <ButtonLink
             href="/support/contact"
-            className="flex-shrink-0 rounded-xl px-5 py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-orange-500/25"
-            style={{
-              background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
-              boxShadow: "0 3px 14px rgba(249,115,22,0.3)",
-            }}
+            className="flex-shrink-0 px-5 shadow-[0_3px_14px_rgba(249,115,22,0.3)]"
           >
             Email Support
-          </Link>
+          </ButtonLink>
         </div>
       </div>
 

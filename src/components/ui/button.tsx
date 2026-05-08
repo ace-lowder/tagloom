@@ -1,4 +1,5 @@
 import * as React from "react";
+import Link, { type LinkProps } from "next/link";
 
 import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
@@ -12,6 +13,13 @@ export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   loadingLabel?: string;
   leftIcon?: React.ReactNode;
 };
+
+export type ButtonLinkProps = LinkProps &
+  Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, keyof LinkProps> & {
+    variant?: ButtonVariant;
+    size?: ButtonSize;
+    leftIcon?: React.ReactNode;
+  };
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   (
@@ -36,12 +44,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled || isLoading}
         {...props}
         aria-label={isLoading ? loadingLabel : props["aria-label"]}
-        className={cn(
-          "relative inline-flex items-center justify-center rounded-xl font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-primary/35 disabled:cursor-not-allowed disabled:opacity-60",
-          sizeClasses[size],
-          variantClasses[variant],
-          className,
-        )}
+        className={buttonClassNames({ className, size, variant })}
       >
         <span
           aria-hidden={isLoading ? "true" : undefined}
@@ -57,10 +60,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {isLoading ? (
           <span
             aria-hidden="true"
-            className="absolute inset-0 inline-flex items-center justify-center gap-2"
+            className="absolute inset-0 inline-flex items-center justify-center"
           >
             <Spinner className="h-4 w-4" />
-            <span>{loadingLabel}</span>
           </span>
         ) : null}
       </button>
@@ -68,6 +70,49 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   },
 );
 Button.displayName = "Button";
+
+export const ButtonLink = React.forwardRef<HTMLAnchorElement, ButtonLinkProps>(
+  (
+    {
+      children,
+      className,
+      leftIcon,
+      size = "md",
+      variant = "primary",
+      ...props
+    },
+    ref,
+  ) => (
+    <Link
+      ref={ref}
+      className={buttonClassNames({ className, size, variant })}
+      {...props}
+    >
+      <span className="inline-flex items-center justify-center gap-2">
+        {leftIcon ? <span className="inline-flex flex-none">{leftIcon}</span> : null}
+        {children}
+      </span>
+    </Link>
+  ),
+);
+ButtonLink.displayName = "ButtonLink";
+
+export function buttonClassNames({
+  className,
+  size = "md",
+  variant = "primary",
+}: {
+  className?: string;
+  size?: ButtonSize;
+  variant?: ButtonVariant;
+}) {
+  return cn(
+    "relative inline-flex items-center justify-center rounded-xl font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-primary/35 disabled:cursor-not-allowed disabled:opacity-60",
+    sizeClasses[size],
+    variantClasses[variant],
+    className,
+  );
+}
 
 // === Constants ===
 

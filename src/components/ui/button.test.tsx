@@ -36,4 +36,14 @@ describe("Button", () => {
 
     expect(screen.getByTestId("spinner")).toBeInTheDocument();
   });
+
+  it("does not visually render the loading label as normal text", () => {
+    render(
+      <Button isLoading loadingLabel="Generating tags">
+        Generate 13 tags
+      </Button>,
+    );
+
+    expect(screen.queryByText("Generating tags")).not.toBeInTheDocument();
+  });
 });
