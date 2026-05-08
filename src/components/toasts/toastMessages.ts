@@ -65,7 +65,7 @@ export const toastMessages = {
   },
   checkoutFailed: {
     title: "Checkout failed",
-    body: "We could not create a checkout session. Please try again.",
+    body: "We could not open checkout. Please try again.",
     type: "danger",
   },
   billingPortalFailed: {
@@ -75,7 +75,7 @@ export const toastMessages = {
   },
   supportMessageSent: {
     title: "Support message sent",
-    body: "Thanks, your message was sent. We will follow up by email.",
+    body: "Your message was sent. We'll follow up by email.",
     type: "success",
   },
   supportMessageFailed: {
@@ -90,7 +90,7 @@ export const toastMessages = {
   },
   generationResumeFailed: {
     title: "Generation resume failed",
-    body: "Checkout or login completed, but the generation could not resume.",
+    body: "Login or checkout finished, but generation could not resume. Try generating again.",
     type: "danger",
   },
   missingListingTitle: {
@@ -105,7 +105,7 @@ export const toastMessages = {
   },
   accountCreated: {
     title: "Account created",
-    body: "You can log in now.",
+    body: "Your free generation is ready. Try it now.",
     type: "success",
   },
 } satisfies Record<string, ToastInput>;

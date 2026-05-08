@@ -19,6 +19,7 @@ export const ToastContext = createContext<ToastContextValue | null>(null);
 // === Types ===
 
 export type ToastType = "success" | "danger" | "info";
+export type ToastStatus = "entering" | "visible" | "exiting" | "exiting-manual";
 
 export type ToastInput = {
   title: string;
@@ -29,9 +30,12 @@ export type ToastInput = {
 export type ToastItem = Required<Pick<ToastInput, "title" | "type">> &
   Pick<ToastInput, "body"> & {
     id: string;
+    status: ToastStatus;
   };
 
 export type ToastContextValue = {
   showToast: (toast: ToastInput) => string;
   dismissToast: (id: string) => void;
+  pauseToastTimer: (id: string) => void;
+  resumeToastTimer: (id: string) => void;
 };
