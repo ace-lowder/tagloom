@@ -12,11 +12,17 @@ import {
   Zap,
 } from "lucide-react";
 
-import PricingCards, { type PricingPlanId } from "@/components/pricing/PricingCards";
+import PricingCards, {
+  type PricingPlanId,
+} from "@/components/pricing/PricingCards";
 import TagGenerator from "@/components/tagsy/TagGenerator";
 import { Card } from "@/components/ui/card";
+import { buttonClassNames } from "@/components/ui/button";
 import SiteFooter from "@/components/shared/SiteFooter";
-import { consumePendingGeneratorCta, dispatchGeneratorCta } from "@/lib/generatorCta";
+import {
+  consumePendingGeneratorCta,
+  dispatchGeneratorCta,
+} from "@/lib/generatorCta";
 
 export type HomePricingState = {
   isLoggedIn: boolean;
@@ -46,7 +52,7 @@ type FAQEntry = {
   answer: ReactNode;
 };
 
-const benefits: BenefitItem[] = [
+export const benefits: BenefitItem[] = [
   {
     icon: TrendingUp,
     title: "Get found in Etsy search",
@@ -59,14 +65,14 @@ const benefits: BenefitItem[] = [
     title: "13 tags in seconds",
     description:
       "Stop spending hours on keyword research and generate 13 optimized tags in seconds.",
-    href: "/blog/how-to-rank-higher-on-etsy#keyword-research",
+    href: "/blog/etsy-tag-tips-every-seller-should-know",
   },
   {
     icon: Zap,
     title: "Stop guessing keywords.",
     description:
       "Every tag is selected to better align with Etsy search behavior and listing discoverability.",
-    href: "/blog/how-to-rank-higher-on-etsy#ai-approach",
+    href: "/blog/mistakes-new-etsy-sellers-make",
   },
 ];
 
@@ -96,7 +102,10 @@ const faqs: FAQEntry[] = [
     answer: (
       <>
         Yes, you can switch between Monthly and Yearly anytime from your{" "}
-        <Link href="/billing" className="font-medium text-orange-700 hover:text-orange-800">
+        <Link
+          href="/billing"
+          className="font-medium text-orange-700 hover:text-orange-800"
+        >
           billing settings
         </Link>
         .
@@ -113,7 +122,10 @@ const faqs: FAQEntry[] = [
     answer: (
       <>
         Open the profile icon in the top-right corner, click{" "}
-        <Link href="/billing" className="font-medium text-orange-700 hover:text-orange-800">
+        <Link
+          href="/billing"
+          className="font-medium text-orange-700 hover:text-orange-800"
+        >
           Billing
         </Link>
         , and manage your plan there.
@@ -159,7 +171,10 @@ export default function HomePageClient({ pricingState }: HomePageClientProps) {
     <div className="min-h-screen bg-stone-50 font-sans">
       <HeroSection onGenerate={triggerGeneratorFlow} />
       <FeaturesSection benefits={benefits} />
-      <PricingSection onGenerate={triggerGeneratorFlow} pricingState={pricingState} />
+      <PricingSection
+        onGenerate={triggerGeneratorFlow}
+        pricingState={pricingState}
+      />
       <FaqSection faqs={faqs} />
       <BottomCtaSection onGenerate={triggerGeneratorFlow} />
       <SiteFooter />
@@ -197,13 +212,15 @@ function HeroSection({ onGenerate }: HeroSectionProps) {
             className="mb-6 inline-flex items-center gap-2 rounded-full bg-orange-100 px-4 py-1.5 text-sm font-medium text-orange-700"
           >
             <Tag className="h-3.5 w-3.5" />
-            AI Tag Generator for Etsy Sellers
+            Etsy Tag Generator for Sellers
           </motion.div>
           <motion.h1
             variants={fadeInUp}
             className="mb-3 text-4xl font-bold leading-[1.06] text-stone-900 sm:text-5xl"
           >
-            <span className="md:whitespace-nowrap">Etsy tags buyers actually search</span>
+            <span className="md:whitespace-nowrap">
+              Etsy tags buyers actually search
+            </span>
             <span className="mt-2 block bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
               More clicks. More sales.
             </span>
@@ -217,7 +234,9 @@ function HeroSection({ onGenerate }: HeroSectionProps) {
           <motion.button
             variants={fadeInUp}
             onClick={onGenerate}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 px-6 py-3 text-sm font-semibold text-white transition-[background,box-shadow,color] duration-200 hover:from-orange-600 hover:to-orange-700"
+            className={buttonClassNames({
+              className: "gap-2 px-6 shadow-[0_4px_20px_rgba(249,115,22,0.35)]",
+            })}
             style={{
               boxShadow: "0 4px 20px rgba(249,115,22,0.35)",
             }}
@@ -371,7 +390,9 @@ function PricingSection({ onGenerate, pricingState }: PricingSectionProps) {
             disableCurrentPlanAction={isLoggedIn}
             renewingTier={isLoggedIn ? pendingRenewalTier : null}
             renewingLabel={renewingLabel}
-            allowStarterPurchaseWithSubscription={allowStarterPurchaseWithSubscription}
+            allowStarterPurchaseWithSubscription={
+              allowStarterPurchaseWithSubscription
+            }
           />
         </motion.div>
       </div>
@@ -415,7 +436,11 @@ function FaqSection({ faqs }: FaqSectionProps) {
           className="rounded-2xl border border-stone-100 bg-stone-50 px-6"
         >
           {faqs.map((faq) => (
-            <FAQItem key={faq.question} question={faq.question} answer={faq.answer} />
+            <FAQItem
+              key={faq.question}
+              question={faq.question}
+              answer={faq.answer}
+            />
           ))}
         </motion.div>
       </div>
@@ -502,12 +527,16 @@ function BottomCtaSection({ onGenerate }: BottomCtaSectionProps) {
               variants={fadeInUp}
               className="mx-auto mb-8 max-w-lg leading-relaxed text-stone-600"
             >
-              Generate 13 high-intent tags for your next listing in under a minute.
+              Generate 13 high-intent tags for your next listing in under a
+              minute.
             </motion.p>
             <motion.button
               variants={fadeInUp}
               onClick={onGenerate}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 px-8 py-4 text-sm font-semibold text-white transition-[background,box-shadow,color] duration-200 hover:from-orange-600 hover:to-orange-700"
+              className={buttonClassNames({
+                className:
+                  "gap-2 px-8 py-4 shadow-[0_6px_28px_rgba(249,115,22,0.32)]",
+              })}
               style={{
                 boxShadow: "0 6px 28px rgba(249,115,22,0.32)",
               }}

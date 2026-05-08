@@ -237,6 +237,7 @@ const DESCRIPTION_MAX = 6000;
 const DEFAULT_TITLE_PLACEHOLDER =
   "e.g. Handmade ceramic coffee mug with minimalist design";
 const USAGE_HINT_CLOSE_DELAY_MS = 500;
+const CTA_SCROLL_CORRECTION_DELAY_MS = 380;
 const HISTORY_PAGE_SIZE = 8;
 const HISTORY_CARDS_PER_PAGE = 4;
 const HISTORY_CACHE_KEY = "tagloom:history:v1";
@@ -508,6 +509,9 @@ export default function TagGenerator({
   const usageHintCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+  const ctaScrollCorrectionTimeoutRef = useRef<number | null>(
+    null,
+  );
   const demoFixtureIndexRef = useRef(0);
   const demoCharIndexRef = useRef(0);
   const draftHistoryCountRef = useRef(0);
@@ -736,9 +740,21 @@ export default function TagGenerator({
 
   const focusTitleInput = useCallback(() => {
     window.setTimeout(() => {
-      titleInputRef.current?.focus();
+      titleInputRef.current?.focus({ preventScroll: true });
       titleInputRef.current?.select();
     }, 20);
+  }, []);
+
+  const scheduleCtaScrollCorrection = useCallback(() => {
+    if (ctaScrollCorrectionTimeoutRef.current) {
+      window.clearTimeout(ctaScrollCorrectionTimeoutRef.current);
+    }
+    ctaScrollCorrectionTimeoutRef.current = window.setTimeout(() => {
+      document
+        .getElementById("generator")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      ctaScrollCorrectionTimeoutRef.current = null;
+    }, CTA_SCROLL_CORRECTION_DELAY_MS);
   }, []);
 
   const demoFixtures = useMemo(
@@ -1034,12 +1050,13 @@ export default function TagGenerator({
       setShowDescription(true);
       focusTitleInput();
       playSheen();
+      scheduleCtaScrollCorrection();
     };
 
     window.addEventListener(GENERATOR_CTA_EVENT, onCta as EventListener);
     return () =>
       window.removeEventListener(GENERATOR_CTA_EVENT, onCta as EventListener);
-  }, [focusTitleInput, playSheen]);
+  }, [focusTitleInput, playSheen, scheduleCtaScrollCorrection]);
 
   useEffect(() => {
     return () => {
@@ -1051,6 +1068,9 @@ export default function TagGenerator({
     return () => {
       if (usageHintCloseTimeoutRef.current) {
         clearTimeout(usageHintCloseTimeoutRef.current);
+      }
+      if (ctaScrollCorrectionTimeoutRef.current) {
+        clearTimeout(ctaScrollCorrectionTimeoutRef.current);
       }
     };
   }, []);

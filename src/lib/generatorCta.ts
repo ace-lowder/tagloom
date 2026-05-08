@@ -1,5 +1,6 @@
 export const GENERATOR_CTA_EVENT = "tagloom:generator-cta";
 const PENDING_GENERATOR_CTA_KEY = "tagloom:pending-generator-cta";
+export const GENERATOR_CTA_SCROLL_SETTLE_MS = 900;
 
 type GeneratorCtaDetail = {
   requestReset: boolean;
@@ -35,7 +36,7 @@ export function dispatchGeneratorCta(
     .getElementById("generator")
     ?.scrollIntoView({ behavior: "smooth", block: "center" });
 
-  window.setTimeout(() => dispatchCtaEvent(detail), 420);
+  window.setTimeout(() => dispatchCtaEvent(detail), GENERATOR_CTA_SCROLL_SETTLE_MS);
 }
 
 export function triggerGeneratorCta({

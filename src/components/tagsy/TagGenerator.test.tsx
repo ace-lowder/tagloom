@@ -632,6 +632,39 @@ describe("TagGenerator auth unlock flow", () => {
   });
 });
 
+describe("TagGenerator CTA event", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("expands description and schedules a final centered scroll correction", async () => {
+    vi.useFakeTimers();
+    const fetchMock = createFetchMockForGenerator();
+    vi.stubGlobal("fetch", fetchMock);
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+
+    act(() => {
+      window.dispatchEvent(new CustomEvent("tagloom:generator-cta"));
+    });
+
+    expect(screen.getByText("Listing Description")).toBeInTheDocument();
+
+    await act(async () => {
+      vi.advanceTimersByTime(380);
+    });
+
+    expect(scrollIntoView).toHaveBeenCalledWith({
+      behavior: "smooth",
+      block: "center",
+    });
+
+    vi.useRealTimers();
+  });
+});
+
 describe("TagGenerator usage label info", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
