@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ArrowRight, Calendar, Check, ChevronRight, CreditCard, LogOut, Mail } from "lucide-react";
 
 import { toastMessages } from "@/components/toasts/toastMessages";
 import { useToast, type ToastInput } from "@/components/toasts/toasts";
@@ -21,16 +22,8 @@ export default function StylePageClient() {
   };
 
   return (
-    <main className="min-h-screen bg-surface-lower px-5 py-12 text-ink">
+    <main className="min-h-screen bg-surface-lower px-5 pb-20 pt-28 text-ink">
       <div className="mx-auto max-w-6xl space-y-12">
-        <section>
-          <p className="text-sm font-semibold uppercase tracking-wide text-primary">Tagloom style</p>
-          <h1 className="mt-2 text-4xl font-semibold">Design system test page</h1>
-          <p className="mt-3 max-w-2xl text-ink-weak">
-            Shared primitives, color tokens, form states, buttons, brand motion, cards, and toast copy.
-          </p>
-        </section>
-
         <Section title="Typography">
           <div className="space-y-3">
             <h1 className="text-5xl font-semibold">Heading one</h1>
@@ -55,8 +48,18 @@ export default function StylePageClient() {
         </Section>
 
         <Section title="Brand">
-          <div className="inline-flex rounded-xl border border-line bg-surface px-4 py-3">
-            <BrandMark />
+          <div className="flex flex-wrap items-center gap-5">
+            <div className="inline-flex rounded-xl border border-line bg-surface px-4 py-3">
+              <BrandMark />
+            </div>
+            <button
+              type="button"
+              className="-m-2 px-2 py-2 text-sm font-medium text-stone-600 transition-colors hover:text-stone-900"
+            >
+              <span className="relative pb-0.5 after:absolute after:bottom-[-4px] after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-orange-500 after:transition-transform after:duration-[250ms] hover:after:scale-x-100">
+                Nav hover sample
+              </span>
+            </button>
           </div>
         </Section>
 
@@ -111,8 +114,74 @@ export default function StylePageClient() {
               <h3 className="mt-2 text-lg font-semibold">Shared surface</h3>
               <p className="mt-2 text-sm text-ink-weak">Rounded border, white surface, subtle shadow.</p>
             </Card>
-            <StatusBadge label="Success" className="border-green-200 bg-green-50 text-success" />
-            <StatusBadge label="Warning" className="border-amber-200 bg-amber-50 text-warning" />
+            <Card className="group p-5 transition-all hover:-translate-y-1 hover:border-orange-200 hover:shadow-lg">
+              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-orange-100">
+                <ArrowRight className="h-5 w-5 text-orange-600" />
+              </div>
+              <h3 className="text-lg font-semibold transition-colors group-hover:text-orange-600">Hover card state</h3>
+              <p className="mt-2 text-sm leading-relaxed text-ink-weak">Feature cards lift and warm the border on hover.</p>
+            </Card>
+            <Card className="flex h-full flex-col border-stone-100 bg-stone-50 p-6 transition-all hover:-translate-y-1 hover:shadow-lg">
+              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-orange-100">
+                <Check className="h-5 w-5 text-orange-600" />
+              </div>
+              <h3 className="mb-2 text-lg font-semibold text-stone-900">Feature card pattern</h3>
+              <p className="text-sm leading-relaxed text-stone-600">Used for compact benefit and explanation cards.</p>
+            </Card>
+            <Card className="p-6 transition-all hover:border-orange-200 hover:shadow-md">
+              <div className="mb-3 flex items-center gap-2">
+                <span className="rounded-full bg-orange-100 px-2.5 py-1 text-xs font-semibold text-orange-700">Tips</span>
+                <span className="text-xs text-stone-400">4 min read</span>
+              </div>
+              <h3 className="mb-2 text-xl font-bold leading-snug text-stone-900">Blog card pattern</h3>
+              <p className="mb-4 text-sm leading-relaxed text-stone-500">Article previews use badge, headline, excerpt, and quiet date metadata.</p>
+              <div className="flex items-center gap-1.5 text-xs text-stone-400">
+                <Calendar className="h-3.5 w-3.5" />
+                May 7, 2026
+              </div>
+            </Card>
+            <Card className="p-5">
+              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100">
+                <Mail className="h-5 w-5 text-orange-600" />
+              </div>
+              <h3 className="mb-1 font-semibold text-stone-800">Support topic pattern</h3>
+              <p className="text-xs leading-relaxed text-stone-500">Topic cards pair a soft icon tile with compact helper copy.</p>
+            </Card>
+            <Card className="p-0">
+              <div className="flex items-center justify-between px-6 py-4">
+                <span className="text-sm text-stone-700">Support article row pattern</span>
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100">
+                  <ChevronRight className="h-4 w-4 text-orange-600" />
+                </span>
+              </div>
+            </Card>
+            <Card className="relative flex h-full flex-col border-2 border-orange-400 p-7 shadow-xl shadow-orange-500/10">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <span className="rounded-full bg-gradient-to-r from-orange-500 to-orange-600 px-3 py-1 text-xs font-semibold text-white shadow">Most Popular</span>
+              </div>
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-stone-400">Monthly</p>
+              <p className="mb-4 text-sm text-stone-500">Pricing card pattern.</p>
+              <div className="mb-6">
+                <span className="text-4xl font-bold text-stone-900">$19</span>
+                <span className="ml-1 text-sm text-stone-400">/month</span>
+              </div>
+              <Button className="mt-auto w-full">Go monthly</Button>
+            </Card>
+            <Card className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-100 text-sm font-semibold text-orange-700 ring-1 ring-orange-200">
+                  SE
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-stone-900">seller@example.com</p>
+                  <span className="mt-1 inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-semibold leading-none text-orange-700 ring-1 ring-orange-200">Monthly</span>
+                </div>
+              </div>
+              <div className="mt-4 grid grid-cols-[1fr_auto] gap-2">
+                <Button variant="secondary" className="px-3 py-2.5"><CreditCard className="h-3.5 w-3.5" /> Manage Plan</Button>
+                <Button variant="secondary" className="px-3 py-2.5"><LogOut className="h-3.5 w-3.5" /> Log out</Button>
+              </div>
+            </Card>
           </div>
         </Section>
 
@@ -180,16 +249,6 @@ function Section({ children, title }: { children: React.ReactNode; title: string
       <h2 className="border-b border-line pb-2 text-2xl font-semibold">{title}</h2>
       {children}
     </section>
-  );
-}
-
-function StatusBadge({ className, label }: { className: string; label: string }) {
-  return (
-    <Card className="flex items-center p-5">
-      <span className={`rounded-full border px-3 py-1 text-sm font-semibold ${className}`}>
-        {label}
-      </span>
-    </Card>
   );
 }
 
