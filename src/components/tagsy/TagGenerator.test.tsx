@@ -869,6 +869,29 @@ describe("TagGenerator generation history mode", () => {
         '[data-skip-generator-return-animations="true"]',
       ),
     ).toBeTruthy();
+    expect(
+      screen
+        .getByTestId("generator-shell")
+        .querySelector('[data-description-animation="none"]'),
+    ).toBeTruthy();
+  });
+
+  it("animates description reveal only on first focus after load", async () => {
+    mockHistoryFetch([historyItem()]);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+
+    const titleInput = screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER);
+    fireEvent.focus(titleInput);
+    const descriptionBlock = await screen.findByText("Listing Description");
+    expect(descriptionBlock.closest('[data-description-animation="enter"]')).toBeTruthy();
+
+    await openHistory();
+    fireEvent.click(screen.getByRole("button", { name: "Show generator" }));
+    expect(
+      screen
+        .getByTestId("generator-shell")
+        .querySelector('[data-description-animation="none"]'),
+    ).toBeTruthy();
   });
 
   it("renders the mode switch as an icon toggle with accessible labels and pressed state", async () => {
@@ -899,6 +922,15 @@ describe("TagGenerator generation history mode", () => {
     renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     fireEvent.focus(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER));
+    expect(screen.getByTestId("generator-scroll-panel")).toHaveClass(
+      "h-full",
+      "overflow-y-auto",
+      "pr-2",
+    );
+    expect(screen.getByTestId("generator-scroll-panel").firstElementChild).toHaveClass(
+      "px-1",
+      "pb-1",
+    );
     const shell = screen.getByTestId("generator-shell");
     expect(shell).toHaveAttribute("data-history-height-locked", "false");
 
@@ -979,6 +1011,11 @@ describe("TagGenerator generation history mode", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Show generator" }));
     expect(screen.getByDisplayValue("History title one")).toBeInTheDocument();
+    expect(
+      screen
+        .getByTestId("generator-shell")
+        .querySelector('[data-description-animation="none"]'),
+    ).toBeTruthy();
     expect(screen.getAllByTestId("generated-tag-chip").map((chip) => chip.textContent)).toEqual([
       "tag one",
       "tag two",
@@ -992,6 +1029,42 @@ describe("TagGenerator generation history mode", () => {
         .getAllByTestId("generated-tag-chip")
         .every((chip) => chip.getAttribute("data-animation") === "none"),
     ).toBe(true);
+  });
+
+  it("keeps description hidden on cached draft hydration until first focus, then animates reveal", async () => {
+    window.localStorage.setItem(
+      "tagloom:history:v2",
+      JSON.stringify({
+        generatedItems: [],
+        selectedGeneratedId: null,
+        drafts: [
+          {
+            id: "draft_1",
+            title: "Hydrated draft",
+            description: "Hydrated description",
+            updatedAt: "2026-05-08T12:30:00.000Z",
+          },
+        ],
+        selectedDraftId: "draft_1",
+        mode: "generator",
+        sortState: null,
+        showArchived: false,
+        savedAt: Date.now(),
+      }),
+    );
+    mockHistoryFetch([historyItem()]);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+
+    expect(screen.queryByText("Listing Description")).not.toBeInTheDocument();
+    const titleInput = screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER);
+    fireEvent.focus(titleInput);
+    const descriptionBlock = await screen.findByText("Listing Description");
+    expect(descriptionBlock.closest('[data-description-animation="enter"]')).toBeTruthy();
+    expect(
+      screen
+        .getByTestId("generator-shell")
+        .querySelector('[data-description-animation="enter"]'),
+    ).toBeTruthy();
   });
 
   it("selects a draft row and loads it", async () => {

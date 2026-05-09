@@ -118,6 +118,7 @@ type HistoryConfirmAction =
 
 type DemoPhase = "typing" | "generating" | "revealing" | "clearing";
 type ClearPhase = "idle" | "fading" | "collapsing";
+type DescriptionRevealMode = "idle" | "first-focus" | "none";
 
 type DemoFixture = {
   title: string;
@@ -482,6 +483,8 @@ export default function TagGenerator({
   );
   const [description, setDescription] = useState("");
   const [showDescription, setShowDescription] = useState(false);
+  const [descriptionRevealMode, setDescriptionRevealMode] =
+    useState<DescriptionRevealMode>("idle");
   const [focusedField, setFocusedField] = useState<
     "title" | "description" | null
   >(null);
@@ -548,6 +551,7 @@ export default function TagGenerator({
   const demoFixtureIndexRef = useRef(0);
   const demoCharIndexRef = useRef(0);
   const shouldSkipDemoRef = useRef(false);
+  const hasPlayedFirstDescriptionRevealRef = useRef(false);
   const isDemoPausedRef = useRef(false);
   const demoTimerMetaRef = useRef<TimerMeta>({
     callback: null,
@@ -779,11 +783,31 @@ export default function TagGenerator({
       : `e.g. ${fixtureTitle}`;
   }, [demoFixtures]);
 
+  const revealDescriptionFromFocus = useCallback(() => {
+    if (showDescription) return;
+    const shouldAnimate =
+      !hasPlayedFirstDescriptionRevealRef.current &&
+      !skipGeneratorReturnAnimations;
+    if (shouldAnimate) {
+      hasPlayedFirstDescriptionRevealRef.current = true;
+      setDescriptionRevealMode("first-focus");
+    } else {
+      setDescriptionRevealMode("none");
+    }
+    setShowDescription(true);
+  }, [showDescription, skipGeneratorReturnAnimations]);
+
+  const revealDescriptionWithoutAnimation = useCallback(() => {
+    if (showDescription) return;
+    setDescriptionRevealMode("none");
+    setShowDescription(true);
+  }, [showDescription]);
+
   const beginDemoInteraction = useCallback(() => {
     setTitlePlaceholder(getCurrentDemoFixtureTitle());
     setTitle("");
     markUserInteraction();
-    setShowDescription(true);
+    revealDescriptionFromFocus();
     setFocusedField("title");
     focusTitleInput();
     onFocus?.();
@@ -792,6 +816,7 @@ export default function TagGenerator({
     getCurrentDemoFixtureTitle,
     markUserInteraction,
     onFocus,
+    revealDescriptionFromFocus,
   ]);
 
   const refreshUsageLabel = useCallback(async () => {
@@ -955,10 +980,8 @@ export default function TagGenerator({
           if (selectedDraft) {
             setTitle(selectedDraft.title);
             setDescription(selectedDraft.description);
-            setShowDescription(
-              Boolean(selectedDraft.description) ||
-                Boolean(selectedDraft.title),
-            );
+            setDescriptionRevealMode("idle");
+            setShowDescription(false);
           }
           setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
         }
@@ -1007,7 +1030,7 @@ export default function TagGenerator({
 
   useEffect(() => {
     const onCta = () => {
-      setShowDescription(true);
+      revealDescriptionFromFocus();
       focusTitleInput();
       playSheen();
       scheduleCtaScrollCorrection();
@@ -1016,7 +1039,12 @@ export default function TagGenerator({
     window.addEventListener(GENERATOR_CTA_EVENT, onCta as EventListener);
     return () =>
       window.removeEventListener(GENERATOR_CTA_EVENT, onCta as EventListener);
-  }, [focusTitleInput, playSheen, scheduleCtaScrollCorrection]);
+  }, [
+    focusTitleInput,
+    playSheen,
+    revealDescriptionFromFocus,
+    scheduleCtaScrollCorrection,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -1472,6 +1500,7 @@ export default function TagGenerator({
     setTitle(context.title);
     setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
     setDescription(context.description);
+    setDescriptionRevealMode("none");
     setShowDescription(Boolean(context.description));
 
     const shouldResume =
@@ -1669,7 +1698,7 @@ export default function TagGenerator({
         setSelectedDraftId(item.id);
         setTitle(item.title);
         setDescription(item.description);
-        setShowDescription(true);
+        revealDescriptionWithoutAnimation();
         setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
         setPaywall(null);
         setIsUnlockingFromPaywall(false);
@@ -1692,7 +1721,7 @@ export default function TagGenerator({
       setSelectedDraftId(null);
       setTitle(item.title);
       setDescription(item.description);
-      setShowDescription(true);
+      revealDescriptionWithoutAnimation();
       setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
       setPaywall(null);
       setIsUnlockingFromPaywall(false);
@@ -1705,6 +1734,7 @@ export default function TagGenerator({
       clearDemoTimer,
       clearRevealTimer,
       markUserInteraction,
+      revealDescriptionWithoutAnimation,
       setResultTagsImmediately,
       showToast,
     ],
@@ -1725,6 +1755,7 @@ export default function TagGenerator({
         setSelectedHistoryId(null);
         setTitle("");
         setDescription("");
+        setDescriptionRevealMode("none");
         setShowDescription(false);
         setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
         setApiTags([]);
@@ -2085,7 +2116,11 @@ export default function TagGenerator({
 
           <div className="min-h-0 flex-1 overflow-hidden">
             {historyMode === "generator" ? (
-              <div className="h-full overflow-y-auto pr-1">
+              <div
+                data-testid="generator-scroll-panel"
+                className="h-full overflow-y-auto pr-2"
+              >
+                <div className="px-1 pb-1">
                 <div className="mb-3">
                   <div className="mb-1.5 flex items-center justify-between">
                     <label className="text-sm font-medium text-stone-700">
@@ -2108,7 +2143,7 @@ export default function TagGenerator({
                         return;
                       }
                       markUserInteraction();
-                      setShowDescription(true);
+                      revealDescriptionFromFocus();
                       setFocusedField("title");
                       if (onFocus) onFocus();
                     }}
@@ -2135,14 +2170,26 @@ export default function TagGenerator({
                       data-skip-generator-return-animations={
                         skipGeneratorReturnAnimations ? "true" : "false"
                       }
+                      data-description-animation={
+                        descriptionRevealMode === "first-focus" &&
+                        !skipGeneratorReturnAnimations
+                          ? "enter"
+                          : "none"
+                      }
                       initial={
-                        skipGeneratorReturnAnimations
-                          ? false
-                          : { height: 0, opacity: 0 }
+                        descriptionRevealMode === "first-focus" &&
+                        !skipGeneratorReturnAnimations
+                          ? { height: 0, opacity: 0 }
+                          : false
                       }
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.3 }}
+                      onAnimationComplete={() => {
+                        if (descriptionRevealMode === "first-focus") {
+                          setDescriptionRevealMode("none");
+                        }
+                      }}
                       className="mb-3 overflow-visible"
                     >
                       <div className="mb-1.5 flex items-center justify-between">
@@ -2377,6 +2424,7 @@ export default function TagGenerator({
                     </motion.div>
                   )}
                 </AnimatePresence>
+                </div>
               </div>
             ) : (
               <div className="flex h-full min-h-0 flex-1 overflow-hidden">
