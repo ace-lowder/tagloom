@@ -923,9 +923,10 @@ describe("TagGenerator generation history mode", () => {
 
     fireEvent.focus(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER));
     expect(screen.getByTestId("generator-scroll-panel")).toHaveClass(
-      "h-full",
-      "overflow-y-auto",
       "pr-2",
+    );
+    expect(screen.getByTestId("generator-scroll-panel")).not.toHaveClass(
+      "overflow-y-auto",
     );
     expect(screen.getByTestId("generator-scroll-panel").firstElementChild).toHaveClass(
       "px-1",

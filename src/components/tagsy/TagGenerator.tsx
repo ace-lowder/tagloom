@@ -2118,7 +2118,7 @@ export default function TagGenerator({
             {historyMode === "generator" ? (
               <div
                 data-testid="generator-scroll-panel"
-                className="h-full overflow-y-auto pr-2"
+                className="pr-2"
               >
                 <div className="px-1 pb-1">
                 <div className="mb-3">
