@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logServerError } from "@/lib/errorLogging";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -79,15 +80,21 @@ export async function GET(req: NextRequest) {
 
   if (error || countError) {
     const queryError = error ?? countError;
-    console.error("[generations/history] GET failed", {
-      code: queryError?.code,
-      message: queryError?.message,
-      details: queryError?.details,
-      hint: queryError?.hint,
-      includeArchived,
-      page,
-      limit,
+    await logServerError({
+      source: "api.generations.history.get",
+      route: "/api/generations/history",
+      method: req.method,
+      status: 500,
       userId: user.id,
+      error: queryError ?? new Error("History query failed"),
+      metadata: {
+        stage: "history_get",
+        includeArchived,
+        page,
+        limit,
+        supabaseDetails: queryError?.details ?? null,
+        supabaseHint: queryError?.hint ?? null,
+      },
     });
     if (queryError?.code === MISSING_ARCHIVE_COLUMN_CODE) {
       return NextResponse.json({ error: HISTORY_SCHEMA_ERROR }, { status: 500 });
@@ -159,13 +166,20 @@ export async function PATCH(req: NextRequest) {
     .maybeSingle();
 
   if (error) {
-    console.error(`[generations/history] PATCH ${action} failed`, {
-      code: error.code,
-      message: error.message,
-      details: error.details,
-      hint: error.hint,
-      generationId,
+    await logServerError({
+      source: "api.generations.history.patch",
+      route: "/api/generations/history",
+      method: req.method,
+      status: 500,
       userId: user.id,
+      error,
+      metadata: {
+        stage: "history_patch",
+        action,
+        generationId,
+        supabaseDetails: error.details ?? null,
+        supabaseHint: error.hint ?? null,
+      },
     });
     if (error.code === MISSING_ARCHIVE_COLUMN_CODE) {
       return NextResponse.json({ error: HISTORY_SCHEMA_ERROR }, { status: 500 });

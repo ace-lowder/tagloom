@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { logServerError } from "@/lib/errorLogging";
 import { GET, PATCH } from "./route";
 
 const getUserMock = vi.fn();
@@ -17,6 +18,10 @@ vi.mock("@/lib/supabase/server", () => ({
 
 vi.mock("@/lib/supabase/admin", () => ({
   createSupabaseAdminClient: () => createAdminMock(),
+}));
+
+vi.mock("@/lib/errorLogging", () => ({
+  logServerError: vi.fn(async () => undefined),
 }));
 
 function makeGetRequest(url: string) {
@@ -82,7 +87,7 @@ describe("generation history route", () => {
     adminFromMock.mockReset();
     createAdminMock.mockReset();
     createAdminMock.mockReturnValue({ from: adminFromMock });
-    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.mocked(logServerError).mockReset();
   });
 
   afterEach(() => {
@@ -181,10 +186,9 @@ describe("generation history route", () => {
       error:
         "Generation history schema is out of date. Apply supabase/migrations/20260508090000_add_generation_archive.sql.",
     });
-    expect(console.error).toHaveBeenCalledWith(
-      "[generations/history] GET failed",
+    expect(logServerError).toHaveBeenCalledWith(
       expect.objectContaining({
-        code: "42703",
+        source: "api.generations.history.get",
         userId: "user_123",
       }),
     );
@@ -207,6 +211,41 @@ describe("generation history route", () => {
     await expect(response.json()).resolves.toEqual({
       error: "Could not load generation history.",
     });
+    expect(logServerError).toHaveBeenCalledTimes(1);
+    expect(logServerError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "api.generations.history.get",
+      }),
+    );
+  });
+
+  it("logs once when PATCH archive query fails", async () => {
+    const maybeSingle = vi.fn(async () => ({
+      data: null,
+      error: {
+        code: "PGRST500",
+        message: "db down",
+        details: null,
+        hint: null,
+      },
+    }));
+    const select = vi.fn(() => ({ maybeSingle }));
+    const eqUser = vi.fn(() => ({ select }));
+    const eqId = vi.fn(() => ({ eq: eqUser }));
+    const update = vi.fn(() => ({ eq: eqId }));
+    adminFromMock.mockReturnValue({ update });
+
+    const response = await PATCH(
+      makePatchRequest({ generationId: "gen_1", action: "archive" }) as never,
+    );
+
+    expect(response.status).toBe(500);
+    expect(logServerError).toHaveBeenCalledTimes(1);
+    expect(logServerError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "api.generations.history.patch",
+      }),
+    );
   });
 
   it("archives only the authenticated user's generation", async () => {

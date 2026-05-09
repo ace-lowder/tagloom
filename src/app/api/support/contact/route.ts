@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { applyApiProtection, jsonFromBlockedResult } from "@/lib/apiProtection";
+import { logServerError } from "@/lib/errorLogging";
 
 type ContactPayload = {
   name?: string;
@@ -69,6 +70,12 @@ function getSupportEmailConfig() {
 
   if (!apiKey || !from || !to) return null;
   return { apiKey, from, to };
+}
+
+function getEmailDomain(email: string) {
+  const atIndex = email.indexOf("@");
+  if (atIndex <= 0 || atIndex === email.length - 1) return null;
+  return email.slice(atIndex + 1).toLowerCase();
 }
 
 function buildSupportEmailText(
@@ -149,13 +156,20 @@ export async function POST(req: NextRequest) {
       userAgent: req.headers.get("user-agent"),
     });
   } catch (error) {
-    console.error(
-      JSON.stringify({
-        type: "support_contact_delivery_failed",
-        timestamp: new Date().toISOString(),
-        error: error instanceof Error ? error.message : "unknown",
-      }),
-    );
+    await logServerError({
+      source: "api.support.contact.resend_send",
+      route: "/api/support/contact",
+      method: req.method,
+      status: 500,
+      error,
+      metadata: {
+        stage: "resend_send",
+        emailDomain: getEmailDomain(validation.value.email),
+        subjectLength: validation.value.subject.length,
+        messageLength: validation.value.message.length,
+        hasName: Boolean(validation.value.name),
+      },
+    });
     return NextResponse.json(
       { ok: false, error: "Could not submit your message." },
       { status: 500 },

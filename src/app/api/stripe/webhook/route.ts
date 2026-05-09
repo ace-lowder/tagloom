@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
+import { logServerError } from "@/lib/errorLogging";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getStripeClient, STRIPE_METADATA_KEYS } from "@/lib/stripe";
 import {
@@ -14,6 +15,18 @@ const STRIPE_EVENT_STATUS = {
   processed: "processed",
   failed: "failed",
 } as const;
+
+function getStripeEventMetadata(
+  event: Stripe.Event,
+  extras: Record<string, unknown> = {},
+) {
+  return {
+    stage: extras.stage ?? null,
+    eventId: event.id,
+    eventType: event.type,
+    ...extras,
+  };
+}
 
 async function grantSingleUseCredit(userId: string, admin: ReturnType<typeof createSupabaseAdminClient>) {
   if (!admin) return;
@@ -69,6 +82,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ received: true });
   }
   if (claim === "error") {
+    await logServerError({
+      source: "api.stripe.webhook.claim_event",
+      route: "/api/stripe/webhook",
+      method: req.method,
+      status: 500,
+      error: new Error("Failed to claim stripe event"),
+      metadata: getStripeEventMetadata(event, { stage: "claim_event" }),
+    });
     return NextResponse.json({ error: "Webhook handling failed." }, { status: 500 });
   }
 
@@ -84,9 +105,17 @@ export async function POST(req: Request) {
       }
 
       if (!userId) {
-        console.error("[stripe] checkout.session.completed missing user mapping", {
-          session: session.id,
-          customerId,
+        await logServerError({
+          source: "api.stripe.webhook.checkout_missing_user",
+          route: "/api/stripe/webhook",
+          method: req.method,
+          status: 200,
+          error: new Error("checkout.session.completed missing user mapping"),
+          metadata: getStripeEventMetadata(event, {
+            stage: "checkout_user_mapping",
+            sessionId: session.id,
+            customerId,
+          }),
         });
         await markStripeEventProcessed(admin, event.id);
         return NextResponse.json({ received: true });
@@ -143,10 +172,17 @@ export async function POST(req: Request) {
       }
 
       if (!userId) {
-        console.error("[stripe] subscription event missing user mapping", {
-          event: event.type,
-          subscriptionId: subscription.id,
-          customerId,
+        await logServerError({
+          source: "api.stripe.webhook.subscription_missing_user",
+          route: "/api/stripe/webhook",
+          method: req.method,
+          status: 200,
+          error: new Error("subscription event missing user mapping"),
+          metadata: getStripeEventMetadata(event, {
+            stage: "subscription_user_mapping",
+            subscriptionId: subscription.id,
+            customerId,
+          }),
         });
         await markStripeEventProcessed(admin, event.id);
         return NextResponse.json({ received: true });
@@ -170,9 +206,17 @@ export async function POST(req: Request) {
       }
 
       if (!userId) {
-        console.error("[stripe] subscription deleted missing user mapping", {
-          subscriptionId: subscription.id,
-          customerId,
+        await logServerError({
+          source: "api.stripe.webhook.subscription_deleted_missing_user",
+          route: "/api/stripe/webhook",
+          method: req.method,
+          status: 200,
+          error: new Error("subscription deleted missing user mapping"),
+          metadata: getStripeEventMetadata(event, {
+            stage: "subscription_deleted_user_mapping",
+            subscriptionId: subscription.id,
+            customerId,
+          }),
         });
         await markStripeEventProcessed(admin, event.id);
         return NextResponse.json({ received: true });
@@ -225,7 +269,14 @@ export async function POST(req: Request) {
     await markStripeEventProcessed(admin, event.id);
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error("[stripe] webhook handling failed", error);
+    await logServerError({
+      source: "api.stripe.webhook.handler",
+      route: "/api/stripe/webhook",
+      method: req.method,
+      status: 500,
+      error,
+      metadata: getStripeEventMetadata(event, { stage: "handle_event" }),
+    });
     await markStripeEventFailed(admin, event.id, error);
     return NextResponse.json({ error: "Webhook handling failed." }, { status: 500 });
   }
@@ -267,10 +318,12 @@ async function claimStripeEvent(
     return reclaimExistingStripeEvent(adminClient, event);
   }
 
-  console.error("[stripe] webhook event claim failed", {
-    eventId: event.id,
-    eventType: event.type,
+  await logServerError({
+    source: "api.stripe.webhook.claim_insert_error",
+    route: "/api/stripe/webhook",
+    status: 500,
     error,
+    metadata: getStripeEventMetadata(event, { stage: "claim_insert" }),
   });
   return "error";
 }
@@ -283,10 +336,12 @@ async function reclaimExistingStripeEvent(adminClient: any, event: Stripe.Event)
     .maybeSingle();
 
   if (readError || !existing) {
-    console.error("[stripe] webhook event lookup failed", {
-      eventId: event.id,
-      eventType: event.type,
-      error: readError,
+    await logServerError({
+      source: "api.stripe.webhook.reclaim_lookup_error",
+      route: "/api/stripe/webhook",
+      status: 500,
+      error: readError ?? new Error("Stripe event reclaim lookup returned no row"),
+      metadata: getStripeEventMetadata(event, { stage: "reclaim_lookup" }),
     });
     return "error";
   }
@@ -304,10 +359,12 @@ async function reclaimExistingStripeEvent(adminClient: any, event: Stripe.Event)
       .eq("id", event.id);
 
     if (updateError) {
-      console.error("[stripe] webhook event reclaim failed", {
-        eventId: event.id,
-        eventType: event.type,
+      await logServerError({
+        source: "api.stripe.webhook.reclaim_update_error",
+        route: "/api/stripe/webhook",
+        status: 500,
         error: updateError,
+        metadata: getStripeEventMetadata(event, { stage: "reclaim_update" }),
       });
       return "error";
     }
@@ -324,7 +381,7 @@ async function markStripeEventProcessed(
 ) {
   if (!admin) return;
   const adminClient = admin as any;
-  await adminClient
+  const { error } = await adminClient
     .from("stripe_events")
     .update({
       status: STRIPE_EVENT_STATUS.processed,
@@ -333,6 +390,18 @@ async function markStripeEventProcessed(
       error: null,
     })
     .eq("id", eventId);
+  if (error) {
+    await logServerError({
+      source: "api.stripe.webhook.mark_processed_error",
+      route: "/api/stripe/webhook",
+      status: 500,
+      error,
+      metadata: {
+        stage: "mark_processed",
+        eventId,
+      },
+    });
+  }
 }
 
 async function markStripeEventFailed(
@@ -342,7 +411,7 @@ async function markStripeEventFailed(
 ) {
   if (!admin) return;
   const adminClient = admin as any;
-  await adminClient
+  const { error: updateError } = await adminClient
     .from("stripe_events")
     .update({
       status: STRIPE_EVENT_STATUS.failed,
@@ -350,4 +419,16 @@ async function markStripeEventFailed(
       error: formatStripeEventError(error),
     })
     .eq("id", eventId);
+  if (updateError) {
+    await logServerError({
+      source: "api.stripe.webhook.mark_failed_error",
+      route: "/api/stripe/webhook",
+      status: 500,
+      error: updateError,
+      metadata: {
+        stage: "mark_failed",
+        eventId,
+      },
+    });
+  }
 }

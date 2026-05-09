@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { applyApiProtection } from "@/lib/apiProtection";
+import { logServerError } from "@/lib/errorLogging";
 import { generateTags } from "@/lib/tag-generation";
 import { POST } from "./route";
 
@@ -37,6 +38,10 @@ vi.mock("@/lib/tag-generation", () => ({
     target: ["placeholder target"],
     discovery: ["placeholder discovery"],
   })),
+}));
+
+vi.mock("@/lib/errorLogging", () => ({
+  logServerError: vi.fn(async () => undefined),
 }));
 
 function makeRequest() {
@@ -97,6 +102,7 @@ describe("generate route entitlement usage", () => {
     generationInsertMock.mockReset();
     generationInsertMock.mockResolvedValue({ error: null });
     vi.mocked(generateTags).mockReset();
+    vi.mocked(logServerError).mockReset();
     vi.mocked(generateTags).mockResolvedValue({
       tags: {
         target: ["silver hoops"],
@@ -190,6 +196,11 @@ describe("generate route entitlement usage", () => {
       p_user_id: "user_123",
       p_entitlement_used: "free_credit",
     });
+    expect(logServerError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "api.generate.generate_tags",
+      }),
+    );
   });
 
   it("refunds reserved entitlement when generation persistence fails", async () => {
@@ -209,6 +220,11 @@ describe("generate route entitlement usage", () => {
       p_user_id: "user_123",
       p_entitlement_used: "single_use",
     });
+    expect(logServerError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "api.generate.generation_insert",
+      }),
+    );
   });
 
   it("returns a safe error when entitlement reservation RPC fails", async () => {

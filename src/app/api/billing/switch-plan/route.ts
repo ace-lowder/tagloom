@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { applyApiProtection, jsonFromBlockedResult } from "@/lib/apiProtection";
+import { logServerError } from "@/lib/errorLogging";
 import { getCanonicalSubscriptionForCustomer, syncBillingProjectionForUser } from "@/lib/stripeBillingSync";
 import { getStripeClient } from "@/lib/stripe";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -48,11 +49,30 @@ export async function POST(req: NextRequest) {
     return jsonFromBlockedResult(protection.blocked);
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("stripe_customer_id")
     .eq("id", user.id)
     .single<{ stripe_customer_id: string | null }>();
+
+  if (profileError) {
+    await logServerError({
+      source: "api.billing.switch_plan.profile_lookup",
+      route: "/api/billing/switch-plan",
+      method: req.method,
+      status: 500,
+      userId: user.id,
+      error: profileError,
+      metadata: {
+        stage: "profile_lookup",
+        requestedTier: targetTier,
+      },
+    });
+    return NextResponse.json(
+      { error: "Could not load billing profile.", code: "profile_lookup_failed" },
+      { status: 500 },
+    );
+  }
 
   if (!profile?.stripe_customer_id) {
     return NextResponse.json(
@@ -63,6 +83,19 @@ export async function POST(req: NextRequest) {
 
   const canonical = await getCanonicalSubscriptionForCustomer(profile.stripe_customer_id);
   if (!canonical) {
+    await logServerError({
+      source: "api.billing.switch_plan.subscription_lookup",
+      route: "/api/billing/switch-plan",
+      method: req.method,
+      status: 400,
+      userId: user.id,
+      error: new Error("No active subscription found"),
+      metadata: {
+        stage: "subscription_lookup",
+        requestedTier: targetTier,
+        hasStripeCustomer: Boolean(profile.stripe_customer_id),
+      },
+    });
     return NextResponse.json(
       { error: "No active subscription found.", code: "no_active_subscription" },
       { status: 400 },
@@ -131,14 +164,24 @@ export async function POST(req: NextRequest) {
       const quantity = currentItem.quantity ?? 1;
 
       if (!phaseStart || !phaseEnd) {
-        console.error("[billing:switch-plan] missing_period_bounds", {
+        await logServerError({
+          source: "api.billing.switch_plan.missing_period_bounds",
+          route: "/api/billing/switch-plan",
+          method: req.method,
+          status: 400,
           userId: user.id,
-          customerId: profile.stripe_customer_id,
-          subscriptionId: canonical.id,
-          currentPeriodStart: periodBoundsSource.current_period_start ?? null,
-          currentPeriodEnd: periodBoundsSource.current_period_end ?? null,
-          itemCurrentPeriodStart: periodBoundsSource.items?.data?.[0]?.current_period_start ?? null,
-          itemCurrentPeriodEnd: periodBoundsSource.items?.data?.[0]?.current_period_end ?? null,
+          error: new Error("Missing subscription period bounds"),
+          metadata: {
+            stage: "missing_period_bounds",
+            requestedTier: targetTier,
+            currentTier,
+            hasStripeCustomer: Boolean(profile.stripe_customer_id),
+            subscriptionId: canonical.id,
+            currentPeriodStart: periodBoundsSource.current_period_start ?? null,
+            currentPeriodEnd: periodBoundsSource.current_period_end ?? null,
+            itemCurrentPeriodStart: periodBoundsSource.items?.data?.[0]?.current_period_start ?? null,
+            itemCurrentPeriodEnd: periodBoundsSource.items?.data?.[0]?.current_period_end ?? null,
+          },
         });
         return NextResponse.json(
           { error: "Could not determine subscription period bounds.", code: "missing_period_bounds" },
@@ -172,7 +215,21 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-  } catch {
+  } catch (error) {
+    await logServerError({
+      source: "api.billing.switch_plan.stripe_update",
+      route: "/api/billing/switch-plan",
+      method: req.method,
+      status: 500,
+      userId: user.id,
+      error,
+      metadata: {
+        stage: "stripe_update",
+        requestedTier: targetTier,
+        currentTier,
+        hasStripeCustomer: Boolean(profile.stripe_customer_id),
+      },
+    });
     return NextResponse.json(
       { error: "Could not switch plan right now.", code: "switch_failed" },
       { status: 500 },

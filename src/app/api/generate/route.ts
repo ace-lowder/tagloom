@@ -4,6 +4,7 @@ import {
   needsBillingProjectionRefresh,
   syncBillingProjectionForUser,
 } from "@/lib/stripeBillingSync";
+import { logServerError } from "@/lib/errorLogging";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { generateTags, getPlaceholderTags } from "@/lib/tag-generation";
 
@@ -138,6 +139,20 @@ export async function POST(req: NextRequest) {
     .single<ProfileRecord>();
 
   if (profileError || !rawProfile) {
+    await logServerError({
+      source: "api.generate.profile_load",
+      route: "/api/generate",
+      method: req.method,
+      status: 500,
+      userId: user.id,
+      error: profileError ?? new Error("Profile not found"),
+      metadata: {
+        stage: "profile_load",
+        titleLength: title.length,
+        descriptionLength: description.length,
+        generationContextId,
+      },
+    });
     return NextResponse.json(
       { error: "Unable to load user profile. Please try again." },
       { status: 500 },
@@ -207,6 +222,23 @@ export async function POST(req: NextRequest) {
   }
 
   if (entitlementError || !entitlement) {
+    await logServerError({
+      source: "api.generate.entitlement_reservation",
+      route: "/api/generate",
+      method: req.method,
+      status: 500,
+      userId: user.id,
+      error: entitlementError ?? new Error("Entitlement reservation returned empty result"),
+      metadata: {
+        stage: "entitlement_reservation",
+        titleLength: title.length,
+        descriptionLength: description.length,
+        generationContextId,
+        hasStripeCustomer: Boolean(profile.stripe_customer_id),
+        supabaseDetails: entitlementError?.details ?? null,
+        supabaseHint: entitlementError?.hint ?? null,
+      },
+    });
     return NextResponse.json(
       { error: "Could not reserve generation entitlement." },
       { status: 500 },
@@ -245,6 +277,23 @@ export async function POST(req: NextRequest) {
     });
 
     if (insertError) {
+      await logServerError({
+        source: "api.generate.generation_insert",
+        route: "/api/generate",
+        method: req.method,
+        status: 500,
+        userId: user.id,
+        error: insertError,
+        metadata: {
+          stage: "generation_insert",
+          titleLength: title.length,
+          descriptionLength: description.length,
+          generationContextId,
+          entitlementUsed,
+          supabaseDetails: insertError.details ?? null,
+          supabaseHint: insertError.hint ?? null,
+        },
+      });
       await refundGenerationEntitlement(supabase, user.id, entitlementUsed);
       return NextResponse.json(
         { error: "Could not save generation." },
@@ -259,7 +308,22 @@ export async function POST(req: NextRequest) {
       source: generated.source,
       entitlementUsed,
     });
-  } catch {
+  } catch (error) {
+    await logServerError({
+      source: "api.generate.generate_tags",
+      route: "/api/generate",
+      method: req.method,
+      status: 500,
+      userId: user.id,
+      error,
+      metadata: {
+        stage: "generate_tags",
+        titleLength: title.length,
+        descriptionLength: description.length,
+        generationContextId,
+        entitlementUsed,
+      },
+    });
     await refundGenerationEntitlement(supabase, user.id, entitlementUsed);
     return NextResponse.json(
       { error: "Tag generation failed." },

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { applyApiProtection, jsonFromBlockedResult } from "@/lib/apiProtection";
+import { logServerError } from "@/lib/errorLogging";
 import { getCanonicalSubscriptionForCustomer } from "@/lib/stripeBillingSync";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getStripeClient, STRIPE_METADATA_KEYS } from "@/lib/stripe";
@@ -94,6 +95,19 @@ export async function POST(req: NextRequest) {
       .single<Pick<CheckoutProfile, "stripe_customer_id" | "subscription_tier" | "subscription_active">>();
 
     if (legacyProfileError || !legacyProfile) {
+      await logServerError({
+        source: "api.checkout.profile_load",
+        route: "/api/checkout/session",
+        method: req.method,
+        status: 500,
+        userId: user.id,
+        error: legacyProfileError ?? new Error("Legacy profile not found"),
+        metadata: {
+          stage: "profile_load_legacy",
+          purchaseType,
+          generationContextId,
+        },
+      });
       return NextResponse.json({ error: "Could not load billing profile." }, { status: 500 });
     }
 
@@ -102,6 +116,19 @@ export async function POST(req: NextRequest) {
       starter_upgrade_discount_available: false,
     };
   } else if (profileWithDiscountError || !profileWithDiscount) {
+    await logServerError({
+      source: "api.checkout.profile_load",
+      route: "/api/checkout/session",
+      method: req.method,
+      status: 500,
+      userId: user.id,
+      error: profileWithDiscountError ?? new Error("Profile not found"),
+      metadata: {
+        stage: "profile_load",
+        purchaseType,
+        generationContextId,
+      },
+    });
     return NextResponse.json({ error: "Could not load billing profile." }, { status: 500 });
   }
 
@@ -182,6 +209,22 @@ export async function POST(req: NextRequest) {
         : yearlyPriceId;
 
   if (!lineItemPriceId) {
+    await logServerError({
+      source: "api.checkout.missing_price_id",
+      route: "/api/checkout/session",
+      method: req.method,
+      status: 500,
+      userId: user.id,
+      error: new Error("Missing Stripe price id"),
+      metadata: {
+        stage: "price_config",
+        purchaseType,
+        generationContextId,
+        hasStripeCustomer: Boolean(profile?.stripe_customer_id),
+        effectiveTier:
+          profile?.subscription_active ? profile.subscription_tier ?? null : null,
+      },
+    });
     return NextResponse.json(
       { error: `Missing Stripe price id for ${purchaseType}.` },
       { status: 500 },
@@ -197,25 +240,49 @@ export async function POST(req: NextRequest) {
     customer_email: profile?.stripe_customer_id ? undefined : user.email ?? undefined,
   };
 
-  const session =
-    purchaseType === "single_use"
-      ? await stripe.checkout.sessions.create({
-          ...baseParams,
-          mode: "payment",
-          payment_intent_data: {
-            metadata,
-          },
-        })
-      : await stripe.checkout.sessions.create({
-          ...baseParams,
-          mode: "subscription",
-          discounts: shouldApplyStarterDiscount
-            ? [{ coupon: couponId as string }]
-            : undefined,
-          subscription_data: {
-            metadata,
-          },
-        });
+  let session: Stripe.Checkout.Session;
+  try {
+    session =
+      purchaseType === "single_use"
+        ? await stripe.checkout.sessions.create({
+            ...baseParams,
+            mode: "payment",
+            payment_intent_data: {
+              metadata,
+            },
+          })
+        : await stripe.checkout.sessions.create({
+            ...baseParams,
+            mode: "subscription",
+            discounts: shouldApplyStarterDiscount
+              ? [{ coupon: couponId as string }]
+              : undefined,
+            subscription_data: {
+              metadata,
+            },
+          });
+  } catch (error) {
+    await logServerError({
+      source: "api.checkout.stripe_session_create",
+      route: "/api/checkout/session",
+      method: req.method,
+      status: 500,
+      userId: user.id,
+      error,
+      metadata: {
+        stage: "stripe_session_create",
+        purchaseType,
+        generationContextId,
+        hasStripeCustomer: Boolean(profile?.stripe_customer_id),
+        effectiveTier:
+          profile?.subscription_active ? profile.subscription_tier ?? null : null,
+      },
+    });
+    return NextResponse.json(
+      { error: "Could not start checkout right now." },
+      { status: 500 },
+    );
+  }
 
   return NextResponse.json({ url: session.url });
 }

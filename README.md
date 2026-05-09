@@ -36,3 +36,17 @@ create index if not exists generations_user_archived_created_idx
 
 The same SQL is in
 `supabase/migrations/20260508090000_add_generation_archive.sql`.
+
+## Weekly Error Log Maintenance
+
+Apply migration `supabase/migrations/20260509120000_add_error_logs.sql` to enable
+server-side error logging to `public.error_logs`.
+
+Example weekly query:
+
+```sql
+select created_at, source, route, status, code, message, metadata
+from public.error_logs
+where created_at >= now() - interval '7 days'
+order by created_at desc;
+```

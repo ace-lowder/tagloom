@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { applyApiProtection, jsonFromBlockedResult } from "@/lib/apiProtection";
+import { logServerError } from "@/lib/errorLogging";
 import { POST } from "./route";
 
 vi.mock("@/lib/apiProtection", () => ({
@@ -7,6 +8,10 @@ vi.mock("@/lib/apiProtection", () => ({
   jsonFromBlockedResult: vi.fn((blocked) =>
     Response.json(blocked.body, { status: blocked.status }),
   ),
+}));
+
+vi.mock("@/lib/errorLogging", () => ({
+  logServerError: vi.fn(async () => undefined),
 }));
 
 const validPayload = {
@@ -54,6 +59,7 @@ describe("support contact route", () => {
       vi.fn(async () => Response.json({ id: "email_123" }, { status: 200 })),
     );
     vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.mocked(logServerError).mockReset();
   });
 
   afterEach(() => {
@@ -142,6 +148,18 @@ describe("support contact route", () => {
       error: "Could not submit your message.",
     });
     expect(fetch).toHaveBeenCalledTimes(1);
+    expect(logServerError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "api.support.contact.resend_send",
+        metadata: expect.objectContaining({
+          stage: "resend_send",
+          emailDomain: "example.com",
+          subjectLength: validPayload.subject.length,
+          messageLength: validPayload.message.length,
+          hasName: true,
+        }),
+      }),
+    );
   });
 
   it("does not send when API protection blocks the request", async () => {
