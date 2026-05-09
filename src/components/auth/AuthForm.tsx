@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { AUTH_POPUP_MESSAGE_SOURCE, dispatchAuthSuccess } from "@/lib/authModal";
+import { dispatchAuthSuccess } from "@/lib/authModal";
 import { buildAuthCallbackUrl } from "@/lib/authRedirect";
 import TurnstileField, {
   type TurnstileFieldHandle,
@@ -23,12 +23,6 @@ type AuthFormProps = {
   onAuthSuccess?: () => void;
   showHeading?: boolean;
   compact?: boolean;
-};
-
-type PopupMessage = {
-  source: string;
-  type: "tagloom:auth-success" | "tagloom:auth-error";
-  message?: string;
 };
 
 function normalizeEmail(value: string) {
@@ -56,12 +50,6 @@ async function checkEmailExists(email: string) {
   }
 
   return data.exists === true;
-}
-
-function centerPopup(width: number, height: number) {
-  const left = window.screenX + Math.max(0, (window.outerWidth - width) / 2);
-  const top = window.screenY + Math.max(0, (window.outerHeight - height) / 2);
-  return `popup=yes,width=${width},height=${height},left=${Math.round(left)},top=${Math.round(top)}`;
 }
 
 const SIGNUP_COOLDOWN_KEY = "tagloom:signup-cooldown:v1";
@@ -107,7 +95,6 @@ export default function AuthForm({
   mode,
   onModeChange,
   next = "/",
-  preferGooglePopup = false,
   onAuthSuccess,
   showHeading = true,
   compact = false,
@@ -167,6 +154,31 @@ export default function AuthForm({
       ...baseToast,
       body: authError instanceof Error ? authError.message : baseToast.body,
     });
+  };
+
+  const getGoogleAuthErrorToast = (authError: unknown): ToastInput => {
+    const message = authError instanceof Error ? authError.message : "";
+
+    if (message === "access_denied") {
+      return {
+        title: "Google sign-in canceled",
+        body: "You can try again when you're ready.",
+        type: "danger",
+      };
+    }
+
+    if (message.toLowerCase().includes("pkce code verifier not found")) {
+      return {
+        title: "Google sign-in failed",
+        body: "Please try signing in with Google again.",
+        type: "danger",
+      };
+    }
+
+    return {
+      ...toastMessages.googleLoginFailed,
+      body: message || toastMessages.googleLoginFailed.body,
+    };
   };
 
   const onEmailAuth = async (event: FormEvent<HTMLFormElement>) => {
@@ -283,75 +295,6 @@ export default function AuthForm({
     if (oauthError) throw oauthError;
   };
 
-  const openGooglePopup = async () => {
-    if (!supabase) return false;
-
-    const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: buildAuthCallbackUrl(next, "popup"),
-        skipBrowserRedirect: true,
-      },
-    });
-
-    if (oauthError) throw oauthError;
-
-    const popupUrl = data?.url;
-    if (!popupUrl) throw new Error("Google login could not start.");
-
-    const popup = window.open(
-      popupUrl,
-      "tagloom_google_auth",
-      centerPopup(520, 720),
-    );
-
-    if (!popup) {
-      return false;
-    }
-
-    await new Promise<void>((resolve, reject) => {
-      let finished = false;
-
-      const cleanup = () => {
-        window.removeEventListener("message", onMessage);
-        window.clearInterval(closePoll);
-      };
-
-      const finish = (fn: () => void) => {
-        if (finished) return;
-        finished = true;
-        cleanup();
-        fn();
-      };
-
-      const onMessage = (event: MessageEvent) => {
-        if (event.origin !== window.location.origin) return;
-
-        const payload = event.data as PopupMessage | null;
-        if (!payload || payload.source !== AUTH_POPUP_MESSAGE_SOURCE) return;
-
-        if (payload.type === "tagloom:auth-success") {
-          finish(() => resolve());
-          return;
-        }
-
-        finish(() =>
-          reject(new Error(payload.message || "Google sign-in failed.")),
-        );
-      };
-
-      const closePoll = window.setInterval(() => {
-        if (!popup.closed) return;
-        finish(() => reject(new Error("Google sign-in was canceled.")));
-      }, 300);
-
-      window.addEventListener("message", onMessage);
-    });
-
-    completeSuccess();
-    return true;
-  };
-
   const onGoogleAuth = async () => {
     setError("");
     setIsSubmitting(true);
@@ -362,17 +305,9 @@ export default function AuthForm({
         return;
       }
 
-      if (preferGooglePopup) {
-        const popupSucceeded = await openGooglePopup();
-        if (!popupSucceeded) {
-          await fallbackGoogleRedirect();
-        }
-        return;
-      }
-
       await fallbackGoogleRedirect();
     } catch (authError) {
-      showAuthFailure(toastMessages.googleLoginFailed, authError);
+      showToast(getGoogleAuthErrorToast(authError));
       setIsSubmitting(false);
     }
   };

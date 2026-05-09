@@ -352,11 +352,52 @@ describe("AuthForm signup guard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
 
     await waitFor(() => expect(signInWithOAuthMock).toHaveBeenCalledTimes(1));
+    expect(signInWithOAuthMock).toHaveBeenCalledWith({
+      provider: "google",
+      options: expect.objectContaining({
+        redirectTo: expect.stringContaining("/auth/callback"),
+      }),
+    });
+    const oauthArgs = signInWithOAuthMock.mock.calls[0]?.[0];
+    expect(oauthArgs.options.redirectTo).toContain("flow=redirect");
+    expect(oauthArgs.options.redirectTo).not.toContain("flow=popup");
+    expect(oauthArgs.options.skipBrowserRedirect).toBeUndefined();
     expect(
       fetchMock.mock.calls.some(([input]) =>
         String(input).includes("/api/auth/signup-eligibility"),
       ),
     ).toBe(false);
+  });
+
+  it("ignores preferGooglePopup and still uses redirect flow", async () => {
+    renderWithToasts(
+      <AuthForm mode="signup" onModeChange={vi.fn()} preferGooglePopup />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
+
+    await waitFor(() => expect(signInWithOAuthMock).toHaveBeenCalledTimes(1));
+    const oauthArgs = signInWithOAuthMock.mock.calls[0]?.[0];
+    expect(oauthArgs.options.redirectTo).toContain("flow=redirect");
+    expect(oauthArgs.options.redirectTo).not.toContain("flow=popup");
+    expect(oauthArgs.options.skipBrowserRedirect).toBeUndefined();
+  });
+
+  it("maps access_denied to friendly cancellation copy", async () => {
+    signInWithOAuthMock.mockResolvedValue({
+      error: new Error("access_denied"),
+      data: {},
+    });
+
+    renderWithToasts(<AuthForm mode="signup" onModeChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
+
+    expect(await screen.findByText("Google sign-in canceled")).toBeInTheDocument();
+    expect(
+      await screen.findByText("You can try again when you're ready."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("access_denied")).not.toBeInTheDocument();
   });
 
   it("uses a Google sign-in failure toast instead of login failure", async () => {
