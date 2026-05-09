@@ -10,16 +10,7 @@ import {
   type RefObject,
 } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  Copy,
-  Info,
-  LockOpen,
-  Sparkles,
-  X,
-} from "lucide-react";
+import { Check, Clock, Copy, Info, LockOpen, Sparkles } from "lucide-react";
 import { toastMessages } from "@/components/toasts/toastMessages";
 import { useToast } from "@/components/toasts/toasts";
 import { useAuthController } from "@/components/auth/AuthController";
@@ -29,7 +20,15 @@ import TurnstileField, {
 } from "@/components/security/TurnstileField";
 import { AUTH_SUCCESS_EVENT } from "@/lib/authModal";
 import { GENERATOR_CTA_EVENT } from "@/lib/generatorCta";
+import { cn } from "@/lib/utils";
 import GradientBackground from "./GradientBackground";
+import {
+  GenerationHistoryPanel,
+  type GenerationHistoryItem,
+  type HistoryMode,
+  type HistorySortKey,
+  type HistorySortState,
+} from "./GenerationHistoryPanel";
 
 type TagGeneratorProps = {
   onFocus?: () => void;
@@ -71,15 +70,6 @@ type AccountUsageResponse = {
   usageLabel: string | null;
   monthlyResetAt?: string | null;
 };
-type GenerationHistoryItem = {
-  id: string;
-  createdAt: string;
-  title: string;
-  description: string;
-  targetTags: string[];
-  discoveryTags: string[];
-  isDraft?: boolean;
-};
 type GenerationHistoryResponse = {
   items: GenerationHistoryItem[];
   page: number;
@@ -93,15 +83,19 @@ type DraftHistoryState = {
   updatedAt: string;
 };
 type HistoryCache = {
-  page0: GenerationHistoryItem[];
-  hasPrev: boolean;
-  hasNext: boolean;
-  selectedId: string | null;
+  generatedItems: GenerationHistoryItem[];
+  activeGeneratedItems?: GenerationHistoryItem[];
+  selectedGeneratedId: string | null;
   drafts: DraftHistoryState[];
   selectedDraftId: string | null;
+  mode: HistoryMode;
+  sortState: HistorySortState;
+  showArchived: boolean;
   savedAt: number;
 };
 type LegacyHistoryCache = Partial<HistoryCache> & {
+  page0?: GenerationHistoryItem[];
+  selectedId?: string | null;
   draft?: Partial<DraftHistoryState> | null;
 };
 
@@ -116,6 +110,11 @@ type PendingContext = {
   title: string;
   description: string;
 };
+
+type HistoryConfirmAction =
+  | { type: "delete-draft"; item: GenerationHistoryItem }
+  | { type: "archive-generation"; item: GenerationHistoryItem }
+  | { type: "restore-generation"; item: GenerationHistoryItem };
 
 type DemoPhase = "typing" | "generating" | "revealing" | "clearing";
 type ClearPhase = "idle" | "fading" | "collapsing";
@@ -238,9 +237,8 @@ const DEFAULT_TITLE_PLACEHOLDER =
   "e.g. Handmade ceramic coffee mug with minimalist design";
 const USAGE_HINT_CLOSE_DELAY_MS = 500;
 const CTA_SCROLL_CORRECTION_DELAY_MS = 380;
-const HISTORY_PAGE_SIZE = 8;
-const HISTORY_CARDS_PER_PAGE = 4;
-const HISTORY_CACHE_KEY = "tagloom:history:v1";
+const HISTORY_PAGE_SIZE = 100;
+const HISTORY_CACHE_KEY = "tagloom:history:v2";
 const GENERATED_TAG_CHIP_CLASSNAME =
   "cursor-default rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm text-stone-700 shadow-sm";
 
@@ -297,6 +295,55 @@ function sanitizeMergedTags(target: string[], discovery: string[]) {
   return sanitizeTags([...target, ...discovery]);
 }
 
+function HistoryModeToggle({
+  historyMode,
+  onToggle,
+  className,
+}: {
+  historyMode: HistoryMode;
+  onToggle: () => void;
+  className?: string;
+}) {
+  const isHistory = historyMode === "history";
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={isHistory ? "Show generator" : "Show generation history"}
+      aria-pressed={isHistory}
+      className={cn(
+        "relative inline-flex h-[36px] w-[64px] items-center rounded-full border border-stone-200 bg-white/85 p-[3px] transition-colors hover:bg-stone-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300/70",
+        className,
+      )}
+    >
+      <span
+        aria-hidden="true"
+        className="absolute left-[3px] top-[3px] flex h-7 w-7 items-center justify-center"
+      >
+        <Sparkles className="h-3.5 w-3.5 text-stone-500 opacity-50" />
+      </span>
+      <span
+        aria-hidden="true"
+        className="absolute left-[31px] top-[3px] flex h-7 w-7 items-center justify-center"
+      >
+        <Clock className="h-3.5 w-3.5 text-stone-500 opacity-50" />
+      </span>
+      <motion.span
+        aria-hidden="true"
+        className="absolute left-[3px] top-[3px] flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-orange-600 shadow-sm"
+        animate={{ x: isHistory ? 28 : 0 }}
+        transition={{ type: "tween", duration: 0.18, ease: "easeOut" }}
+      >
+        {isHistory ? (
+          <Clock className="h-3.5 w-3.5 text-white" />
+        ) : (
+          <Sparkles className="h-3.5 w-3.5 text-white" />
+        )}
+      </motion.span>
+    </button>
+  );
+}
+
 function readHistoryCache(): HistoryCache | null {
   if (typeof window === "undefined") return null;
   const raw = window.localStorage.getItem(HISTORY_CACHE_KEY);
@@ -304,14 +351,24 @@ function readHistoryCache(): HistoryCache | null {
 
   try {
     const parsed = JSON.parse(raw) as LegacyHistoryCache;
-    if (!parsed || !Array.isArray(parsed.page0)) return null;
+    if (!parsed) return null;
     const legacyDraft = parsed.draft;
+    const generatedItems = Array.isArray(parsed.generatedItems)
+      ? parsed.generatedItems
+      : Array.isArray(parsed.activeGeneratedItems)
+        ? parsed.activeGeneratedItems
+        : Array.isArray(parsed.page0)
+          ? parsed.page0
+          : [];
     return {
-      page0: parsed.page0,
-      hasPrev: Boolean(parsed.hasPrev),
-      hasNext: Boolean(parsed.hasNext),
-      selectedId:
-        typeof parsed.selectedId === "string" ? parsed.selectedId : null,
+      generatedItems,
+      selectedGeneratedId:
+        typeof parsed.selectedGeneratedId === "string"
+          ? parsed.selectedGeneratedId
+          : typeof parsed.selectedId === "string" &&
+              parsed.selectedId !== "draft"
+            ? parsed.selectedId
+            : null,
       drafts: Array.isArray(parsed.drafts)
         ? parsed.drafts
             .filter(
@@ -349,6 +406,18 @@ function readHistoryCache(): HistoryCache | null {
         typeof parsed.selectedDraftId === "string"
           ? parsed.selectedDraftId
           : null,
+      mode: "generator",
+      sortState:
+        parsed.sortState &&
+        typeof parsed.sortState === "object" &&
+        ["date", "title", "description", "status"].includes(
+          parsed.sortState.key,
+        ) &&
+        (parsed.sortState.direction === "asc" ||
+          parsed.sortState.direction === "desc")
+          ? parsed.sortState
+          : null,
+      showArchived: Boolean(parsed.showArchived),
       savedAt: typeof parsed.savedAt === "number" ? parsed.savedAt : Date.now(),
     };
   } catch {
@@ -397,44 +466,6 @@ function getUsageHintText(
   return null;
 }
 
-function ordinal(day: number) {
-  const mod10 = day % 10;
-  const mod100 = day % 100;
-  if (mod10 === 1 && mod100 !== 11) return `${day}st`;
-  if (mod10 === 2 && mod100 !== 12) return `${day}nd`;
-  if (mod10 === 3 && mod100 !== 13) return `${day}rd`;
-  return `${day}th`;
-}
-
-function formatHistoryDate(isoDate: string) {
-  const date = new Date(isoDate);
-  if (Number.isNaN(date.getTime())) return "";
-  const month = new Intl.DateTimeFormat("en-US", { month: "short" }).format(
-    date,
-  );
-  const day = ordinal(date.getDate());
-  const year = date.getFullYear();
-  return `${month} ${day}, ${year}`;
-}
-
-function truncateHistoryText(value: string, max = 30, fallback = "") {
-  const clean = value.trim() || fallback;
-  if (clean.length <= max) return clean;
-  return `${clean.slice(0, max - 1)}…`;
-}
-
-function getHistoryPageStart(page: number, cardCount: number) {
-  if (cardCount <= HISTORY_CARDS_PER_PAGE) return 0;
-  return Math.min(
-    page * HISTORY_CARDS_PER_PAGE,
-    cardCount - HISTORY_CARDS_PER_PAGE,
-  );
-}
-
-function getHistoryPageCount(cardCount: number) {
-  return Math.max(1, Math.ceil(cardCount / HISTORY_CARDS_PER_PAGE));
-}
-
 export default function TagGenerator({
   onFocus,
   glowRef,
@@ -481,23 +512,27 @@ export default function TagGenerator({
   const [clearPhase, setClearPhase] = useState<ClearPhase>("idle");
   const [shellHeightPx, setShellHeightPx] = useState<number | null>(null);
   const [shellHeightTransitionMs, setShellHeightTransitionMs] = useState(0);
+  const [historyShellHeightPx, setHistoryShellHeightPx] = useState<
+    number | null
+  >(null);
   const [historyItems, setHistoryItems] = useState<GenerationHistoryItem[]>([]);
-  const [historyCardPage, setHistoryCardPage] = useState(0);
+  const [historyMode, setHistoryMode] = useState<HistoryMode>("generator");
+  const [historySortState, setHistorySortState] =
+    useState<HistorySortState>(null);
+  const [showArchivedHistory, setShowArchivedHistory] = useState(false);
   const [isHistoryAuthenticated, setIsHistoryAuthenticated] = useState(false);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
-  const [historyDirection, setHistoryDirection] = useState<"newer" | "older">(
-    "older",
-  );
+  const [skipGeneratorReturnAnimations, setSkipGeneratorReturnAnimations] =
+    useState(false);
   const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(
-    null,
-  );
-  const [, setSelectedSavedHistory] = useState<GenerationHistoryItem | null>(
     null,
   );
   const [draftHistoryItems, setDraftHistoryItems] = useState<
     DraftHistoryState[]
   >([]);
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
+  const [historyConfirmAction, setHistoryConfirmAction] =
+    useState<HistoryConfirmAction | null>(null);
 
   const revealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const demoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -509,13 +544,9 @@ export default function TagGenerator({
   const usageHintCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
-  const ctaScrollCorrectionTimeoutRef = useRef<number | null>(
-    null,
-  );
+  const ctaScrollCorrectionTimeoutRef = useRef<number | null>(null);
   const demoFixtureIndexRef = useRef(0);
   const demoCharIndexRef = useRef(0);
-  const draftHistoryCountRef = useRef(0);
-  const previousDraftHistoryCountRef = useRef(0);
   const shouldSkipDemoRef = useRef(false);
   const isDemoPausedRef = useRef(false);
   const demoTimerMetaRef = useRef<TimerMeta>({
@@ -530,10 +561,10 @@ export default function TagGenerator({
     remainingMs: 0,
     startedAtMs: 0,
   });
-  const displayHistoryCards = useMemo(() => {
-    const cards = [...historyItems];
+  const displayHistoryItems = useMemo<GenerationHistoryItem[]>(() => {
+    const items = [...historyItems];
     for (const draft of draftHistoryItems) {
-      cards.push({
+      items.push({
         id: draft.id,
         createdAt: draft.updatedAt,
         title: draft.title,
@@ -543,39 +574,8 @@ export default function TagGenerator({
         isDraft: true,
       });
     }
-    return cards;
+    return items;
   }, [draftHistoryItems, historyItems]);
-  const historyCardPageCount = getHistoryPageCount(displayHistoryCards.length);
-  const historyPageStart = getHistoryPageStart(
-    historyCardPage,
-    displayHistoryCards.length,
-  );
-  const visibleHistoryCards = displayHistoryCards.slice(
-    historyPageStart,
-    historyPageStart + HISTORY_CARDS_PER_PAGE,
-  );
-  const visibleHistoryDotPages = useMemo(() => {
-    const dotCount = Math.min(5, historyCardPageCount);
-    const maxStart = Math.max(0, historyCardPageCount - dotCount);
-    const start = Math.min(
-      Math.max(0, historyCardPage - Math.floor(dotCount / 2)),
-      maxStart,
-    );
-    return Array.from({ length: dotCount }, (_, index) => start + index);
-  }, [historyCardPage, historyCardPageCount]);
-
-  useEffect(() => {
-    const newestPage = Math.max(0, historyCardPageCount - 1);
-    setHistoryCardPage((current) => Math.min(current, newestPage));
-  }, [historyCardPageCount]);
-
-  useEffect(() => {
-    draftHistoryCountRef.current = draftHistoryItems.length;
-    if (draftHistoryItems.length > previousDraftHistoryCountRef.current) {
-      setHistoryCardPage(Math.max(0, historyCardPageCount - 1));
-    }
-    previousDraftHistoryCountRef.current = draftHistoryItems.length;
-  }, [draftHistoryItems.length, historyCardPageCount]);
 
   const setRevealTimer = useCallback(
     (callback: () => void, delayMs: number) => {
@@ -826,17 +826,15 @@ export default function TagGenerator({
 
       while (hasNext) {
         const response = await fetch(
-          `/api/generations/history?limit=${HISTORY_PAGE_SIZE}&page=${page}`,
+          `/api/generations/history?limit=${HISTORY_PAGE_SIZE}&page=${page}&includeArchived=true`,
           { method: "GET" },
         );
         if (response.status === 401) {
           setIsHistoryAuthenticated(false);
           setHistoryItems([]);
-          setHistoryCardPage(0);
           setDraftHistoryItems([]);
           setSelectedDraftId(null);
           setSelectedHistoryId(null);
-          setSelectedSavedHistory(null);
           clearHistoryCache();
           return;
         }
@@ -852,7 +850,7 @@ export default function TagGenerator({
 
       const seen = new Set<string>();
       const nextItems: GenerationHistoryItem[] = [];
-      for (const item of fetchedPages.reverse().flat()) {
+      for (const item of fetchedPages.flat()) {
         if (!item?.id || seen.has(item.id)) continue;
         seen.add(item.id);
         nextItems.push(item);
@@ -860,24 +858,15 @@ export default function TagGenerator({
 
       setIsHistoryAuthenticated(true);
       setHistoryItems(nextItems);
-      setHistoryCardPage(
-        Math.max(
-          0,
-          getHistoryPageCount(nextItems.length + draftHistoryCountRef.current) - 1,
-        ),
-      );
 
       setSelectedHistoryId((current) => {
         if (!current) {
-          setSelectedSavedHistory(null);
           return null;
         }
         if (current === "draft") {
-          setSelectedSavedHistory(null);
           return current;
         }
         const matched = nextItems.find((item) => item.id === current) ?? null;
-        setSelectedSavedHistory(matched);
         return matched ? matched.id : null;
       });
     } catch {
@@ -888,39 +877,6 @@ export default function TagGenerator({
       setIsHistoryLoading(false);
     }
   }, [showToast]);
-
-  const goToHistoryCardPage = useCallback(
-    (nextPage: number) => {
-      if (isHistoryLoading) return;
-      const clampedPage = Math.max(
-        0,
-        Math.min(nextPage, historyCardPageCount - 1),
-      );
-      if (clampedPage === historyCardPage) return;
-
-      setHistoryDirection(clampedPage > historyCardPage ? "older" : "newer");
-      setHistoryCardPage(clampedPage);
-    },
-    [historyCardPage, historyCardPageCount, isHistoryLoading],
-  );
-
-  const pageHistory = useCallback(
-    (direction: "newer" | "older") => {
-      if (isHistoryLoading) return;
-
-      const localNextPage =
-        direction === "older" ? historyCardPage + 1 : historyCardPage - 1;
-      if (localNextPage >= 0 && localNextPage < historyCardPageCount) {
-        setHistoryDirection(direction);
-        setHistoryCardPage(localNextPage);
-      }
-    },
-    [
-      historyCardPage,
-      historyCardPageCount,
-      isHistoryLoading,
-    ],
-  );
 
   const openUsageHint = useCallback(() => {
     if (usageHintCloseTimeoutRef.current) {
@@ -971,28 +927,28 @@ export default function TagGenerator({
   useEffect(() => {
     const cached = readHistoryCache();
     if (cached) {
-      const cachedItems = Array.isArray(cached.page0) ? cached.page0 : [];
+      const cachedItems = Array.isArray(cached.generatedItems)
+        ? cached.generatedItems
+        : [];
       setIsHistoryAuthenticated(true);
       setHistoryItems(cachedItems);
       const cachedDrafts = Array.isArray(cached.drafts) ? cached.drafts : [];
-      draftHistoryCountRef.current = cachedDrafts.length;
-      previousDraftHistoryCountRef.current = cachedDrafts.length;
       setDraftHistoryItems(cachedDrafts);
-      setHistoryCardPage(
-        Math.max(
-          0,
-          getHistoryPageCount(cachedItems.length + cachedDrafts.length) - 1,
-        ),
-      );
+      setHistoryMode("generator");
+      setHistorySortState(cached.sortState);
+      setShowArchivedHistory(cached.showArchived);
       setSelectedDraftId(
         cached.selectedDraftId &&
           cachedDrafts.some((draft) => draft.id === cached.selectedDraftId)
           ? cached.selectedDraftId
           : null,
       );
-      if (cached.selectedId) {
-        setSelectedHistoryId(cached.selectedId);
-        if (cached.selectedId === "draft" && cachedDrafts.length > 0) {
+      if (cached.selectedGeneratedId || cached.selectedDraftId) {
+        const nextSelectedId = cached.selectedDraftId
+          ? "draft"
+          : cached.selectedGeneratedId;
+        setSelectedHistoryId(nextSelectedId);
+        if (cached.selectedDraftId && cachedDrafts.length > 0) {
           const selectedDraft =
             cachedDrafts.find((draft) => draft.id === cached.selectedDraftId) ??
             cachedDrafts[cachedDrafts.length - 1];
@@ -1006,21 +962,19 @@ export default function TagGenerator({
           }
           setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
         }
-        const selected =
-          cachedItems.find((item) => item.id === cached.selectedId) ?? null;
-        setSelectedSavedHistory(selected);
       } else {
         setSelectedHistoryId(null);
-        setSelectedSavedHistory(null);
       }
     }
+  }, []);
+
+  useEffect(() => {
     void loadHistory();
   }, [loadHistory]);
 
   useEffect(() => {
     if (!isDemoActive) return;
     setSelectedHistoryId(null);
-    setSelectedSavedHistory(null);
   }, [isDemoActive]);
 
   useEffect(() => {
@@ -1029,20 +983,26 @@ export default function TagGenerator({
       return;
     }
     writeHistoryCache({
-      page0: historyItems,
-      hasPrev: false,
-      hasNext: false,
-      selectedId: selectedHistoryId,
+      generatedItems: historyItems,
+      selectedGeneratedId:
+        selectedHistoryId && selectedHistoryId !== "draft"
+          ? selectedHistoryId
+          : null,
       drafts: draftHistoryItems,
       selectedDraftId,
+      mode: "generator",
+      sortState: historySortState,
+      showArchived: showArchivedHistory,
       savedAt: Date.now(),
     });
   }, [
     draftHistoryItems,
     historyItems,
+    historySortState,
     isHistoryAuthenticated,
     selectedHistoryId,
     selectedDraftId,
+    showArchivedHistory,
   ]);
 
   useEffect(() => {
@@ -1421,7 +1381,9 @@ export default function TagGenerator({
       showToast({
         ...toastMessages.generationFailed,
         body:
-          err instanceof Error ? err.message : toastMessages.generationFailed.body,
+          err instanceof Error
+            ? err.message
+            : toastMessages.generationFailed.body,
       });
     } finally {
       setIsGenerating(false);
@@ -1668,7 +1630,6 @@ export default function TagGenerator({
         setSelectedDraftId(null);
         if (selectedHistoryId === "draft") {
           setSelectedHistoryId(null);
-          setSelectedSavedHistory(null);
         }
         return;
       }
@@ -1694,10 +1655,6 @@ export default function TagGenerator({
         setSelectedHistoryId("draft");
         setSelectedDraftId(nextDraft.id);
       }
-
-      if (selectedHistoryId === "draft") {
-        setSelectedSavedHistory(null);
-      }
     },
     [isHistoryAuthenticated, selectedDraftId, selectedHistoryId],
   );
@@ -1710,7 +1667,6 @@ export default function TagGenerator({
         clearDemoTimer();
         setSelectedHistoryId("draft");
         setSelectedDraftId(item.id);
-        setSelectedSavedHistory(null);
         setTitle(item.title);
         setDescription(item.description);
         setShowDescription(true);
@@ -1727,13 +1683,13 @@ export default function TagGenerator({
         setClearPhase("idle");
         setShellHeightTransitionMs(0);
         setShellHeightPx(null);
+        showToast(toastMessages.historyLoaded);
         return;
       }
 
       markUserInteraction();
       setSelectedHistoryId(item.id);
       setSelectedDraftId(null);
-      setSelectedSavedHistory(item);
       setTitle(item.title);
       setDescription(item.description);
       setShowDescription(true);
@@ -1743,16 +1699,18 @@ export default function TagGenerator({
       setUnlockReadyContext(null);
       setConfirmModalMode(null);
       setResultTagsImmediately(item.targetTags, item.discoveryTags);
+      showToast(toastMessages.historyLoaded);
     },
     [
       clearDemoTimer,
       clearRevealTimer,
       markUserInteraction,
       setResultTagsImmediately,
+      showToast,
     ],
   );
 
-  const clearDraftCard = useCallback(
+  const deleteDraftItem = useCallback(
     (draftId: string) => {
       if (!draftId) {
         return;
@@ -1764,6 +1722,7 @@ export default function TagGenerator({
       setSelectedDraftId((current) => (current === draftId ? null : current));
 
       if (selectedHistoryId === "draft" && selectedDraftId === draftId) {
+        setSelectedHistoryId(null);
         setTitle("");
         setDescription("");
         setShowDescription(false);
@@ -1775,28 +1734,160 @@ export default function TagGenerator({
         setUnlockReadyContext(null);
         setConfirmModalMode(null);
         setIsUnlockingFromPaywall(false);
-
-        const remainingDrafts = draftHistoryItems.filter(
-          (draft) => draft.id !== draftId,
-        );
-        if (remainingDrafts.length > 0) {
-          const newestDraft = remainingDrafts[remainingDrafts.length - 1];
-          setSelectedDraftId(newestDraft.id);
-          setTitle(newestDraft.title);
-          setDescription(newestDraft.description);
-          setShowDescription(true);
-        } else if (historyItems.length > 0) {
-          const newest = historyItems[historyItems.length - 1];
-          setSelectedHistoryId(newest.id);
-          setSelectedSavedHistory(newest);
-        } else {
-          setSelectedHistoryId(null);
-          setSelectedSavedHistory(null);
-        }
       }
     },
-    [draftHistoryItems, historyItems, selectedDraftId, selectedHistoryId],
+    [selectedDraftId, selectedHistoryId],
   );
+
+  const archiveGenerationItem = useCallback(
+    async (item: GenerationHistoryItem) => {
+      const response = await fetch("/api/generations/history", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ generationId: item.id, action: "archive" }),
+      });
+
+      const data = (await response.json().catch(() => ({}))) as {
+        archivedAt?: string;
+        error?: string;
+      };
+      if (!response.ok) {
+        throw new Error(data.error || "Could not archive generation.");
+      }
+
+      const archivedAt = data.archivedAt ?? new Date().toISOString();
+      setHistoryItems((current) =>
+        current.map((historyItem) =>
+          historyItem.id === item.id
+            ? { ...historyItem, archivedAt }
+            : historyItem,
+        ),
+      );
+    },
+    [],
+  );
+
+  const restoreGenerationItem = useCallback(
+    async (item: GenerationHistoryItem) => {
+      const response = await fetch("/api/generations/history", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ generationId: item.id, action: "restore" }),
+      });
+      const data = (await response.json().catch(() => ({}))) as {
+        archivedAt?: string | null;
+        error?: string;
+      };
+      if (!response.ok) {
+        throw new Error(data.error || "Could not restore generation.");
+      }
+      setHistoryItems((current) =>
+        current.map((historyItem) =>
+          historyItem.id === item.id
+            ? { ...historyItem, archivedAt: null }
+            : historyItem,
+        ),
+      );
+    },
+    [],
+  );
+
+  const confirmHistoryAction = useCallback(async () => {
+    if (!historyConfirmAction) return;
+
+    if (historyConfirmAction.type === "delete-draft") {
+      deleteDraftItem(historyConfirmAction.item.id);
+      setHistoryConfirmAction(null);
+      return;
+    }
+
+    try {
+      if (historyConfirmAction.type === "restore-generation") {
+        await restoreGenerationItem(historyConfirmAction.item);
+      } else {
+        await archiveGenerationItem(historyConfirmAction.item);
+      }
+      setHistoryConfirmAction(null);
+    } catch (err) {
+      if (historyConfirmAction.type === "restore-generation") {
+        showToast(toastMessages.historyRestoreFailed);
+      } else {
+        showToast({
+          title: "Archive failed",
+          body:
+            err instanceof Error
+              ? err.message
+              : "Could not archive generation. Please try again.",
+          type: "danger",
+        });
+      }
+    }
+  }, [
+    archiveGenerationItem,
+    deleteDraftItem,
+    historyConfirmAction,
+    restoreGenerationItem,
+    showToast,
+  ]);
+
+  const cycleHistorySort = useCallback(
+    (key: HistorySortKey) => {
+      if (key === "status") {
+        if (showArchivedHistory) {
+          setShowArchivedHistory(false);
+          setHistorySortState(null);
+          return;
+        }
+        if (!historySortState || historySortState.key !== "status") {
+          setHistorySortState({ key, direction: "asc" });
+          return;
+        }
+        if (historySortState.direction === "asc") {
+          setHistorySortState({ key, direction: "desc" });
+          return;
+        }
+        setHistorySortState(null);
+        setShowArchivedHistory(true);
+        return;
+      }
+
+      setShowArchivedHistory(false);
+      setHistorySortState((current) => {
+        if (key === "date") {
+          if (!current || current.key !== "date")
+            return { key, direction: "desc" };
+          if (current.direction === "desc") return { key, direction: "asc" };
+          return null;
+        }
+        if (!current || current.key !== key) return { key, direction: "asc" };
+        if (current.direction === "asc") return { key, direction: "desc" };
+        return null;
+      });
+    },
+    [historySortState, showArchivedHistory],
+  );
+
+  const showHistoryMode = useCallback(() => {
+    const shellHeight = shellRef.current?.getBoundingClientRect().height;
+    if (typeof shellHeight === "number" && Number.isFinite(shellHeight)) {
+      setHistoryShellHeightPx(Math.round(shellHeight));
+    }
+    setHistoryMode("history");
+  }, []);
+
+  const showGeneratorMode = useCallback(() => {
+    setSkipGeneratorReturnAnimations(true);
+    setHistoryMode("generator");
+    setHistoryShellHeightPx(null);
+  }, []);
+
+  useEffect(() => {
+    if (historyMode !== "generator" || !skipGeneratorReturnAnimations) return;
+    const timer = window.setTimeout(() => {
+      setSkipGeneratorReturnAnimations(false);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [historyMode, skipGeneratorReturnAnimations]);
 
   const handleCopyAll = async () => {
     markUserInteraction();
@@ -1814,6 +1905,8 @@ export default function TagGenerator({
     totalTags > 0 || isUnlockingFromPaywall || Boolean(paywall);
   const areAllTagsVisible =
     apiTags.length > 0 && visibleTags.length === apiTags.length;
+  const shouldRevealTagChips =
+    shouldAnimateTagChips && !skipGeneratorReturnAnimations;
   const canCopyAll = !paywall && !isUnlockingFromPaywall && areAllTagsVisible;
   const isClearingFade = clearPhase === "fading";
   const hasTitle = Boolean(title.trim());
@@ -1833,26 +1926,7 @@ export default function TagGenerator({
     }).format(date);
   }, [monthlyResetAt]);
   const showFreeGenerationModalTitle = confirmModalMode === "generate";
-  const showHistoryStrip =
-    isHistoryAuthenticated &&
-    (historyItems.length > 0 || draftHistoryItems.length > 0);
-  const canShowOlderHistory =
-    historyCardPage < historyCardPageCount - 1;
-  const canShowNewerHistory = historyCardPage > 0;
-
-  useEffect(() => {
-    if (!selectedHistoryId) {
-      setSelectedSavedHistory(null);
-      return;
-    }
-    if (selectedHistoryId === "draft") {
-      return;
-    }
-    const match = historyItems.find((item) => item.id === selectedHistoryId);
-    if (match) {
-      setSelectedSavedHistory(match);
-    }
-  }, [historyItems, selectedHistoryId]);
+  const canSwitchHistoryMode = !isDemoActive && isHistoryAuthenticated;
   return (
     <div ref={glowRef} id="generator" className="relative mx-auto max-w-2xl">
       <div className="pointer-events-none absolute -inset-8 overflow-hidden rounded-3xl">
@@ -1864,6 +1938,11 @@ export default function TagGenerator({
         data-testid="generator-shell"
         data-clear-phase={clearPhase}
         data-height-locked={shellHeightPx !== null ? "true" : "false"}
+        data-history-height-locked={
+          historyMode === "history" && historyShellHeightPx !== null
+            ? "true"
+            : "false"
+        }
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
@@ -1875,7 +1954,10 @@ export default function TagGenerator({
           border: "1px solid rgba(255,255,255,0.92)",
           boxShadow:
             "0 24px 84px rgba(249,115,22,0.24), 0 12px 52px rgba(168,85,247,0.18), 0 1px 0 rgba(255,255,255,0.92) inset",
-          height: shellHeightPx ?? undefined,
+          height:
+            historyMode === "history"
+              ? (historyShellHeightPx ?? shellHeightPx ?? undefined)
+              : (shellHeightPx ?? undefined),
           transition:
             shellHeightPx !== null
               ? `height ${shellHeightTransitionMs}ms ease-out`
@@ -1897,13 +1979,22 @@ export default function TagGenerator({
           />
         ) : null}
 
-        <div ref={contentRef} className="relative z-10 p-6 sm:p-8">
-          <div className="mb-6 flex items-center gap-2">
+        <div
+          ref={contentRef}
+          className="relative z-10 flex h-full min-h-0 flex-col p-6 sm:p-8"
+        >
+          <div className="mb-6 flex shrink-0 items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/30">
-              <Sparkles className="h-3.5 w-3.5 text-white" />
+              {historyMode === "history" ? (
+                <Clock className="h-3.5 w-3.5 text-white" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5 text-white" />
+              )}
             </div>
             <span className="text-sm font-semibold text-stone-700">
-              Tagloom Generator
+              {historyMode === "history"
+                ? "Generation History"
+                : "Tagloom Generator"}
             </span>
             {usageLabel ? (
               <motion.div
@@ -1979,418 +2070,345 @@ export default function TagGenerator({
                 ) : null}
               </motion.div>
             ) : null}
+            {canSwitchHistoryMode ? (
+              <HistoryModeToggle
+                historyMode={historyMode}
+                onToggle={() =>
+                  historyMode === "history"
+                    ? showGeneratorMode()
+                    : showHistoryMode()
+                }
+                className={usageLabel ? undefined : "ml-auto"}
+              />
+            ) : null}
           </div>
 
-          <div className="mb-3">
-            <div className="mb-1.5 flex items-center justify-between">
-              <label className="text-sm font-medium text-stone-700">
-                Listing Title <span className="text-orange-500">*</span>
-              </label>
-              {focusedField === "title" ? (
-                <span className="text-xs font-medium text-stone-500">
-                  {title.length}/{TITLE_MAX}
-                </span>
-              ) : null}
-            </div>
-            <input
-              ref={titleInputRef}
-              type="text"
-              maxLength={TITLE_MAX}
-              value={title}
-              onFocus={() => {
-                if (isDemoActive) {
-                  beginDemoInteraction();
-                  return;
-                }
-                markUserInteraction();
-                setShowDescription(true);
-                setFocusedField("title");
-                if (onFocus) onFocus();
-              }}
-              onBlur={() => {
-                setFocusedField(null);
-              }}
-              onChange={(e) => {
-                markUserInteraction();
-                const nextTitle = e.target.value;
-                setTitle(nextTitle);
-                syncDraftFromUserInput(nextTitle, description);
-                if (nextTitle.length > 0) {
-                  setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
-                }
-              }}
-              placeholder={titlePlaceholder}
-              className="w-full rounded-xl border border-stone-200 bg-white/70 px-4 py-3 text-sm text-stone-800 placeholder-stone-400 transition-all focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
-            />
-          </div>
-
-          <AnimatePresence>
-            {showDescription && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="mb-3 overflow-visible"
-              >
-                <div className="mb-1.5 flex items-center justify-between">
-                  <label className="text-sm font-medium text-stone-700">
-                    Listing Description
-                  </label>
-                  {focusedField === "description" ? (
-                    <span className="text-xs font-medium text-stone-500">
-                      {description.length}/{DESCRIPTION_MAX}
-                    </span>
-                  ) : null}
+          <div className="min-h-0 flex-1 overflow-hidden">
+            {historyMode === "generator" ? (
+              <div className="h-full overflow-y-auto pr-1">
+                <div className="mb-3">
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <label className="text-sm font-medium text-stone-700">
+                      Listing Title <span className="text-orange-500">*</span>
+                    </label>
+                    {focusedField === "title" ? (
+                      <span className="text-xs font-medium text-stone-500">
+                        {title.length}/{TITLE_MAX}
+                      </span>
+                    ) : null}
+                  </div>
+                  <input
+                    ref={titleInputRef}
+                    type="text"
+                    maxLength={TITLE_MAX}
+                    value={title}
+                    onFocus={() => {
+                      if (isDemoActive) {
+                        beginDemoInteraction();
+                        return;
+                      }
+                      markUserInteraction();
+                      setShowDescription(true);
+                      setFocusedField("title");
+                      if (onFocus) onFocus();
+                    }}
+                    onBlur={() => {
+                      setFocusedField(null);
+                    }}
+                    onChange={(e) => {
+                      markUserInteraction();
+                      const nextTitle = e.target.value;
+                      setTitle(nextTitle);
+                      syncDraftFromUserInput(nextTitle, description);
+                      if (nextTitle.length > 0) {
+                        setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
+                      }
+                    }}
+                    placeholder={titlePlaceholder}
+                    className="w-full rounded-xl border border-stone-200 bg-white/70 px-4 py-3 text-sm text-stone-800 placeholder-stone-400 transition-all focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
+                  />
                 </div>
-                <textarea
-                  maxLength={DESCRIPTION_MAX}
-                  value={description}
-                  onFocus={() => {
-                    setFocusedField("description");
-                  }}
-                  onBlur={() => {
-                    setFocusedField(null);
-                  }}
-                  onChange={(e) => {
-                    markUserInteraction();
-                    const nextDescription = e.target.value;
-                    setDescription(nextDescription);
-                    syncDraftFromUserInput(title, nextDescription);
-                  }}
-                  placeholder="Add more details about your product to get more accurate tags..."
-                  rows={3}
-                  className="w-full resize-none rounded-xl border border-stone-200 bg-white/70 px-4 py-3 text-sm text-stone-800 placeholder-stone-400 transition-all focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
 
-          <Button
-            onClick={() => {
-              if (isDemoActive) {
-                beginDemoInteraction();
-                return;
-              }
-              void handleGenerate();
-            }}
-            disabled={isGenerating || !title.trim()}
-            isLoading={isGenerating}
-            loadingLabel="Generating tags"
-            leftIcon={<Sparkles className="h-4 w-4" />}
-            className={`mt-1 flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-semibold text-white transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${
-              hasTitle
-                ? "bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
-                : "bg-gray-300"
-            }`}
-            style={{
-              boxShadow: title.trim()
-                ? "0 4px 20px rgba(249,115,22,0.35)"
-                : "none",
-            }}
-          >
-            Generate 13 tags
-          </Button>
-
-          <TurnstileField ref={turnstileRef} onError={(message) => showToast({ ...toastMessages.botCheckFailed, body: message })} />
-          <AnimatePresence>
-            {showResults && (
-              <motion.div
-                data-testid="results-block"
-                initial={{ opacity: 0, y: 8 }}
-                animate={
-                  isClearingFade ? { opacity: 0, y: 10 } : { opacity: 1, y: 0 }
-                }
-                transition={{
-                  duration: isClearingFade ? 0.16 : 0.22,
-                  ease: "easeOut",
-                }}
-                className="mt-6"
-              >
-                {!isUnlockingFromPaywall ? (
-                  <div className="mb-3 flex items-center justify-between">
-                    <span
-                      data-testid="generated-tag-count"
-                      className="text-sm font-medium text-stone-700"
+                <AnimatePresence>
+                  {showDescription && (
+                    <motion.div
+                      data-skip-generator-return-animations={
+                        skipGeneratorReturnAnimations ? "true" : "false"
+                      }
+                      initial={
+                        skipGeneratorReturnAnimations
+                          ? false
+                          : { height: 0, opacity: 0 }
+                      }
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="mb-3 overflow-visible"
                     >
-                      {totalTags} tags generated
-                    </span>
-                    <button
-                      onClick={handleCopyAll}
-                      disabled={!canCopyAll}
-                      className={`flex w-[90px] items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
-                        canCopyAll
-                          ? "cursor-pointer bg-stone-100 text-stone-600 hover:bg-orange-100 hover:text-orange-700"
-                          : "cursor-not-allowed bg-stone-100 text-stone-500 opacity-50"
-                      }`}
-                    >
-                      {copied ? (
-                        <Check className="h-3.5 w-3.5" />
-                      ) : (
-                        <Copy className="h-3.5 w-3.5" />
-                      )}
-                      {copied ? "Copied!" : "Copy all"}
-                    </button>
-                  </div>
-                ) : null}
-
-                {isUnlockingFromPaywall ? (
-                  <div className="mt-3 flex flex-col items-center justify-center gap-3 rounded-xl border border-stone-200 bg-white/70 py-8">
-                    <div className="relative h-12 w-12">
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{
-                          duration: 1,
-                          repeat: Infinity,
-                          ease: "linear",
-                        }}
-                        className="absolute inset-0 rounded-full border-2 border-orange-200 border-t-orange-500"
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <LockOpen className="h-5 w-5 text-orange-600" />
-                      </div>
-                    </div>
-                    <p className="text-sm font-semibold text-stone-700">
-                      Unlocking tags
-                    </p>
-                  </div>
-                ) : paywall?.reason === "auth_required" &&
-                  unlockReadyContext ? (
-                  <div className="mt-3 flex w-full flex-col items-center justify-center gap-3 rounded-xl border border-stone-200 bg-white/70 py-8">
-                    <div className="relative h-12 w-12">
-                      <div className="absolute inset-0 flex items-center justify-center rounded-full border border-orange-300 bg-white text-orange-600">
-                        <LockOpen className="h-5 w-5" />
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={onUnlockTags}
-                      className="rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700"
-                    >
-                      Unlock generated tags
-                    </button>
-                  </div>
-                ) : (
-                  <div
-                    className={`flex flex-wrap gap-2 ${paywall ? "blur-sm select-none" : ""}`}
-                  >
-                    {visibleTags.map((tag, i) =>
-                      shouldAnimateTagChips ? (
-                        <motion.span
-                          key={`${tag}-${i}`}
-                          data-testid="generated-tag-chip"
-                          data-animation="reveal"
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{
-                            delay: i * 0.04,
-                            type: "spring",
-                            stiffness: 300,
-                            damping: 20,
-                          }}
-                          className={GENERATED_TAG_CHIP_CLASSNAME}
-                        >
-                          {tag}
-                        </motion.span>
-                      ) : (
-                        <span
-                          key={`${tag}-${i}`}
-                          data-testid="generated-tag-chip"
-                          data-animation="none"
-                          className={GENERATED_TAG_CHIP_CLASSNAME}
-                        >
-                          {tag}
-                        </span>
-                      ),
-                    )}
-                  </div>
-                )}
-
-                {paywall &&
-                !(paywall.reason === "auth_required" && unlockReadyContext) ? (
-                  <div className="mt-4 rounded-xl border border-orange-200 bg-orange-50 p-4">
-                    {paywall.reason === "auth_required" ? (
-                      <div className="space-y-3 text-center">
-                        {!unlockReadyContext ? (
-                          <>
-                            <p className="text-sm font-semibold text-orange-800">
-                              Create an account or log in to unlock this
-                              generation for FREE
-                            </p>
-                            <button
-                              type="button"
-                              onClick={goToLogin}
-                              className="rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700"
-                            >
-                              Create account / log in
-                            </button>
-                          </>
+                      <div className="mb-1.5 flex items-center justify-between">
+                        <label className="text-sm font-medium text-stone-700">
+                          Listing Description
+                        </label>
+                        {focusedField === "description" ? (
+                          <span className="text-xs font-medium text-stone-500">
+                            {description.length}/{DESCRIPTION_MAX}
+                          </span>
                         ) : null}
                       </div>
-                    ) : (
-                      <div className="space-y-3 text-center">
-                        <p className="text-sm font-semibold text-orange-800">
-                          You have no remaining generation credits.
-                        </p>
-                        <button
-                          type="button"
-                          onClick={goToPricing}
-                          className="rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700"
-                        >
-                          Get more generations
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ) : null}
-              </motion.div>
-            )}
-          </AnimatePresence>
+                      <textarea
+                        maxLength={DESCRIPTION_MAX}
+                        value={description}
+                        onFocus={() => {
+                          setFocusedField("description");
+                        }}
+                        onBlur={() => {
+                          setFocusedField(null);
+                        }}
+                        onChange={(e) => {
+                          markUserInteraction();
+                          const nextDescription = e.target.value;
+                          setDescription(nextDescription);
+                          syncDraftFromUserInput(title, nextDescription);
+                        }}
+                        placeholder="Add more details about your product to get more accurate tags..."
+                        rows={3}
+                        className="w-full resize-none rounded-xl border border-stone-200 bg-white/70 px-4 py-3 text-sm text-stone-800 placeholder-stone-400 transition-all focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
-          {showHistoryStrip ? (
-            <div className="mt-4 rounded-xl border border-stone-200 bg-white/70 p-3">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center">
-                  <button
-                    type="button"
-                    aria-label="Show newer generations"
-                    onClick={() => void pageHistory("newer")}
-                    disabled={isHistoryLoading || !canShowNewerHistory}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-stone-200 bg-white text-stone-600 transition-colors hover:border-orange-300 hover:text-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-                </div>
+                <Button
+                  onClick={() => {
+                    if (isDemoActive) {
+                      beginDemoInteraction();
+                      return;
+                    }
+                    void handleGenerate();
+                  }}
+                  disabled={isGenerating || !title.trim()}
+                  isLoading={isGenerating}
+                  loadingLabel="Generating tags"
+                  leftIcon={<Sparkles className="h-4 w-4" />}
+                  className={`mt-1 flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-semibold text-white transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${
+                    hasTitle
+                      ? "bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
+                      : "bg-gray-300"
+                  }`}
+                  style={{
+                    boxShadow: title.trim()
+                      ? "0 4px 20px rgba(249,115,22,0.35)"
+                      : "none",
+                  }}
+                >
+                  Generate 13 tags
+                </Button>
 
-                <div className="min-h-[88px] flex-1 overflow-hidden">
-                  <AnimatePresence mode="wait" initial={false}>
+                <TurnstileField
+                  ref={turnstileRef}
+                  onError={(message) =>
+                    showToast({
+                      ...toastMessages.botCheckFailed,
+                      body: message,
+                    })
+                  }
+                />
+                <AnimatePresence>
+                  {showResults && (
                     <motion.div
-                      key={`history-cards-${historyCardPage}`}
-                      className="grid grid-cols-4 gap-2"
+                      data-testid="results-block"
+                      data-results-animation={
+                        skipGeneratorReturnAnimations ? "none" : "enter"
+                      }
+                      initial={
+                        skipGeneratorReturnAnimations
+                          ? false
+                          : { opacity: 0, y: 8 }
+                      }
+                      animate={
+                        isClearingFade
+                          ? { opacity: 0, y: 10 }
+                          : { opacity: 1, y: 0 }
+                      }
+                      transition={{
+                        duration: isClearingFade ? 0.16 : 0.22,
+                        ease: "easeOut",
+                      }}
+                      className="mt-6"
                     >
-                      {visibleHistoryCards.map((item, cardIndex) => {
-                        const staggerIndex =
-                          historyDirection === "older"
-                            ? cardIndex
-                            : visibleHistoryCards.length - cardIndex - 1;
-                        const isSelected = item.isDraft
-                          ? selectedHistoryId === "draft" &&
-                            selectedDraftId === item.id
-                          : selectedHistoryId === item.id;
-                        const cardDate = item.isDraft
-                          ? ""
-                          : formatHistoryDate(item.createdAt);
-                        const cardTitle = truncateHistoryText(
-                          item.title,
-                          30,
-                          "Untitled listing",
-                        );
-                        const cardDescription = truncateHistoryText(
-                          item.description,
-                          42,
-                          "No description yet",
-                        );
-                        return (
-                          <motion.div
-                            key={item.isDraft ? `draft-${item.id}` : item.id}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => onSelectHistoryItem(item)}
-                            onKeyDown={(event) => {
-                              if (event.key !== "Enter" && event.key !== " ")
-                                return;
-                              event.preventDefault();
-                              onSelectHistoryItem(item);
-                            }}
-                            layout={false}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{
-                              duration: 0.16,
-                              ease: "easeOut",
-                              delay: staggerIndex * 0.025,
-                            }}
-                            className={`relative h-[88px] min-w-0 rounded-lg border px-2.5 py-2 text-left transition-all ${
-                              isSelected
-                                ? "border-orange-400 bg-orange-50 shadow-sm"
-                                : "border-stone-200 bg-white hover:border-orange-300"
+                      {!isUnlockingFromPaywall ? (
+                        <div className="mb-3 flex items-center justify-between">
+                          <span
+                            data-testid="generated-tag-count"
+                            className="text-sm font-medium text-stone-700"
+                          >
+                            {totalTags} tags generated
+                          </span>
+                          <button
+                            onClick={handleCopyAll}
+                            disabled={!canCopyAll}
+                            className={`flex w-[90px] items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+                              canCopyAll
+                                ? "cursor-pointer bg-stone-100 text-stone-600 hover:bg-orange-100 hover:text-orange-700"
+                                : "cursor-not-allowed bg-stone-100 text-stone-500 opacity-50"
                             }`}
                           >
-                            {item.isDraft ? (
-                              <div className="flex items-start justify-between gap-2">
-                                <span
-                                  className={`inline-flex rounded-full px-2 pt-1 pb-0.5 text-[10px] tracking-wide leading-none text-stone-600 ${isSelected ? "bg-stone-200" : "bg-stone-100"}`}
-                                >
-                                  Draft
-                                </span>
-                                <button
-                                  type="button"
-                                  aria-label="Delete draft"
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    clearDraftCard(item.id);
-                                  }}
-                                  className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-stone-500 transition-colors hover:text-stone-700 ${isSelected ? "hover:bg-stone-200" : "hover:bg-stone-100"}`}
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </div>
-                            ) : null}
-                            {cardDate ? (
-                              <p className="overflow-hidden text-ellipsis whitespace-nowrap text-[10px] font-medium leading-snug text-stone-400">
-                                {cardDate}
-                              </p>
-                            ) : null}
-                            <p
-                              className={`overflow-hidden text-ellipsis whitespace-nowrap text-xs font-semibold leading-snug text-stone-700 ${item.isDraft ? "mt-2" : "mt-1.5"}`}
-                            >
-                              {cardTitle}
-                            </p>
-                            <p className="mt-1 overflow-hidden text-ellipsis whitespace-nowrap text-[11px] leading-snug text-stone-500">
-                              {cardDescription}
-                            </p>
-                          </motion.div>
-                        );
-                      })}
-                    </motion.div>
-                  </AnimatePresence>
-                </div>
+                            {copied ? (
+                              <Check className="h-3.5 w-3.5" />
+                            ) : (
+                              <Copy className="h-3.5 w-3.5" />
+                            )}
+                            {copied ? "Copied!" : "Copy all"}
+                          </button>
+                        </div>
+                      ) : null}
 
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center">
-                  <button
-                    type="button"
-                    aria-label="Show older generations"
-                    onClick={() => void pageHistory("older")}
-                    disabled={isHistoryLoading || !canShowOlderHistory}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-stone-200 bg-white text-stone-600 transition-colors hover:border-orange-300 hover:text-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
+                      {isUnlockingFromPaywall ? (
+                        <div className="mt-3 flex flex-col items-center justify-center gap-3 rounded-xl border border-stone-200 bg-white/70 py-8">
+                          <div className="relative h-12 w-12">
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{
+                                duration: 1,
+                                repeat: Infinity,
+                                ease: "linear",
+                              }}
+                              className="absolute inset-0 rounded-full border-2 border-orange-200 border-t-orange-500"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <LockOpen className="h-5 w-5 text-orange-600" />
+                            </div>
+                          </div>
+                          <p className="text-sm font-semibold text-stone-700">
+                            Unlocking tags
+                          </p>
+                        </div>
+                      ) : paywall?.reason === "auth_required" &&
+                        unlockReadyContext ? (
+                        <div className="mt-3 flex w-full flex-col items-center justify-center gap-3 rounded-xl border border-stone-200 bg-white/70 py-8">
+                          <div className="relative h-12 w-12">
+                            <div className="absolute inset-0 flex items-center justify-center rounded-full border border-orange-300 bg-white text-orange-600">
+                              <LockOpen className="h-5 w-5" />
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={onUnlockTags}
+                            className="rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700"
+                          >
+                            Unlock generated tags
+                          </button>
+                        </div>
+                      ) : (
+                        <div
+                          className={`flex flex-wrap gap-2 ${paywall ? "blur-sm select-none" : ""}`}
+                        >
+                          {visibleTags.map((tag, i) =>
+                            shouldRevealTagChips ? (
+                              <motion.span
+                                key={`${tag}-${i}`}
+                                data-testid="generated-tag-chip"
+                                data-animation="reveal"
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{
+                                  delay: i * 0.04,
+                                  type: "spring",
+                                  stiffness: 300,
+                                  damping: 20,
+                                }}
+                                className={GENERATED_TAG_CHIP_CLASSNAME}
+                              >
+                                {tag}
+                              </motion.span>
+                            ) : (
+                              <span
+                                key={`${tag}-${i}`}
+                                data-testid="generated-tag-chip"
+                                data-animation="none"
+                                className={GENERATED_TAG_CHIP_CLASSNAME}
+                              >
+                                {tag}
+                              </span>
+                            ),
+                          )}
+                        </div>
+                      )}
+
+                      {paywall &&
+                      !(
+                        paywall.reason === "auth_required" && unlockReadyContext
+                      ) ? (
+                        <div className="mt-4 rounded-xl border border-orange-200 bg-orange-50 p-4">
+                          {paywall.reason === "auth_required" ? (
+                            <div className="space-y-3 text-center">
+                              {!unlockReadyContext ? (
+                                <>
+                                  <p className="text-sm font-semibold text-orange-800">
+                                    Create an account or log in to unlock this
+                                    generation for FREE
+                                  </p>
+                                  <button
+                                    type="button"
+                                    onClick={goToLogin}
+                                    className="rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700"
+                                  >
+                                    Create account / log in
+                                  </button>
+                                </>
+                              ) : null}
+                            </div>
+                          ) : (
+                            <div className="space-y-3 text-center">
+                              <p className="text-sm font-semibold text-orange-800">
+                                You have no remaining generation credits.
+                              </p>
+                              <button
+                                type="button"
+                                onClick={goToPricing}
+                                className="rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700"
+                              >
+                                Get more generations
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ) : null}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-              {historyCardPageCount > 1 ? (
-                <div className="mt-2 flex justify-center gap-1.5">
-                  {visibleHistoryDotPages.map((page) => {
-                    const isCurrent = page === historyCardPage;
-                    return (
-                      <button
-                        key={page}
-                        type="button"
-                        aria-label={`Show history page ${page + 1}`}
-                        aria-current={isCurrent ? "page" : undefined}
-                        onClick={() => goToHistoryCardPage(page)}
-                        disabled={isHistoryLoading}
-                        className={`h-2 w-2 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-                          isCurrent ? "bg-orange-500" : "bg-stone-300"
-                        }`}
-                      />
-                    );
-                  })}
-                </div>
-              ) : null}
-            </div>
-          ) : null}
+            ) : (
+              <div className="flex h-full min-h-0 flex-1 overflow-hidden">
+                <GenerationHistoryPanel
+                  items={displayHistoryItems}
+                  selectedDraftId={selectedDraftId}
+                  selectedGeneratedId={
+                    selectedHistoryId === "draft" ? null : selectedHistoryId
+                  }
+                  showArchived={showArchivedHistory}
+                  sortState={historySortState}
+                  onArchiveGeneration={(item) =>
+                    setHistoryConfirmAction({
+                      type: "archive-generation",
+                      item,
+                    })
+                  }
+                  onRestoreGeneration={(item) =>
+                    setHistoryConfirmAction({
+                      type: "restore-generation",
+                      item,
+                    })
+                  }
+                  onDeleteDraft={(item) =>
+                    setHistoryConfirmAction({ type: "delete-draft", item })
+                  }
+                  onSelectItem={onSelectHistoryItem}
+                  onSortHeaderClick={cycleHistorySort}
+                />
+              </div>
+            )}
+          </div>
         </div>
       </motion.div>
 
@@ -2441,6 +2459,69 @@ export default function TagGenerator({
                   className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-2 text-sm font-semibold text-stone-700 transition-colors hover:bg-stone-50"
                 >
                   No
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {historyConfirmAction ? (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.16 }}
+          >
+            <button
+              type="button"
+              aria-label="Cancel history action"
+              className="absolute inset-0 bg-stone-900/45"
+              onClick={() => setHistoryConfirmAction(null)}
+            />
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              className="relative z-10 w-full max-w-sm rounded-2xl border border-stone-200 bg-white p-5 shadow-2xl"
+              initial={{ opacity: 0, scale: 0.96, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: 6 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+            >
+              <h3 className="text-base font-semibold text-stone-900">
+                {historyConfirmAction.type === "delete-draft"
+                  ? "Delete draft?"
+                  : historyConfirmAction.type === "restore-generation"
+                    ? "Restore generation?"
+                    : "Archive generation?"}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-stone-600">
+                {historyConfirmAction.type === "delete-draft"
+                  ? "This removes the draft from this browser."
+                  : historyConfirmAction.type === "restore-generation"
+                    ? "This moves the generation back into normal history."
+                    : "This hides the generation from normal history without deleting it from your account."}
+              </p>
+              <div className="mt-5 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => void confirmHistoryAction()}
+                  className="w-full rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-3.5 py-2 text-sm font-semibold text-white transition-all hover:from-orange-600 hover:to-orange-700"
+                >
+                  {historyConfirmAction.type === "delete-draft"
+                    ? "Delete draft"
+                    : historyConfirmAction.type === "restore-generation"
+                      ? "Restore generation"
+                      : "Archive generation"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHistoryConfirmAction(null)}
+                  className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-2 text-sm font-semibold text-stone-700 transition-colors hover:bg-stone-50"
+                >
+                  Cancel
                 </button>
               </div>
             </motion.div>

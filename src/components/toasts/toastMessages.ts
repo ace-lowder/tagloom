@@ -103,6 +103,16 @@ export const toastMessages = {
     body: "Saved generations could not be loaded right now.",
     type: "danger",
   },
+  historyLoaded: {
+    title: "Generation loaded",
+    body: "Switch back to the generator to edit or copy tags.",
+    type: "success",
+  },
+  historyRestoreFailed: {
+    title: "Restore failed",
+    body: "Could not restore this generation. Please try again.",
+    type: "danger",
+  },
   accountCreated: {
     title: "Account created",
     body: "Your free generation is ready. Try it now.",

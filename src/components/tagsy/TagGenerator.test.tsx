@@ -754,54 +754,35 @@ describe("TagGenerator usage label info", () => {
   });
 });
 
-describe("TagGenerator history strip behavior", () => {
+describe("TagGenerator generation history mode", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
 
-  const historyItem = (index: number) => ({
-    id: `hist_${index}`,
-    createdAt: "2026-08-14T12:00:00.000Z",
-    title: `History title ${index}`,
-    description: `History description ${index}`,
-    targetTags: [`tag ${index}`],
-    discoveryTags: [],
+  const historyItem = (overrides: Partial<{
+    id: string;
+    createdAt: string;
+    title: string;
+    description: string;
+    targetTags: string[];
+    discoveryTags: string[];
+    archivedAt: string | null;
+  }> = {}) => ({
+    id: "hist_1",
+    createdAt: "2026-05-08T12:00:00.000Z",
+    title: "History title one",
+    description: "Hydrated description from history",
+    targetTags: ["tag one"],
+    discoveryTags: ["tag two"],
+    archivedAt: null,
+    ...overrides,
   });
 
-  const mockHistoryFetch = (items: ReturnType<typeof historyItem>[]) => {
-    const fetchMock = vi.fn().mockImplementation((input: unknown) => {
-      const url =
-        typeof input === "string"
-          ? input
-          : input instanceof URL
-            ? input.toString()
-            : typeof input === "object" &&
-                input !== null &&
-                "url" in input &&
-                typeof (input as { url?: unknown }).url === "string"
-              ? (input as { url: string }).url
-              : String(input);
-      if (url.includes("/api/account/usage")) {
-        return mockGenerateResponse({ usageLabel: null });
-      }
-      if (url.includes("/api/generations/history")) {
-        return mockGenerateResponse({
-          items,
-          page: 0,
-          hasPrev: false,
-          hasNext: false,
-        });
-      }
-      return mockGenerateResponse({ error: "Unexpected fetch call." }, false);
-    });
-    vi.stubGlobal("fetch", fetchMock);
-    return fetchMock;
-  };
-
-  const mockPagedHistoryFetch = (
-    pages: Record<number, ReturnType<typeof historyItem>[]>,
+  const mockHistoryFetch = (
+    items: Array<ReturnType<typeof historyItem>>,
+    options: { patchOk?: boolean } = {},
   ) => {
-    const fetchMock = vi.fn().mockImplementation((input: unknown) => {
+    const fetchMock = vi.fn().mockImplementation((input: unknown, init?: RequestInit) => {
       const url =
         typeof input === "string"
           ? input
@@ -816,14 +797,29 @@ describe("TagGenerator history strip behavior", () => {
       if (url.includes("/api/account/usage")) {
         return mockGenerateResponse({ usageLabel: null });
       }
+      if (url.includes("/api/generations/history") && init?.method === "PATCH") {
+        const body =
+          typeof init.body === "string"
+            ? (JSON.parse(init.body) as { action?: string })
+            : { action: "archive" };
+        return mockGenerateResponse(
+          {
+            ok: true,
+            archivedAt:
+              body.action === "restore"
+                ? null
+                : "2026-05-08T13:00:00.000Z",
+          },
+          options.patchOk ?? true,
+        );
+      }
       if (url.includes("/api/generations/history")) {
-        const pageMatch = url.match(/[?&]page=(\d+)/);
-        const page = pageMatch ? Number(pageMatch[1]) : 0;
+        const includeArchived = url.includes("includeArchived=true");
         return mockGenerateResponse({
-          items: pages[page] ?? [],
-          page,
-          hasPrev: page > 0,
-          hasNext: Boolean(pages[page + 1]),
+          items: includeArchived ? items : items.filter((item) => !item.archivedAt),
+          page: 0,
+          hasPrev: false,
+          hasNext: false,
         });
       }
       return mockGenerateResponse({ error: "Unexpected fetch call." }, false);
@@ -832,722 +828,403 @@ describe("TagGenerator history strip behavior", () => {
     return fetchMock;
   };
 
-  it("starts with no selected history card when there is no cached selection", async () => {
-    window.localStorage.removeItem("tagloom:history:v1");
-
-    const fetchMock = vi.fn().mockImplementation((input: unknown) => {
-      const url =
-        typeof input === "string"
-          ? input
-          : input instanceof URL
-            ? input.toString()
-            : typeof input === "object" &&
-                input !== null &&
-                "url" in input &&
-                typeof (input as { url?: unknown }).url === "string"
-              ? (input as { url: string }).url
-              : String(input);
-      if (url.includes("/api/account/usage")) {
-        return mockGenerateResponse({ usageLabel: null });
-      }
-      if (url.includes("/api/generations/history")) {
-        return mockGenerateResponse({
-          items: [
-            {
-              id: "hist_1",
-              createdAt: "2026-08-14T00:00:00.000Z",
-              title: "History title one",
-              description: "Hydrated description from history",
-              targetTags: ["tag one"],
-              discoveryTags: ["tag two"],
-            },
-          ],
-          page: 0,
-          hasPrev: false,
-          hasNext: false,
-        });
-      }
-      return mockGenerateResponse({ error: "Unexpected fetch call." }, false);
+  const openHistory = async () => {
+    const button = await screen.findByRole("button", {
+      name: "Show generation history",
     });
-    vi.stubGlobal("fetch", fetchMock);
+    fireEvent.click(button);
+  };
 
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
-
-    const historyCard = await screen.findByText("History title one");
-    expect(historyCard.closest('[role="button"]')).not.toHaveClass("border-orange-400");
-  });
-
-  it("renders saved history card date, title, and description preview", async () => {
-    const fetchMock = vi.fn().mockImplementation((input: unknown) => {
-      const url =
-        typeof input === "string"
-          ? input
-          : input instanceof URL
-            ? input.toString()
-            : typeof input === "object" &&
-                input !== null &&
-                "url" in input &&
-                typeof (input as { url?: unknown }).url === "string"
-              ? (input as { url: string }).url
-              : String(input);
-      if (url.includes("/api/account/usage")) {
-        return mockGenerateResponse({ usageLabel: null });
-      }
-      if (url.includes("/api/generations/history")) {
-        return mockGenerateResponse({
-          items: [
-            {
-              id: "hist_1",
-              createdAt: "2026-08-14T12:00:00.000Z",
-              title: "Sterling silver hoop earrings",
-              description: "Lightweight hoops with a polished minimalist finish for everyday wear",
-              targetTags: ["silver hoops"],
-              discoveryTags: ["minimalist jewelry"],
-            },
-          ],
-          page: 0,
-          hasPrev: false,
-          hasNext: false,
-        });
-      }
-      return mockGenerateResponse({ error: "Unexpected fetch call." }, false);
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
-
-    const title = await screen.findByText("Sterling silver hoop earrings");
-    const card = title.closest('[role="button"]');
-    expect(card).not.toBeNull();
-    const date = screen.getByText("Aug 14th, 2026");
-    expect(date).toBeInTheDocument();
-    expect(date).toHaveClass("overflow-hidden", "text-ellipsis", "whitespace-nowrap");
-    expect(date).not.toHaveClass("pr-14");
-    expect(
-      screen.getByText("Lightweight hoops with a polished minimal…"),
-    ).toBeInTheDocument();
-    const cardText = card?.textContent ?? "";
-    expect(cardText.indexOf("Aug 14th, 2026")).toBeLessThan(
-      cardText.indexOf("Sterling silver hoop earrings"),
-    );
-    expect(cardText.indexOf("Sterling silver hoop earrings")).toBeLessThan(
-      cardText.indexOf("Lightweight hoops with a polished minimal…"),
-    );
-  });
-
-  it("starts on the newest combined page so draft cards are visible", async () => {
-    window.localStorage.setItem(
-      "tagloom:history:v1",
-      JSON.stringify({
-        page0: Array.from({ length: 4 }, (_, index) => historyItem(index + 1)),
-        hasPrev: false,
-        hasNext: false,
-        selectedId: null,
-        drafts: [
-          {
-            id: "draft_newest",
-            title: "Newest draft title",
-            description: "Newest draft description",
-            updatedAt: "2026-08-14T12:00:00.000Z",
-          },
-        ],
-        selectedDraftId: null,
-        savedAt: Date.now(),
-      }),
-    );
-    mockHistoryFetch(Array.from({ length: 4 }, (_, index) => historyItem(index + 1)));
-
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
-
-    expect(await screen.findByText("Newest draft title")).toBeInTheDocument();
-    expect(screen.queryByText("History title 1")).not.toBeInTheDocument();
-    expect(screen.getByText("History title 2")).toBeInTheDocument();
-    expect(screen.getByText("History title 3")).toBeInTheDocument();
-    expect(screen.getByText("History title 4")).toBeInTheDocument();
-  });
-
-  it("renders only four history cards per local page", async () => {
-    mockHistoryFetch(Array.from({ length: 5 }, (_, index) => historyItem(index + 1)));
-
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
-
-    expect(await screen.findByText("History title 2")).toBeInTheDocument();
-    expect(screen.getByText("History title 3")).toBeInTheDocument();
-    expect(screen.getByText("History title 4")).toBeInTheDocument();
-    expect(screen.getByText("History title 5")).toBeInTheDocument();
-    expect(screen.queryByText("History title 1")).not.toBeInTheDocument();
-  });
-
-  it("paginates without selecting or hydrating history cards", async () => {
-    mockHistoryFetch(Array.from({ length: 8 }, (_, index) => historyItem(index + 1)));
-
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
-
-    expect(await screen.findByText("History title 5")).toBeInTheDocument();
-    expect(screen.queryByText("History title 1")).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByLabelText("Show newer generations"));
-    const firstPageCard = await screen.findByText("History title 1");
-    expect(firstPageCard.closest('[role="button"]')).not.toHaveClass("border-orange-400");
-    expect(screen.queryByDisplayValue("History title 1")).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByLabelText("Show older generations"));
-    expect(await screen.findByText("History title 5")).toBeInTheDocument();
-    expect(screen.queryByDisplayValue("History title 5")).not.toBeInTheDocument();
-  });
-
-  it("stops arrows at valid local page bounds", async () => {
-    mockHistoryFetch(Array.from({ length: 5 }, (_, index) => historyItem(index + 1)));
-
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
-
-    expect(await screen.findByText("History title 5")).toBeInTheDocument();
-    expect(screen.getByLabelText("Show older generations")).toBeDisabled();
-    fireEvent.click(screen.getByLabelText("Show older generations"));
-    expect(screen.getByText("History title 5")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByLabelText("Show newer generations"));
-    expect(await screen.findByText("History title 1")).toBeInTheDocument();
-    expect(screen.getByLabelText("Show newer generations")).toBeDisabled();
-    fireEvent.click(screen.getByLabelText("Show newer generations"));
-    expect(screen.getByText("History title 1")).toBeInTheDocument();
-    expect(screen.getByText("History title 2")).toBeInTheDocument();
-  });
-
-  it("renders sliding pagination dots and jumps to a clicked dot", async () => {
-    mockHistoryFetch(Array.from({ length: 24 }, (_, index) => historyItem(index + 1)));
-
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
-
-    expect(await screen.findByText("History title 21")).toBeInTheDocument();
-    const dots = screen.getAllByRole("button", { name: /Show history page/ });
-    expect(dots).toHaveLength(5);
-    expect(screen.queryByLabelText("Show history page 1")).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Show history page 6")).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
-
-    fireEvent.click(screen.getByLabelText("Show history page 3"));
-    expect(await screen.findByText("History title 9")).toBeInTheDocument();
-    expect(screen.getByLabelText("Show history page 3")).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
-  });
-
-  it("loads all remote pages into one deduped local history list", async () => {
-    const fetchMock = mockPagedHistoryFetch({
-      0: Array.from({ length: 4 }, (_, index) => historyItem(index + 5)),
-      1: [historyItem(1), historyItem(2), historyItem(3), historyItem(5)],
-    });
-
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
-
-    expect(await screen.findByText("History title 5")).toBeInTheDocument();
-    expect(screen.getByText("History title 6")).toBeInTheDocument();
-    expect(screen.getByText("History title 7")).toBeInTheDocument();
-    expect(screen.getByText("History title 8")).toBeInTheDocument();
-    expect(screen.queryByText("History title 1")).not.toBeInTheDocument();
-    expect(screen.getAllByText("History title 5")).toHaveLength(1);
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/api/generations/history?limit=8&page=0",
-      { method: "GET" },
-    );
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/api/generations/history?limit=8&page=1",
-      { method: "GET" },
-    );
-  });
-
-  it("renders local page dots after loading multiple remote pages", async () => {
-    mockPagedHistoryFetch({
-      0: Array.from({ length: 4 }, (_, index) => historyItem(index + 5)),
-      1: Array.from({ length: 4 }, (_, index) => historyItem(index + 1)),
-    });
-
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
-
-    expect(await screen.findByText("History title 5")).toBeInTheDocument();
-    const dots = screen.getAllByRole("button", { name: /Show history page/ });
-    expect(dots).toHaveLength(2);
-    expect(screen.getByLabelText("Show history page 2")).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
-    expect(screen.getByLabelText("Show history page 1")).not.toHaveAttribute(
-      "aria-current",
-    );
-  });
-
-  it("clicks a dot without selecting or hydrating a card", async () => {
-    mockPagedHistoryFetch({
-      0: Array.from({ length: 4 }, (_, index) => historyItem(index + 5)),
-      1: Array.from({ length: 4 }, (_, index) => historyItem(index + 1)),
-    });
-
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
-
-    expect(await screen.findByText("History title 5")).toBeInTheDocument();
-    fireEvent.click(screen.getByLabelText("Show history page 1"));
-
-    const previousPageCard = await screen.findByText("History title 1");
-    expect(previousPageCard.closest('[role="button"]')).not.toHaveClass(
-      "border-orange-400",
-    );
-    expect(screen.queryByDisplayValue("History title 1")).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Show history page 1")).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
-  });
-
-  it("uses staggered fade-only card animation", async () => {
-    mockHistoryFetch(Array.from({ length: 5 }, (_, index) => historyItem(index + 1)));
-
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
-
-    const card = (await screen.findByText("History title 2")).closest(
-      '[role="button"]',
-    );
-    expect(card).toHaveAttribute("data-motion-initial", "{\"opacity\":0}");
-    expect(card).toHaveAttribute("data-motion-animate", "{\"opacity\":1}");
-    expect(card).toHaveAttribute("data-motion-exit", "{\"opacity\":0}");
-    expect(card?.getAttribute("data-motion-initial")).not.toContain("x");
-    expect(card?.getAttribute("data-motion-animate")).not.toContain("x");
-    expect(card?.getAttribute("data-motion-exit")).not.toContain("x");
-  });
-
-  it("shows no selected history card while the demo is active", async () => {
-    const fetchMock = vi.fn().mockImplementation((input: unknown) => {
-      const url =
-        typeof input === "string"
-          ? input
-          : input instanceof URL
-            ? input.toString()
-            : typeof input === "object" &&
-                input !== null &&
-                "url" in input &&
-                typeof (input as { url?: unknown }).url === "string"
-              ? (input as { url: string }).url
-              : String(input);
-      if (url.includes("/api/account/usage")) {
-        return mockGenerateResponse({ usageLabel: null });
-      }
-      if (url.includes("/api/generations/history")) {
-        return mockGenerateResponse({
-          items: [
-            {
-              id: "hist_1",
-              createdAt: "2026-08-14T00:00:00.000Z",
-              title: "History title one",
-              description: "Hydrated description from history",
-              targetTags: ["tag one"],
-              discoveryTags: ["tag two"],
-            },
-          ],
-          page: 0,
-          hasPrev: false,
-          hasNext: false,
-        });
-      }
-      return mockGenerateResponse({ error: "Unexpected fetch call." }, false);
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
-
-    const historyCard = await screen.findByText("History title one");
-    expect(historyCard.closest('[role="button"]')).not.toHaveClass("border-orange-400");
-  });
-
-  it("does not show a cached history selection while the demo is active", async () => {
-    window.localStorage.setItem(
-      "tagloom:history:v1",
-      JSON.stringify({
-        page0: [
-          {
-            id: "hist_1",
-            createdAt: "2026-08-14T00:00:00.000Z",
-            title: "History title one",
-            description: "Hydrated description from history",
-            targetTags: ["tag one"],
-            discoveryTags: ["tag two"],
-          },
-        ],
-        hasPrev: false,
-        hasNext: false,
-        selectedId: "hist_1",
-        draft: null,
-        savedAt: Date.now(),
-      }),
-    );
-
-    const fetchMock = vi.fn().mockImplementation((input: unknown) => {
-      const url =
-        typeof input === "string"
-          ? input
-          : input instanceof URL
-            ? input.toString()
-            : typeof input === "object" &&
-                input !== null &&
-                "url" in input &&
-                typeof (input as { url?: unknown }).url === "string"
-              ? (input as { url: string }).url
-              : String(input);
-      if (url.includes("/api/account/usage")) {
-        return mockGenerateResponse({ usageLabel: null });
-      }
-      if (url.includes("/api/generations/history")) {
-        return mockGenerateResponse({
-          items: [
-            {
-              id: "hist_1",
-              createdAt: "2026-08-14T00:00:00.000Z",
-              title: "History title one",
-              description: "Hydrated description from history",
-              targetTags: ["tag one"],
-              discoveryTags: ["tag two"],
-            },
-          ],
-          page: 0,
-          hasPrev: false,
-          hasNext: false,
-        });
-      }
-      return mockGenerateResponse({ error: "Unexpected fetch call." }, false);
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
-
-    const historyCard = await screen.findByText("History title one");
-    expect(historyCard.closest('[role="button"]')).not.toHaveClass("border-orange-400");
-  });
-
-  it("renders draft card with no date, single draft label, title, and description, then hydrates it", async () => {
-    window.localStorage.setItem(
-      "tagloom:history:v1",
-      JSON.stringify({
-        page0: [],
-        hasPrev: false,
-        hasNext: false,
-        selectedId: null,
-        drafts: [
-          {
-            id: "draft_test",
-            title: "My saved draft title",
-            description: "Draft description preview text",
-            updatedAt: "2026-08-14T12:00:00.000Z",
-          },
-        ],
-        selectedDraftId: null,
-        savedAt: Date.now(),
-      }),
-    );
-
-    const fetchMock = vi.fn().mockImplementation((input: unknown) => {
-      const url =
-        typeof input === "string"
-          ? input
-          : input instanceof URL
-            ? input.toString()
-            : typeof input === "object" &&
-                input !== null &&
-                "url" in input &&
-                typeof (input as { url?: unknown }).url === "string"
-              ? (input as { url: string }).url
-              : String(input);
-      if (url.includes("/api/account/usage")) {
-        return mockGenerateResponse({ usageLabel: null });
-      }
-      if (url.includes("/api/generations/history")) {
-        return mockGenerateResponse({
-          items: [],
-          page: 0,
-          hasPrev: false,
-          hasNext: false,
-        });
-      }
-      return mockGenerateResponse({ error: "Unexpected fetch call." }, false);
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
-
-    const title = await screen.findByText("My saved draft title");
-    const card = title.closest('[role="button"]');
-    expect(card).not.toBeNull();
-    expect(card).not.toHaveTextContent("Aug 14th, 2026");
-    expect(screen.getByText("Draft description preview text")).toBeInTheDocument();
-    const draftLabel = screen.getByText(/^Draft$/);
-    const deleteButton = screen.getByLabelText("Delete draft");
-    expect(screen.getAllByText(/^Draft$/)).toHaveLength(1);
-    expect(deleteButton).toBeInTheDocument();
-    expect(draftLabel).not.toHaveClass("absolute");
-    expect(deleteButton).not.toHaveClass("absolute");
-    expect(draftLabel.parentElement).toHaveClass("flex");
-    const cardText = card?.textContent ?? "";
-    expect(cardText.indexOf("My saved draft title")).toBeLessThan(
-      cardText.indexOf("Draft description preview text"),
-    );
-
-    fireEvent.click(title);
-    expect(screen.getByDisplayValue("My saved draft title")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("Draft description preview text")).toBeInTheDocument();
-    expect(screen.getAllByText(/^Draft$/)).toHaveLength(1);
-  });
-
-  it("reveals and hydrates description when clicking a saved history card", async () => {
-    const historyDescription = "Hydrated description from history";
-    const fetchMock = vi.fn().mockImplementation((input: unknown) => {
-      const url =
-        typeof input === "string"
-          ? input
-          : input instanceof URL
-            ? input.toString()
-            : typeof input === "object" &&
-                input !== null &&
-                "url" in input &&
-                typeof (input as { url?: unknown }).url === "string"
-              ? (input as { url: string }).url
-              : String(input);
-      if (url.includes("/api/account/usage")) {
-        return mockGenerateResponse({ usageLabel: null });
-      }
-      if (url.includes("/api/generations/history")) {
-        return mockGenerateResponse({
-          items: [
-            {
-              id: "hist_1",
-              createdAt: "2026-08-14T00:00:00.000Z",
-              title: "History title one",
-              description: historyDescription,
-              targetTags: ["tag one"],
-              discoveryTags: ["tag two"],
-            },
-          ],
-          page: 0,
-          hasPrev: false,
-          hasNext: false,
-        });
-      }
-      return mockGenerateResponse({ error: "Unexpected fetch call." }, false);
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
+  it("hides the history switch in demo mode and shows it after user interaction with authenticated history", async () => {
+    mockHistoryFetch([historyItem()]);
     renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     expect(
-      screen.queryByPlaceholderText("Add more details about your product to get more accurate tags..."),
+      screen.queryByRole("button", { name: "Show generation history" }),
     ).not.toBeInTheDocument();
-
-    fireEvent.click(await screen.findByText("History title one"));
+    const titleInput = screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER);
+    fireEvent.focus(titleInput);
 
     expect(
-      await screen.findByPlaceholderText("Add more details about your product to get more accurate tags..."),
+      await screen.findByRole("button", { name: "Show generation history" }),
     ).toBeInTheDocument();
-    expect(screen.getByDisplayValue(historyDescription)).toBeInTheDocument();
   });
 
-  it("shows all saved history tags immediately when clicking a saved history card", async () => {
-    const fetchMock = vi.fn().mockImplementation((input: unknown) => {
-      const url =
-        typeof input === "string"
-          ? input
-          : input instanceof URL
-            ? input.toString()
-            : typeof input === "object" &&
-                input !== null &&
-                "url" in input &&
-                typeof (input as { url?: unknown }).url === "string"
-              ? (input as { url: string }).url
-              : String(input);
-      if (url.includes("/api/account/usage")) {
-        return mockGenerateResponse({ usageLabel: null });
-      }
-      if (url.includes("/api/generations/history")) {
-        return mockGenerateResponse({
-          items: [
-            {
-              id: "hist_1",
-              createdAt: "2026-08-14T00:00:00.000Z",
-              title: "History title one",
-              description: "Hydrated description from history",
-              targetTags: ["tag one", "tag two", "tag one"],
-              discoveryTags: ["tag three", "  ", "tag four"],
-            },
-          ],
-          page: 0,
-          hasPrev: false,
-          hasNext: false,
-        });
-      }
-      return mockGenerateResponse({ error: "Unexpected fetch call." }, false);
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
+  it("switches to the history viewer and back without clearing generator state", async () => {
+    mockHistoryFetch([historyItem()]);
     renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
-    fireEvent.click(await screen.findByText("History title one"));
+    const titleInput = screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER);
+    fireEvent.focus(titleInput);
+    fireEvent.change(titleInput, { target: { value: "Draft title" } });
 
-    const chips = screen.getAllByTestId("generated-tag-chip");
-    expect(chips.map((chip) => chip.textContent)).toEqual([
+    await openHistory();
+    expect(screen.getByText("Generation History")).toBeInTheDocument();
+    expect(screen.getByTestId("generation-history-panel")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Show generator" }));
+    expect(screen.getByDisplayValue("Draft title")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("generator-shell").querySelector(
+        '[data-skip-generator-return-animations="true"]',
+      ),
+    ).toBeTruthy();
+  });
+
+  it("renders the mode switch as an icon toggle with accessible labels and pressed state", async () => {
+    mockHistoryFetch([historyItem()]);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+
+    fireEvent.focus(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER));
+
+    const toggleToHistory = await screen.findByRole("button", {
+      name: "Show generation history",
+    });
+    expect(toggleToHistory).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(toggleToHistory);
+    const toggleToGenerator = screen.getByRole("button", {
+      name: "Show generator",
+    });
+    expect(toggleToGenerator).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.click(toggleToGenerator);
+    expect(
+      screen.getByRole("button", { name: "Show generation history" }),
+    ).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("locks shell height in history mode and releases it when returning to generator", async () => {
+    mockHistoryFetch([historyItem()]);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+
+    fireEvent.focus(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER));
+    const shell = screen.getByTestId("generator-shell");
+    expect(shell).toHaveAttribute("data-history-height-locked", "false");
+
+    await openHistory();
+    expect(shell).toHaveAttribute("data-history-height-locked", "true");
+    expect(screen.getByTestId("generation-history-panel").parentElement).toHaveClass(
+      "min-h-0",
+      "flex-1",
+      "overflow-hidden",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Show generator" }));
+    expect(shell).toHaveAttribute("data-history-height-locked", "false");
+  });
+
+  it("ignores cached history mode and always hydrates in generator mode", async () => {
+    window.localStorage.setItem(
+      "tagloom:history:v2",
+      JSON.stringify({
+        activeGeneratedItems: [historyItem()],
+        selectedGeneratedId: "hist_1",
+        drafts: [],
+        selectedDraftId: null,
+        mode: "history",
+        sortState: { key: "title", direction: "asc" },
+        showArchived: true,
+        savedAt: Date.now(),
+      }),
+    );
+    mockHistoryFetch([historyItem()]);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+
+    expect(screen.getByText("Tagloom Generator")).toBeInTheDocument();
+    expect(screen.queryByText("Generation History")).not.toBeInTheDocument();
+  });
+
+  it("renders the empty history state when no drafts or generated rows exist", async () => {
+    mockHistoryFetch([]);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+
+    fireEvent.focus(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER));
+    await openHistory();
+
+    expect(screen.getByText("No generation history")).toBeInTheDocument();
+    expect(
+      screen.getByText("Generate tags and view your past generations here."),
+    ).toBeInTheDocument();
+  });
+
+  it("displays generated rows with date, title, description, and status", async () => {
+    mockHistoryFetch([
+      historyItem({
+        title: "Sterling silver hoop earrings",
+        description: "Lightweight hoops with a polished minimalist finish",
+      }),
+    ]);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+
+    fireEvent.focus(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER));
+    await openHistory();
+
+    expect(screen.getByText("May 8, 2026")).toBeInTheDocument();
+    expect(screen.getByText("Sterling silver hoop earrings")).toBeInTheDocument();
+    expect(screen.getByText("Lightweight hoops with a polished minimalist finish")).toBeInTheDocument();
+    expect(screen.getByText("generated")).toBeInTheDocument();
+  });
+
+  it("selects a generated row, loads tags, shows toast, and stays in history mode", async () => {
+    mockHistoryFetch([historyItem({ targetTags: ["tag one", "tag one"], discoveryTags: ["tag two"] })]);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+
+    fireEvent.focus(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER));
+    await openHistory();
+    fireEvent.click(screen.getByText("History title one"));
+
+    expect(screen.getByText("Generation History")).toBeInTheDocument();
+    expect(await screen.findByText("Generation loaded")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Show generator" }));
+    expect(screen.getByDisplayValue("History title one")).toBeInTheDocument();
+    expect(screen.getAllByTestId("generated-tag-chip").map((chip) => chip.textContent)).toEqual([
       "tag one",
       "tag two",
-      "tag three",
-      "tag four",
     ]);
+    expect(screen.getByTestId("results-block")).toHaveAttribute(
+      "data-results-animation",
+      "none",
+    );
     expect(
-      chips.every((chip) => chip.getAttribute("data-animation") === "none"),
+      screen
+        .getAllByTestId("generated-tag-chip")
+        .every((chip) => chip.getAttribute("data-animation") === "none"),
     ).toBe(true);
   });
 
-  it("clears pending history tags when switching to a draft card", async () => {
-    window.localStorage.setItem(
-      "tagloom:history:v1",
-      JSON.stringify({
-        page0: [
-          {
-            id: "hist_1",
-            createdAt: "2026-08-14T00:00:00.000Z",
-            title: "History title one",
-            description: "Hydrated description from history",
-            targetTags: ["tag one", "tag two", "tag three"],
-            discoveryTags: ["tag four", "tag five", "tag six"],
-          },
-        ],
-        hasPrev: false,
-        hasNext: false,
-        selectedId: null,
-        draft: {
-          title: "Draft listing",
-          description: "Draft description",
-          updatedAt: "2026-08-14T00:00:00.000Z",
-        },
-        savedAt: Date.now(),
-      }),
-    );
-
-    const fetchMock = vi.fn().mockImplementation((input: unknown) => {
-      const url = typeof input === "string" ? input : String(input);
-      if (url.includes("/api/account/usage")) {
-        return mockGenerateResponse({ usageLabel: null });
-      }
-      if (url.includes("/api/generations/history")) {
-        return mockGenerateResponse({
-          items: [
-            {
-              id: "hist_1",
-              createdAt: "2026-08-14T00:00:00.000Z",
-              title: "History title one",
-              description: "Hydrated description from history",
-              targetTags: ["tag one", "tag two", "tag three"],
-              discoveryTags: ["tag four", "tag five", "tag six"],
-            },
-          ],
-          page: 0,
-          hasPrev: false,
-          hasNext: false,
-        });
-      }
-      return mockGenerateResponse({ error: "Unexpected fetch call." }, false);
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
+  it("selects a draft row and loads it", async () => {
+    mockHistoryFetch([]);
     renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
 
-    fireEvent.click(await screen.findByText("History title one"));
-    expect(await screen.findAllByTestId("generated-tag-chip")).toHaveLength(6);
-
-    fireEvent.click(screen.getByText("Draft"));
-    await waitFor(() => expect(screen.queryByTestId("generated-tag-chip")).not.toBeInTheDocument());
-    expect(screen.getByDisplayValue("Draft description")).toBeInTheDocument();
-  });
-
-  it("creates a draft from typing without auto-selecting it when another history item is selected", async () => {
-    window.localStorage.setItem(
-      "tagloom:history:v1",
-      JSON.stringify({
-        page0: [],
-        hasPrev: false,
-        hasNext: false,
-        selectedId: null,
-        draft: null,
-        savedAt: Date.now(),
-      }),
-    );
-
-    const fetchMock = vi.fn().mockImplementation((input: unknown) => {
-      const url = typeof input === "string" ? input : String(input);
-      if (url.includes("/api/account/usage")) {
-        return mockGenerateResponse({ usageLabel: null });
-      }
-      if (url.includes("/api/generations/history")) {
-        return mockGenerateResponse({
-          items: [
-            {
-              id: "hist_1",
-              createdAt: "2026-08-14T00:00:00.000Z",
-              title: "History title one",
-              description: "Hydrated description from history",
-              targetTags: ["tag one"],
-              discoveryTags: ["tag two"],
-            },
-          ],
-          page: 0,
-          hasPrev: false,
-          hasNext: false,
-        });
-      }
-      return mockGenerateResponse({ error: "Unexpected fetch call." }, false);
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
-
-    const historyCard = await screen.findByText("History title one");
-    fireEvent.click(historyCard);
-
-    const titleInput = screen.getByDisplayValue("History title one");
-    fireEvent.change(titleInput, { target: { value: "History title one updated" } });
-
-    expect(await screen.findByText("History title one updated")).toBeInTheDocument();
-    expect(screen.getByText("History title one updated")).toBeInTheDocument();
-    expect(historyCard.closest('[role="button"]')).not.toHaveClass(
-      "border-orange-400",
-    );
-    expect(screen.getByText("Draft")).toBeInTheDocument();
-  });
-
-  it("creates a new draft and selects it when nothing is selected", async () => {
-    const fetchMock = vi.fn().mockImplementation((input: unknown) => {
-      const url = typeof input === "string" ? input : String(input);
-      if (url.includes("/api/account/usage")) {
-        return mockGenerateResponse({ usageLabel: null });
-      }
-      if (url.includes("/api/generations/history")) {
-        return mockGenerateResponse({
-          items: [],
-          page: 0,
-          hasPrev: false,
-          hasNext: false,
-        });
-      }
-      return mockGenerateResponse({ error: "Unexpected fetch call." }, false);
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
-
-    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     const titleInput = screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER);
     fireEvent.focus(titleInput);
-    fireEvent.change(titleInput, { target: { value: "New draft title" } });
+    await screen.findByRole("button", { name: "Show generation history" });
+    fireEvent.change(titleInput, { target: { value: "Draft listing" } });
+    await openHistory();
+    fireEvent.click(screen.getByText("Draft listing"));
+    fireEvent.click(screen.getByRole("button", { name: "Show generator" }));
 
-    expect(await screen.findByText("New draft title")).toBeInTheDocument();
-    expect(screen.getByText("New draft title").closest('[role="button"]')).toHaveClass(
-      "border-orange-400",
+    expect(screen.getByDisplayValue("Draft listing")).toBeInTheDocument();
+  });
+
+  it("requires confirmation before deleting a selected draft and clears selection", async () => {
+    mockHistoryFetch([historyItem()]);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+
+    const titleInput = screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER);
+    fireEvent.focus(titleInput);
+    await screen.findByRole("button", { name: "Show generation history" });
+    fireEvent.change(titleInput, { target: { value: "Draft to delete" } });
+    await openHistory();
+    fireEvent.click(screen.getByLabelText("Delete draft"));
+
+    expect(screen.getByText("Delete draft?")).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: "Delete draft" })[1]);
+    await waitFor(() => expect(screen.queryByText("Draft to delete")).not.toBeInTheDocument());
+    expect(screen.getByText("History title one").closest('[role="button"]')).not.toHaveClass("bg-orange-50");
+
+    fireEvent.click(screen.getByRole("button", { name: "Show generator" }));
+    expect(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER)).toHaveValue("");
+  });
+
+  it("requires confirmation before archiving a generated row and hides it from default history", async () => {
+    const fetchMock = mockHistoryFetch([historyItem()]);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+
+    fireEvent.focus(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER));
+    await openHistory();
+    fireEvent.click(screen.getByLabelText("Archive generation"));
+
+    expect(screen.getByText("Archive generation?")).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: "Archive generation" })[1]);
+
+    await waitFor(() => expect(screen.queryByText("History title one")).not.toBeInTheDocument());
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/generations/history",
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({ generationId: "hist_1", action: "archive" }),
+      }),
+    );
+  });
+
+  it("renders restore action for archived rows and restores via confirmation without refetch", async () => {
+    const fetchMock = mockHistoryFetch([
+      historyItem({
+        id: "hist_archived",
+        title: "Archived title",
+        archivedAt: "2026-05-08T13:00:00.000Z",
+      }),
+    ]);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+
+    fireEvent.focus(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER));
+    await openHistory();
+
+    const statusHeader = screen.getByRole("button", { name: /^Status/i });
+    fireEvent.click(statusHeader);
+    fireEvent.click(statusHeader);
+    fireEvent.click(statusHeader);
+
+    const historyGetCallsBefore = fetchMock.mock.calls.filter(([input, init]) => {
+      const url = typeof input === "string" ? input : String(input);
+      return url.includes("/api/generations/history") && (!init || init.method === "GET");
+    }).length;
+
+    fireEvent.click(await screen.findByLabelText("Restore generation"));
+    expect(screen.getByText("Restore generation?")).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: "Restore generation" })[1]);
+
+    await waitFor(() => expect(screen.queryByText("archived")).not.toBeInTheDocument());
+    expect(screen.getByText("generated")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/generations/history",
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({ generationId: "hist_archived", action: "restore" }),
+      }),
+    );
+
+    const historyGetCallsAfter = fetchMock.mock.calls.filter(([input, init]) => {
+      const url = typeof input === "string" ? input : String(input);
+      return url.includes("/api/generations/history") && (!init || init.method === "GET");
+    }).length;
+    expect(historyGetCallsAfter).toBe(historyGetCallsBefore);
+  });
+
+  it("cancels restore without sending PATCH", async () => {
+    const fetchMock = mockHistoryFetch([
+      historyItem({
+        id: "hist_archived",
+        title: "Archived title",
+        archivedAt: "2026-05-08T13:00:00.000Z",
+      }),
+    ]);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+
+    fireEvent.focus(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER));
+    await openHistory();
+    const statusHeader = screen.getByRole("button", { name: /^Status/i });
+    fireEvent.click(statusHeader);
+    fireEvent.click(statusHeader);
+    fireEvent.click(statusHeader);
+
+    fireEvent.click(await screen.findByLabelText("Restore generation"));
+    expect(screen.getByText("Restore generation?")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(
+      fetchMock.mock.calls.some(([input, init]) => {
+        const url = typeof input === "string" ? input : String(input);
+        return (
+          url.includes("/api/generations/history") &&
+          Boolean(init) &&
+          init?.method === "PATCH"
+        );
+      }),
+    ).toBe(false);
+  });
+
+  it("status header third click includes archived rows without refetch", async () => {
+    const fetchMock = mockHistoryFetch([historyItem({ archivedAt: "2026-05-08T13:00:00.000Z", title: "Archived title" })]);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+
+    fireEvent.focus(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER));
+    await openHistory();
+    expect(screen.queryByText("Archived title")).not.toBeInTheDocument();
+    const historyGetCallsBefore = fetchMock.mock.calls.filter(([input, init]) => {
+      const url = typeof input === "string" ? input : String(input);
+      return url.includes("/api/generations/history") && (!init || init.method === "GET");
+    }).length;
+
+    const statusHeader = screen.getByRole("button", { name: /^Status/i });
+    expect(statusHeader).toHaveClass("col-span-2");
+    fireEvent.click(statusHeader);
+    fireEvent.click(statusHeader);
+    fireEvent.click(statusHeader);
+
+    expect(await screen.findByText("Archived title")).toBeInTheDocument();
+    expect(screen.getByText("archived")).toBeInTheDocument();
+    const historyGetCallsAfter = fetchMock.mock.calls.filter(([input, init]) => {
+      const url = typeof input === "string" ? input : String(input);
+      return url.includes("/api/generations/history") && (!init || init.method === "GET");
+    }).length;
+    expect(historyGetCallsAfter).toBe(historyGetCallsBefore);
+  });
+
+  it("date header cycles desc, asc, then default", async () => {
+    mockHistoryFetch([
+      historyItem({ id: "hist_old", title: "Old", createdAt: "2026-05-07T12:00:00.000Z" }),
+      historyItem({ id: "hist_new", title: "New", createdAt: "2026-05-08T12:00:00.000Z" }),
+    ]);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+
+    fireEvent.focus(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER));
+    await openHistory();
+    const dateHeader = screen.getByRole("button", { name: /^Date/i });
+
+    fireEvent.click(dateHeader);
+    expect(screen.getAllByText(/^(Old|New)$/).map((node) => node.textContent)).toEqual([
+      "New",
+      "Old",
+    ]);
+
+    fireEvent.click(dateHeader);
+    expect(screen.getAllByText(/^(Old|New)$/).map((node) => node.textContent)).toEqual([
+      "Old",
+      "New",
+    ]);
+
+    fireEvent.click(dateHeader);
+    expect(screen.getAllByText(/^(Old|New)$/).map((node) => node.textContent)).toEqual([
+      "New",
+      "Old",
+    ]);
+  });
+
+  it("sort headers cycle through asc, desc, and default for text columns", async () => {
+    mockHistoryFetch([
+      historyItem({ id: "hist_b", title: "B title", createdAt: "2026-05-07T12:00:00.000Z" }),
+      historyItem({ id: "hist_a", title: "A title", createdAt: "2026-05-08T12:00:00.000Z" }),
+    ]);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+
+    fireEvent.focus(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER));
+    await openHistory();
+    const titleHeader = screen.getByRole("button", { name: /^Title/i });
+
+    fireEvent.click(titleHeader);
+    expect(screen.getAllByText(/ title$/).map((node) => node.textContent)).toEqual([
+      "A title",
+      "B title",
+    ]);
+
+    fireEvent.click(titleHeader);
+    expect(screen.getAllByText(/ title$/).map((node) => node.textContent)).toEqual([
+      "B title",
+      "A title",
+    ]);
+
+    fireEvent.click(titleHeader);
+    expect(screen.getAllByText(/ title$/).map((node) => node.textContent)).toEqual([
+      "A title",
+      "B title",
+    ]);
+  });
+
+  it("initial history fetch includes archived rows", async () => {
+    const fetchMock = mockHistoryFetch([historyItem()]);
+    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    fireEvent.focus(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER));
+
+    await screen.findByRole("button", { name: "Show generation history" });
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining("includeArchived=true"),
+        expect.objectContaining({ method: "GET" }),
+      ),
     );
   });
 });
