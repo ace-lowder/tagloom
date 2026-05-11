@@ -57,21 +57,21 @@ export const benefits: BenefitItem[] = [
     icon: TrendingUp,
     title: "Get found in Etsy search",
     description:
-      "AI-crafted tags based on what buyers are actually searching for so your listings get found by the right people.",
+      "We craft tags based on what buyers are actually searching for so your listings get found by the right people.",
     href: "/blog/how-to-rank-higher-on-etsy#why-tags-matter",
   },
   {
     icon: Clock,
-    title: "13 tags in seconds",
+    title: "Get tags in seconds",
     description:
-      "Stop spending hours on keyword research and generate 13 optimized tags in seconds.",
+      "Stop wasting time on keyword research and generate optimized tags for your listing in seconds.",
     href: "/blog/etsy-tag-tips-every-seller-should-know",
   },
   {
     icon: Zap,
-    title: "Stop guessing keywords.",
+    title: "No more guesswork",
     description:
-      "Every tag is selected to better align with Etsy search behavior and listing discoverability.",
+      "Every tag is selected to match you with Etsy customers and make your listing discoverable.",
     href: "/blog/mistakes-new-etsy-sellers-make",
   },
 ];
@@ -80,12 +80,12 @@ const faqs: FAQEntry[] = [
   {
     question: "How does Tagloom generate tags?",
     answer:
-      "Tagloom analyzes your title and description, identifies high-intent keywords, and builds a balanced 13-tag set that combines direct search terms with broader discovery terms.",
+      "Tagloom analyzes your title and description, identifies high-intent keywords, and builds a balanced 13-tag set that combines direct search terms with broader discovery terms. We find the best combination of tags that will boost sales for your listing.",
   },
   {
     question: "Will these tags work for my niche?",
     answer:
-      "Yes, because tags are generated from your listing context and optimized for both exact-match shopper intent and niche discovery, so they stay relevant across categories.",
+      "Yes. Your tags are generated using the niche terms from your listing title and description. We generate optimized tags for both exact-match shopper intent and discovery, then add generalized synonyms to keep you relevant across categories.",
   },
   {
     question: "Do I need to connect my Etsy account to Tagloom?",
@@ -115,7 +115,7 @@ const faqs: FAQEntry[] = [
   {
     question: "What happens when I run out of monthly generations?",
     answer:
-      "Your Monthly generation limit resets on your billing date, and if you need more before then you can upgrade to Yearly for unlimited generations or buy Starter generations.",
+      "Your Monthly generation limit resets on your billing date. If you need more before then you can upgrade to Yearly for unlimited generations or buy Starter generations.",
   },
   {
     question: "Where can I manage my plan?",
@@ -126,21 +126,21 @@ const faqs: FAQEntry[] = [
           href="/billing"
           className="font-medium text-orange-700 hover:text-orange-800"
         >
-          Billing
+          Manage Plan
         </Link>
-        , and manage your plan there.
+        , and view your billing settings there.
       </>
     ),
   },
   {
     question: "How many tags does Etsy allow?",
     answer:
-      "Etsy allows 13 tags per listing, and Tagloom gives you all 13 so you can fully use every slot.",
+      "Etsy allows 13 tags per listing. Tagloom generates an optimized list of 13 tags that takes advantage of the character limit to make the most of every tag slot.",
   },
   {
     question: "Can I cancel anytime?",
     answer:
-      "Yes, you can cancel anytime in billing and your plan stays active until the end of your current period, then you won't be charged again.",
+      "Yes, you can cancel anytime in billing and your plan stays active until the end of your current period. At the end of your period, your plan will cancel and you will not be charged.",
   },
 ];
 
@@ -219,17 +219,18 @@ function HeroSection({ onGenerate }: HeroSectionProps) {
             className="mb-3 text-4xl font-bold leading-[1.06] text-stone-900 sm:text-5xl"
           >
             <span className="md:whitespace-nowrap">
-              Etsy tags buyers actually search
+              Get the Etsy sales you deserve
             </span>
             <span className="mt-2 block bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
-              More clicks. More sales.
+              Better Tags. More sales.
             </span>
           </motion.h1>
           <motion.p
             variants={fadeInUp}
             className="mx-auto mb-8 max-w-xl text-lg leading-relaxed text-stone-600"
           >
-            Paste your Etsy listing. Get 13 tags buyers are already searching.
+            Enter your listing info and generate tags that will get you Etsy
+            sales
           </motion.p>
           <motion.button
             variants={fadeInUp}
@@ -279,7 +280,7 @@ function FeaturesSection({ benefits }: FeaturesSectionProps) {
             variants={fadeInUp}
             className="text-3xl font-bold text-stone-900 sm:text-4xl"
           >
-            How this gets you more sales
+            How our Etsy tags work
           </motion.h2>
         </motion.div>
 
@@ -521,14 +522,13 @@ function BottomCtaSection({ onGenerate }: BottomCtaSectionProps) {
               variants={fadeInUp}
               className="mb-4 text-3xl font-bold text-stone-900 sm:text-4xl"
             >
-              Ready to get found by more Etsy buyers?
+              Ready to make more Etsy sales?
             </motion.h2>
             <motion.p
               variants={fadeInUp}
               className="mx-auto mb-8 max-w-lg leading-relaxed text-stone-600"
             >
-              Generate 13 high-intent tags for your next listing in under a
-              minute.
+              Generate optimized tags for your Etsy listing in seconds
             </motion.p>
             <motion.button
               variants={fadeInUp}
