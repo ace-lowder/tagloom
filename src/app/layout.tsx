@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
+import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
 import { ToastProvider } from "@/components/toasts/ToastProvider";
 import "./globals.css";
 
@@ -26,6 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${outfit.variable} ${inter.variable} bg-surface-lower text-ink`}>
+        <GoogleAnalytics />
         <ToastProvider>{children}</ToastProvider>
       </body>
     </html>

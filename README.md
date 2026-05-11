@@ -18,6 +18,29 @@ Generate 13 Etsy-ready tags from a listing in under 60 seconds
    npm run dev
    ```
 
+## Google Analytics 4
+
+For basic site traffic/page view tracking, create or use a GA4 web stream for
+`https://tagloom.app`.
+
+Set this in local and deployment environments:
+
+```sh
+NEXT_PUBLIC_GA_MEASUREMENT_ID=G-...
+```
+
+No Google CLI or Google auth setup is needed for this basic site tracking.
+
+Local verification:
+
+1. Run `npm run dev`.
+2. Visit local pages and confirm events in GA Realtime/DebugView.
+3. Test UTM capture with:
+   `http://localhost:3000/?utm_source=youtube&utm_medium=paid&utm_campaign=local_test`
+
+If you do not want local/dev traffic sent to GA, omit
+`NEXT_PUBLIC_GA_MEASUREMENT_ID`.
+
 ## Database Migrations
 
 Apply Supabase migrations before running features that read persisted data. The
