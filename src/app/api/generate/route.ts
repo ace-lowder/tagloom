@@ -39,6 +39,10 @@ type EntitlementResult = {
   reason: string | null;
 };
 
+type InsertedGenerationRow = {
+  id: string;
+};
+
 function paywall(
   reason: "auth_required" | "payment_required" | "limit_reached",
   message: string,
@@ -266,32 +270,36 @@ export async function POST(req: NextRequest) {
   try {
     const generated = await generateTags(title, description);
 
-    const { error: insertError } = await supabase.from("generations").insert({
-      user_id: user.id,
-      title,
-      description,
-      target_tags: generated.tags.target,
-      discovery_tags: generated.tags.discovery,
-      source: generated.source,
-      entitlement_used: entitlementUsed,
-    });
+    const { data: insertedGeneration, error: insertError } = await supabase
+      .from("generations")
+      .insert({
+        user_id: user.id,
+        title,
+        description,
+        target_tags: generated.tags.target,
+        discovery_tags: generated.tags.discovery,
+        source: generated.source,
+        entitlement_used: entitlementUsed,
+      })
+      .select("id")
+      .single<InsertedGenerationRow>();
 
-    if (insertError) {
+    if (insertError || !insertedGeneration?.id) {
       await logServerError({
         source: "api.generate.generation_insert",
         route: "/api/generate",
         method: req.method,
         status: 500,
         userId: user.id,
-        error: insertError,
+        error: insertError ?? new Error("Generation insert returned empty row"),
         metadata: {
           stage: "generation_insert",
           titleLength: title.length,
           descriptionLength: description.length,
           generationContextId,
           entitlementUsed,
-          supabaseDetails: insertError.details ?? null,
-          supabaseHint: insertError.hint ?? null,
+          supabaseDetails: insertError?.details ?? null,
+          supabaseHint: insertError?.hint ?? null,
         },
       });
       await refundGenerationEntitlement(supabase, user.id, entitlementUsed);
@@ -304,6 +312,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       status: "ok",
       requestId: generationContextId,
+      generationId: insertedGeneration.id,
       tags: generated.tags,
       source: generated.source,
       entitlementUsed,

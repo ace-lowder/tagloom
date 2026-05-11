@@ -13,6 +13,12 @@ type GenerationHistoryRow = {
   archived_at: string | null;
 };
 
+type GenerationFeedbackRow = {
+  generation_id: string;
+  rating: "up" | "down";
+  note: string | null;
+};
+
 type ArchiveGenerationRequest = {
   generationId?: unknown;
   action?: unknown;
@@ -104,6 +110,62 @@ export async function GET(req: NextRequest) {
 
   const total = count ?? 0;
   const rows = (data ?? []) as GenerationHistoryRow[];
+  const generationIds = rows.map((row) => row.id);
+  let feedbackByGenerationId = new Map<string, GenerationFeedbackRow>();
+
+  if (generationIds.length > 0) {
+    const admin = createSupabaseAdminClient();
+    if (!admin) {
+      await logServerError({
+        source: "api.generations.history.feedback_admin_missing",
+        route: "/api/generations/history",
+        method: req.method,
+        status: 500,
+        userId: user.id,
+        error: new Error("Admin client is not configured"),
+        metadata: {
+          stage: "history_feedback_lookup",
+          includeArchived,
+          page,
+          limit,
+          generationCount: generationIds.length,
+        },
+      });
+    } else {
+      const { data: feedbackRows, error: feedbackError } = await admin
+      .from("generation_feedback")
+      .select("generation_id, rating, note")
+      .eq("user_id", user.id)
+      .in("generation_id", generationIds);
+
+      if (feedbackError) {
+        await logServerError({
+          source: "api.generations.history.feedback_lookup",
+          route: "/api/generations/history",
+          method: req.method,
+          status: 500,
+          userId: user.id,
+          error: feedbackError,
+          metadata: {
+            stage: "history_feedback_lookup",
+            includeArchived,
+            page,
+            limit,
+            generationCount: generationIds.length,
+            supabaseDetails: feedbackError.details ?? null,
+            supabaseHint: feedbackError.hint ?? null,
+          },
+        });
+      } else {
+        feedbackByGenerationId = new Map(
+          ((feedbackRows ?? []) as GenerationFeedbackRow[]).map((row) => [
+            row.generation_id,
+            row,
+          ]),
+        );
+      }
+    }
+  }
 
   return NextResponse.json({
     items: rows.map((row) => ({
@@ -114,6 +176,12 @@ export async function GET(req: NextRequest) {
       targetTags: Array.isArray(row.target_tags) ? row.target_tags : [],
       discoveryTags: Array.isArray(row.discovery_tags) ? row.discovery_tags : [],
       archivedAt: row.archived_at,
+      feedback: feedbackByGenerationId.has(row.id)
+        ? {
+            rating: feedbackByGenerationId.get(row.id)?.rating ?? "up",
+            note: feedbackByGenerationId.get(row.id)?.note ?? null,
+          }
+        : null,
     })),
     page,
     hasPrev: page > 0,

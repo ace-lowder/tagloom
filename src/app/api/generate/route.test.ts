@@ -9,6 +9,8 @@ const rpcMock = vi.fn();
 const fromMock = vi.fn();
 const profileUpdateMock = vi.fn();
 const generationInsertMock = vi.fn();
+const generationInsertSelectMock = vi.fn();
+const generationInsertSingleMock = vi.fn();
 
 vi.mock("@/lib/apiProtection", () => ({
   applyApiProtection: vi.fn(async () => ({})),
@@ -100,7 +102,11 @@ describe("generate route entitlement usage", () => {
     rpcMock.mockReset();
     profileUpdateMock.mockReset();
     generationInsertMock.mockReset();
-    generationInsertMock.mockResolvedValue({ error: null });
+    generationInsertSelectMock.mockReset();
+    generationInsertSingleMock.mockReset();
+    generationInsertSingleMock.mockResolvedValue({ data: { id: "gen_123" }, error: null });
+    generationInsertSelectMock.mockReturnValue({ single: generationInsertSingleMock });
+    generationInsertMock.mockReturnValue({ select: generationInsertSelectMock });
     vi.mocked(generateTags).mockReset();
     vi.mocked(logServerError).mockReset();
     vi.mocked(generateTags).mockResolvedValue({
@@ -147,6 +153,7 @@ describe("generate route entitlement usage", () => {
       expect.objectContaining({
         status: "ok",
         entitlementUsed: "free_credit",
+        generationId: "gen_123",
       }),
     );
     expect(generationInsertMock).toHaveBeenCalledWith(
@@ -171,6 +178,7 @@ describe("generate route entitlement usage", () => {
       expect.objectContaining({
         status: "ok",
         entitlementUsed: "single_use",
+        generationId: "gen_123",
       }),
     );
     expect(generationInsertMock).toHaveBeenCalledWith(
@@ -208,7 +216,8 @@ describe("generate route entitlement usage", () => {
       data: [{ allowed: true, entitlement_used: "single_use", reason: null }],
       error: null,
     });
-    generationInsertMock.mockResolvedValueOnce({
+    generationInsertSingleMock.mockResolvedValueOnce({
+      data: null,
       error: { message: "insert failed" },
     });
 

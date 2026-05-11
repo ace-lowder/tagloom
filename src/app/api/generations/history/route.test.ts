@@ -80,6 +80,13 @@ function createHistoryQuery(
   };
 }
 
+function createFeedbackQuery(rows: unknown[]) {
+  const inGenerationId = vi.fn(async () => ({ data: rows, error: null }));
+  const eqUser = vi.fn(() => ({ in: inGenerationId }));
+  const select = vi.fn(() => ({ eq: eqUser }));
+  return { select, eqUser, inGenerationId };
+}
+
 describe("generation history route", () => {
   beforeEach(() => {
     getUserMock.mockResolvedValue({ data: { user: { id: "user_123" } } });
@@ -107,7 +114,11 @@ describe("generation history route", () => {
       },
     ];
     const { query, countQuery } = createHistoryQuery(rows);
+    const feedbackQuery = createFeedbackQuery([
+      { generation_id: "gen_1", rating: "up", note: null },
+    ]);
     serverFromMock.mockReturnValueOnce(query).mockReturnValueOnce(countQuery);
+    adminFromMock.mockReturnValue(feedbackQuery);
 
     const response = await GET(
       makeGetRequest("https://tagloom.test/api/generations/history") as never,
@@ -124,6 +135,7 @@ describe("generation history route", () => {
           targetTags: ["tag one"],
           discoveryTags: ["tag two"],
           archivedAt: null,
+          feedback: { rating: "up", note: null },
         },
       ],
       page: 0,
@@ -147,7 +159,11 @@ describe("generation history route", () => {
         archived_at: "2026-05-08T12:00:00.000Z",
       },
     ]);
+    const feedbackQuery = createFeedbackQuery([
+      { generation_id: "gen_archived", rating: "down", note: "Not useful" },
+    ]);
     serverFromMock.mockReturnValueOnce(query).mockReturnValueOnce(countQuery);
+    adminFromMock.mockReturnValue(feedbackQuery);
 
     const response = await GET(
       makeGetRequest(
@@ -161,6 +177,7 @@ describe("generation history route", () => {
         {
           id: "gen_archived",
           archivedAt: "2026-05-08T12:00:00.000Z",
+          feedback: { rating: "down", note: "Not useful" },
         },
       ],
     });

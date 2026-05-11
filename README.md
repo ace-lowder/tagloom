@@ -50,3 +50,40 @@ from public.error_logs
 where created_at >= now() - interval '7 days'
 order by created_at desc;
 ```
+
+## Weekly Feedback Maintenance
+
+Apply migration `supabase/migrations/20260509130000_add_feedback_tables.sql` to
+enable article and generation feedback capture.
+
+Recent downvoted generation feedback:
+
+```sql
+select created_at, generation_id, user_id, note, title_snapshot
+from public.generation_feedback
+where rating = 'down'
+order by created_at desc
+limit 100;
+```
+
+Recent support article feedback:
+
+```sql
+select created_at, article_slug, rating, note, user_id
+from public.support_article_feedback
+order by created_at desc
+limit 100;
+```
+
+Feedback counts by rating:
+
+```sql
+select 'generation' as source, rating, count(*) as total
+from public.generation_feedback
+group by rating
+union all
+select 'article' as source, rating, count(*) as total
+from public.support_article_feedback
+group by rating
+order by source, rating;
+```
