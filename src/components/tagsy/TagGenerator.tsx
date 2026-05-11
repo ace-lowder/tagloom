@@ -11,6 +11,8 @@ import {
 } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Clock, Copy, Info, LockOpen, Sparkles } from "lucide-react";
+import FeedbackButtons, { type FeedbackRating } from "@/components/feedback/FeedbackButtons";
+import FeedbackModal from "@/components/feedback/FeedbackModal";
 import { toastMessages } from "@/components/toasts/toastMessages";
 import { useToast } from "@/components/toasts/toasts";
 import { useAuthController } from "@/components/auth/AuthController";
@@ -42,6 +44,7 @@ type TagGeneratorProps = {
 type GenerateOkResponse = {
   status: "ok";
   requestId: string | null;
+  generationId: string;
   tags: {
     target: string[];
     discovery: string[];
@@ -76,6 +79,7 @@ type GenerationHistoryResponse = {
   hasPrev: boolean;
   hasNext: boolean;
 };
+type GenerationFeedback = { rating: FeedbackRating; note: string | null };
 type DraftHistoryState = {
   id: string;
   title: string;
@@ -496,6 +500,18 @@ export default function TagGenerator({
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
   const [entitlementUsed, setEntitlementUsed] = useState<string | null>(null);
+  const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(
+    null,
+  );
+  const [currentGenerationFeedback, setCurrentGenerationFeedback] =
+    useState<GenerationFeedback | null>(null);
+  const [isGenerationFeedbackSaving, setIsGenerationFeedbackSaving] =
+    useState(false);
+  const [isGenerationDownvoteModalOpen, setIsGenerationDownvoteModalOpen] =
+    useState(false);
+  const generationDownvotePreviousFeedbackRef = useRef<GenerationFeedback | null>(
+    null,
+  );
   const [usageLabel, setUsageLabel] = useState<string | null>(null);
   const [monthlyResetAt, setMonthlyResetAt] = useState<string | null>(null);
   const [isUsageHintOpen, setIsUsageHintOpen] = useState(false);
@@ -860,6 +876,8 @@ export default function TagGenerator({
           setDraftHistoryItems([]);
           setSelectedDraftId(null);
           setSelectedHistoryId(null);
+          setCurrentGenerationId(null);
+          setCurrentGenerationFeedback(null);
           clearHistoryCache();
           return;
         }
@@ -896,6 +914,8 @@ export default function TagGenerator({
       });
     } catch {
       setIsHistoryAuthenticated(false);
+      setCurrentGenerationId(null);
+      setCurrentGenerationFeedback(null);
       clearHistoryCache();
       showToast(toastMessages.historyLoadFailed);
     } finally {
@@ -1332,11 +1352,22 @@ export default function TagGenerator({
           requestId: data.requestId,
         });
         setEntitlementUsed(null);
+        setCurrentGenerationId(null);
+        setCurrentGenerationFeedback(null);
         setResultTags(data.placeholders.target, data.placeholders.discovery);
         return;
       }
 
       setEntitlementUsed(data.entitlementUsed);
+      setCurrentGenerationId(data.generationId);
+      setCurrentGenerationFeedback(null);
+      if (selectedHistoryId === "draft" && selectedDraftId) {
+        setDraftHistoryItems((current) =>
+          current.filter((draft) => draft.id !== selectedDraftId),
+        );
+        setSelectedDraftId(null);
+      }
+      setSelectedHistoryId(data.generationId);
       setPaywall(null);
       setIsUnlockingFromPaywall(false);
       setResultTags(data.tags.target, data.tags.discovery);
@@ -1352,12 +1383,35 @@ export default function TagGenerator({
         window.history.replaceState({}, "", url.toString());
       }
     },
-    [loadHistory, refreshUsageLabel, setResultTags],
+    [
+      loadHistory,
+      refreshUsageLabel,
+      selectedDraftId,
+      selectedHistoryId,
+      setResultTags,
+    ],
   );
 
   const executeGenerate = useCallback(async () => {
     markUserInteraction();
     if (!title.trim()) return;
+
+    clearRevealTimer();
+    setIsGenerating(true);
+    setEntitlementUsed(null);
+    setCurrentGenerationId(null);
+    setCurrentGenerationFeedback(null);
+    setPaywall(null);
+    setIsUnlockingFromPaywall(false);
+    setUnlockReadyContext(null);
+    setConfirmModalMode(null);
+    setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
+    setApiTags([]);
+    setVisibleTags([]);
+    setShouldAnimateTagChips(false);
+    setClearPhase("idle");
+    setShellHeightTransitionMs(0);
+    setShellHeightPx(null);
 
     let turnstileToken: string | null = null;
     if (turnstileEnabled) {
@@ -1365,6 +1419,7 @@ export default function TagGenerator({
         turnstileToken = (await turnstileRef.current?.getToken()) ?? null;
         if (!turnstileToken) {
           showToast(toastMessages.botCheckFailed);
+          setIsGenerating(false);
           return;
         }
       } catch (err) {
@@ -1375,6 +1430,7 @@ export default function TagGenerator({
               ? err.message
               : toastMessages.botCheckFailed.body,
         });
+        setIsGenerating(false);
         return;
       }
     }
@@ -1387,21 +1443,6 @@ export default function TagGenerator({
       title,
       description,
     });
-
-    clearRevealTimer();
-    setIsGenerating(true);
-    setEntitlementUsed(null);
-    setPaywall(null);
-    setIsUnlockingFromPaywall(false);
-    setUnlockReadyContext(null);
-    setConfirmModalMode(null);
-    setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
-    setApiTags([]);
-    setVisibleTags([]);
-    setShouldAnimateTagChips(false);
-    setClearPhase("idle");
-    setShellHeightTransitionMs(0);
-    setShellHeightPx(null);
 
     try {
       await runGeneration(title, description, contextId, turnstileToken);
@@ -1706,6 +1747,8 @@ export default function TagGenerator({
         setConfirmModalMode(null);
         setIsGenerating(false);
         setEntitlementUsed(null);
+        setCurrentGenerationId(null);
+        setCurrentGenerationFeedback(null);
         setApiTags([]);
         setVisibleTags([]);
         setShouldAnimateTagChips(false);
@@ -1727,6 +1770,8 @@ export default function TagGenerator({
       setIsUnlockingFromPaywall(false);
       setUnlockReadyContext(null);
       setConfirmModalMode(null);
+      setCurrentGenerationId(item.id);
+      setCurrentGenerationFeedback(item.feedback ?? null);
       setResultTagsImmediately(item.targetTags, item.discoveryTags);
       showToast(toastMessages.historyLoaded);
     },
@@ -1765,6 +1810,8 @@ export default function TagGenerator({
         setUnlockReadyContext(null);
         setConfirmModalMode(null);
         setIsUnlockingFromPaywall(false);
+        setCurrentGenerationId(null);
+        setCurrentGenerationFeedback(null);
       }
     },
     [selectedDraftId, selectedHistoryId],
@@ -1821,6 +1868,160 @@ export default function TagGenerator({
       );
     },
     [],
+  );
+
+  const setFeedbackForGenerationInHistory = useCallback(
+    (generationId: string, feedback: GenerationFeedback | null) => {
+      setHistoryItems((current) =>
+        current.map((item) =>
+          item.id === generationId ? { ...item, feedback } : item,
+        ),
+      );
+    },
+    [],
+  );
+
+  const saveGenerationFeedback = useCallback(
+    async (
+      action: "set" | "clear",
+      payload: { generationId: string; rating?: FeedbackRating; note?: string },
+    ) => {
+      const response = await fetch("/api/feedback/generation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action,
+          generationId: payload.generationId,
+          ...(payload.rating ? { rating: payload.rating } : {}),
+          ...(typeof payload.note === "string" ? { note: payload.note } : {}),
+        }),
+      });
+
+      const data = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        feedback?: GenerationFeedback | null;
+      };
+      if (!response.ok) {
+        throw new Error(data.error || "Could not save generation feedback.");
+      }
+      return data.feedback ?? null;
+    },
+    [],
+  );
+
+  const onGenerationFeedbackUp = useCallback(async () => {
+    if (!currentGenerationId || isGenerationFeedbackSaving) return;
+    const previous = currentGenerationFeedback;
+    setIsGenerationFeedbackSaving(true);
+    try {
+      if (currentGenerationFeedback?.rating === "up") {
+        setCurrentGenerationFeedback(null);
+        setFeedbackForGenerationInHistory(currentGenerationId, null);
+        await saveGenerationFeedback("clear", { generationId: currentGenerationId });
+        return;
+      }
+      setCurrentGenerationFeedback({ rating: "up", note: null });
+      setFeedbackForGenerationInHistory(currentGenerationId, {
+        rating: "up",
+        note: null,
+      });
+      const feedback = await saveGenerationFeedback("set", {
+        generationId: currentGenerationId,
+        rating: "up",
+      });
+      setCurrentGenerationFeedback(feedback ?? { rating: "up", note: null });
+      setFeedbackForGenerationInHistory(currentGenerationId, feedback ?? { rating: "up", note: null });
+    } catch {
+      setCurrentGenerationFeedback(previous);
+      setFeedbackForGenerationInHistory(currentGenerationId, previous);
+      showToast(toastMessages.generationFeedbackFailed);
+    } finally {
+      setIsGenerationFeedbackSaving(false);
+    }
+  }, [
+    currentGenerationFeedback,
+    currentGenerationId,
+    isGenerationFeedbackSaving,
+    saveGenerationFeedback,
+    setFeedbackForGenerationInHistory,
+    showToast,
+  ]);
+
+  const onGenerationFeedbackDown = useCallback(async () => {
+    if (!currentGenerationId || isGenerationFeedbackSaving) return;
+    const previous = currentGenerationFeedback;
+    if (currentGenerationFeedback?.rating === "down") {
+      setIsGenerationFeedbackSaving(true);
+      try {
+        setCurrentGenerationFeedback(null);
+        setFeedbackForGenerationInHistory(currentGenerationId, null);
+        await saveGenerationFeedback("clear", { generationId: currentGenerationId });
+      } catch {
+        setCurrentGenerationFeedback(previous);
+        setFeedbackForGenerationInHistory(currentGenerationId, previous);
+        showToast(toastMessages.generationFeedbackFailed);
+      } finally {
+        setIsGenerationFeedbackSaving(false);
+      }
+      return;
+    }
+
+    setCurrentGenerationFeedback({ rating: "down", note: null });
+    setFeedbackForGenerationInHistory(currentGenerationId, {
+      rating: "down",
+      note: null,
+    });
+    generationDownvotePreviousFeedbackRef.current = previous;
+    setIsGenerationDownvoteModalOpen(true);
+  }, [
+    currentGenerationFeedback,
+    currentGenerationId,
+    isGenerationFeedbackSaving,
+    saveGenerationFeedback,
+    setFeedbackForGenerationInHistory,
+    showToast,
+  ]);
+
+  const submitGenerationDownvote = useCallback(
+    async (note: string) => {
+      if (!currentGenerationId || isGenerationFeedbackSaving) return;
+      const previous = generationDownvotePreviousFeedbackRef.current ?? currentGenerationFeedback;
+      setIsGenerationFeedbackSaving(true);
+      try {
+        setCurrentGenerationFeedback({ rating: "down", note: note || null });
+        setFeedbackForGenerationInHistory(currentGenerationId, {
+          rating: "down",
+          note: note || null,
+        });
+        const feedback = await saveGenerationFeedback("set", {
+          generationId: currentGenerationId,
+          rating: "down",
+          note,
+        });
+        setCurrentGenerationFeedback(
+          feedback ?? { rating: "down", note: note || null },
+        );
+        setFeedbackForGenerationInHistory(
+          currentGenerationId,
+          feedback ?? { rating: "down", note: note || null },
+        );
+      } catch {
+        setCurrentGenerationFeedback(previous);
+        setFeedbackForGenerationInHistory(currentGenerationId, previous);
+        showToast(toastMessages.generationFeedbackFailed);
+      } finally {
+        generationDownvotePreviousFeedbackRef.current = null;
+        setIsGenerationFeedbackSaving(false);
+      }
+    },
+    [
+      currentGenerationFeedback,
+      currentGenerationId,
+      isGenerationFeedbackSaving,
+      saveGenerationFeedback,
+      setFeedbackForGenerationInHistory,
+      showToast,
+    ],
   );
 
   const confirmHistoryAction = useCallback(async () => {
@@ -1914,10 +2115,20 @@ export default function TagGenerator({
 
   useEffect(() => {
     if (historyMode !== "generator" || !skipGeneratorReturnAnimations) return;
-    const timer = window.setTimeout(() => {
-      setSkipGeneratorReturnAnimations(false);
-    }, 0);
-    return () => window.clearTimeout(timer);
+
+    let firstFrame = 0;
+    let secondFrame = 0;
+
+    firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        setSkipGeneratorReturnAnimations(false);
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
+    };
   }, [historyMode, skipGeneratorReturnAnimations]);
 
   const handleCopyAll = async () => {
@@ -1939,6 +2150,13 @@ export default function TagGenerator({
   const shouldRevealTagChips =
     shouldAnimateTagChips && !skipGeneratorReturnAnimations;
   const canCopyAll = !paywall && !isUnlockingFromPaywall && areAllTagsVisible;
+  const showGenerationFeedbackControls =
+    !isDemoActive &&
+    isHistoryAuthenticated &&
+    Boolean(currentGenerationId) &&
+    totalTags > 0 &&
+    !paywall &&
+    !isUnlockingFromPaywall;
   const isClearingFade = clearPhase === "fading";
   const hasTitle = Boolean(title.trim());
   const usageHint = useMemo(
@@ -1977,7 +2195,10 @@ export default function TagGenerator({
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative overflow-hidden rounded-2xl"
+        className={cn(
+          "relative rounded-2xl",
+          historyMode === "history" ? "overflow-hidden" : "overflow-visible",
+        )}
         style={{
           background: "rgba(255,255,255,0.8)",
           backdropFilter: "blur(30px)",
@@ -1995,20 +2216,22 @@ export default function TagGenerator({
               : undefined,
         }}
       >
-        {activeSheenId ? (
-          <motion.div
-            key={activeSheenId}
-            initial={{ x: "-120%", opacity: 0 }}
-            animate={{ x: "170%", opacity: [0, 0.9, 0] }}
-            transition={{ duration: 0.95, ease: "easeInOut" }}
-            onAnimationComplete={() => setActiveSheenId(null)}
-            className="pointer-events-none absolute inset-y-0 left-0 z-20 w-2/5 -skew-x-12"
-            style={{
-              background:
-                "linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.78) 45%, rgba(255,255,255,0) 100%)",
-            }}
-          />
-        ) : null}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]">
+          {activeSheenId ? (
+            <motion.div
+              key={activeSheenId}
+              initial={{ x: "-120%", opacity: 0 }}
+              animate={{ x: "170%", opacity: [0, 0.9, 0] }}
+              transition={{ duration: 0.95, ease: "easeInOut" }}
+              onAnimationComplete={() => setActiveSheenId(null)}
+              className="absolute inset-y-0 left-0 z-20 w-2/5 -skew-x-12"
+              style={{
+                background:
+                  "linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.78) 45%, rgba(255,255,255,0) 100%)",
+              }}
+            />
+          ) : null}
+        </div>
 
         <div
           ref={contentRef}
@@ -2114,13 +2337,17 @@ export default function TagGenerator({
             ) : null}
           </div>
 
-          <div className="min-h-0 flex-1 overflow-hidden">
+          <div
+            className={cn(
+              "min-h-0 flex-1",
+              historyMode === "history" ? "overflow-hidden" : "overflow-visible",
+            )}
+          >
             {historyMode === "generator" ? (
               <div
                 data-testid="generator-scroll-panel"
-                className="pr-2"
+                className="overflow-visible"
               >
-                <div className="px-1 pb-1">
                 <div className="mb-3">
                   <div className="mb-1.5 flex items-center justify-between">
                     <label className="text-sm font-medium text-stone-700">
@@ -2132,36 +2359,41 @@ export default function TagGenerator({
                       </span>
                     ) : null}
                   </div>
-                  <input
-                    ref={titleInputRef}
-                    type="text"
-                    maxLength={TITLE_MAX}
-                    value={title}
-                    onFocus={() => {
-                      if (isDemoActive) {
-                        beginDemoInteraction();
-                        return;
-                      }
-                      markUserInteraction();
-                      revealDescriptionFromFocus();
-                      setFocusedField("title");
-                      if (onFocus) onFocus();
-                    }}
-                    onBlur={() => {
-                      setFocusedField(null);
-                    }}
-                    onChange={(e) => {
-                      markUserInteraction();
-                      const nextTitle = e.target.value;
-                      setTitle(nextTitle);
-                      syncDraftFromUserInput(nextTitle, description);
-                      if (nextTitle.length > 0) {
-                        setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
-                      }
-                    }}
-                    placeholder={titlePlaceholder}
-                    className="w-full rounded-xl border border-stone-200 bg-white/70 px-4 py-3 text-sm text-stone-800 placeholder-stone-400 transition-all focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
-                  />
+                  <div
+                    data-testid="title-focus-gutter"
+                    className="-mx-1 px-1 pb-1"
+                  >
+                    <input
+                      ref={titleInputRef}
+                      type="text"
+                      maxLength={TITLE_MAX}
+                      value={title}
+                      onFocus={() => {
+                        if (isDemoActive) {
+                          beginDemoInteraction();
+                          return;
+                        }
+                        markUserInteraction();
+                        revealDescriptionFromFocus();
+                        setFocusedField("title");
+                        if (onFocus) onFocus();
+                      }}
+                      onBlur={() => {
+                        setFocusedField(null);
+                      }}
+                      onChange={(e) => {
+                        markUserInteraction();
+                        const nextTitle = e.target.value;
+                        setTitle(nextTitle);
+                        syncDraftFromUserInput(nextTitle, description);
+                        if (nextTitle.length > 0) {
+                          setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
+                        }
+                      }}
+                      placeholder={titlePlaceholder}
+                      className="w-full rounded-xl border border-stone-200 bg-white/70 px-4 py-3 text-sm text-stone-800 placeholder-stone-400 transition-all focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
+                    />
+                  </div>
                 </div>
 
                 <AnimatePresence>
@@ -2202,54 +2434,61 @@ export default function TagGenerator({
                           </span>
                         ) : null}
                       </div>
-                      <textarea
-                        maxLength={DESCRIPTION_MAX}
-                        value={description}
-                        onFocus={() => {
-                          setFocusedField("description");
-                        }}
-                        onBlur={() => {
-                          setFocusedField(null);
-                        }}
-                        onChange={(e) => {
-                          markUserInteraction();
-                          const nextDescription = e.target.value;
-                          setDescription(nextDescription);
-                          syncDraftFromUserInput(title, nextDescription);
-                        }}
-                        placeholder="Add more details about your product to get more accurate tags..."
-                        rows={3}
-                        className="w-full resize-none rounded-xl border border-stone-200 bg-white/70 px-4 py-3 text-sm text-stone-800 placeholder-stone-400 transition-all focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
-                      />
+                      <div
+                        data-testid="description-focus-gutter"
+                        className="-mx-1 px-1 pb-1"
+                      >
+                        <textarea
+                          maxLength={DESCRIPTION_MAX}
+                          value={description}
+                          onFocus={() => {
+                            setFocusedField("description");
+                          }}
+                          onBlur={() => {
+                            setFocusedField(null);
+                          }}
+                          onChange={(e) => {
+                            markUserInteraction();
+                            const nextDescription = e.target.value;
+                            setDescription(nextDescription);
+                            syncDraftFromUserInput(title, nextDescription);
+                          }}
+                          placeholder="Add more details about your product to get more accurate tags..."
+                          rows={3}
+                          className="w-full resize-none rounded-xl border border-stone-200 bg-white/70 px-4 py-3 text-sm text-stone-800 placeholder-stone-400 transition-all focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
+                        />
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
-                <Button
-                  onClick={() => {
-                    if (isDemoActive) {
-                      beginDemoInteraction();
-                      return;
-                    }
-                    void handleGenerate();
-                  }}
-                  disabled={isGenerating || !title.trim()}
-                  isLoading={isGenerating}
-                  loadingLabel="Generating tags"
-                  leftIcon={<Sparkles className="h-4 w-4" />}
-                  className={`mt-1 flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-semibold text-white transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${
-                    hasTitle
-                      ? "bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
-                      : "bg-gray-300"
-                  }`}
-                  style={{
-                    boxShadow: title.trim()
-                      ? "0 4px 20px rgba(249,115,22,0.35)"
-                      : "none",
-                  }}
-                >
-                  Generate 13 tags
-                </Button>
+                <div className="pb-2">
+                  <Button
+                    onClick={() => {
+                      if (isDemoActive) {
+                        beginDemoInteraction();
+                        return;
+                      }
+                      void handleGenerate();
+                    }}
+                    disabled={isGenerating || !title.trim()}
+                    isLoading={isGenerating}
+                    loadingLabel="Generating tags"
+                    leftIcon={<Sparkles className="h-4 w-4" />}
+                    className={`mt-1 flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-semibold text-white transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${
+                      hasTitle
+                        ? "bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
+                        : "bg-gray-300"
+                    }`}
+                    style={{
+                      boxShadow: title.trim()
+                        ? "0 4px 20px rgba(249,115,22,0.35)"
+                        : "none",
+                    }}
+                  >
+                    Generate 13 tags
+                  </Button>
+                </div>
 
                 <TurnstileField
                   ref={turnstileRef}
@@ -2348,7 +2587,7 @@ export default function TagGenerator({
                         </div>
                       ) : (
                         <div
-                          className={`flex flex-wrap gap-2 ${paywall ? "blur-sm select-none" : ""}`}
+                          className={`flex flex-wrap items-center gap-2 ${paywall ? "blur-sm select-none" : ""}`}
                         >
                           {visibleTags.map((tag, i) =>
                             shouldRevealTagChips ? (
@@ -2379,6 +2618,20 @@ export default function TagGenerator({
                               </span>
                             ),
                           )}
+                          {showGenerationFeedbackControls ? (
+                            <div className="ml-auto flex items-center justify-end">
+                              <FeedbackButtons
+                                rating={currentGenerationFeedback?.rating ?? null}
+                                disabled={isGenerationFeedbackSaving}
+                                onUp={() => {
+                                  void onGenerationFeedbackUp();
+                                }}
+                                onDown={() => {
+                                  void onGenerationFeedbackDown();
+                                }}
+                              />
+                            </div>
+                          ) : null}
                         </div>
                       )}
 
@@ -2424,7 +2677,6 @@ export default function TagGenerator({
                     </motion.div>
                   )}
                 </AnimatePresence>
-                </div>
               </div>
             ) : (
               <div className="flex h-full min-h-0 flex-1 overflow-hidden">
@@ -2513,6 +2765,26 @@ export default function TagGenerator({
           </motion.div>
         ) : null}
       </AnimatePresence>
+
+      <FeedbackModal
+        open={isGenerationDownvoteModalOpen}
+        title="What went wrong with these tags?"
+        placeholder="Please tell us what went wrong with these tags so we can improve future tags."
+        initialNote={
+          currentGenerationFeedback?.rating === "down"
+            ? currentGenerationFeedback.note
+            : ""
+        }
+        isSubmitting={isGenerationFeedbackSaving}
+        onCloseWithoutNote={() => {
+          setIsGenerationDownvoteModalOpen(false);
+          void submitGenerationDownvote("");
+        }}
+        onSubmit={(note) => {
+          setIsGenerationDownvoteModalOpen(false);
+          void submitGenerationDownvote(note);
+        }}
+      />
 
       <AnimatePresence>
         {historyConfirmAction ? (

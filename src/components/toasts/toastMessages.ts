@@ -113,6 +113,21 @@ export const toastMessages = {
     body: "Could not restore this generation. Please try again.",
     type: "danger",
   },
+  articleFeedbackSaved: {
+    title: "Feedback saved",
+    body: "Thanks for the feedback.",
+    type: "success",
+  },
+  articleFeedbackFailed: {
+    title: "Feedback failed",
+    body: "Could not save article feedback. Please try again.",
+    type: "danger",
+  },
+  generationFeedbackFailed: {
+    title: "Feedback failed",
+    body: "Could not save generation feedback. Please try again.",
+    type: "danger",
+  },
   accountCreated: {
     title: "Account created",
     body: "Your free generation is ready. Try it now.",

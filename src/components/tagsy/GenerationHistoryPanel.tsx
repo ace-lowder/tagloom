@@ -294,6 +294,7 @@ export type GenerationHistoryItem = {
   discoveryTags: string[];
   archivedAt?: string | null;
   isDraft?: boolean;
+  feedback?: { rating: "up" | "down"; note: string | null } | null;
 };
 
 export type HistoryMode = "generator" | "history";

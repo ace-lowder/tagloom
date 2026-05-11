@@ -1,17 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ChevronRight,
   Mail,
-  ThumbsDown,
-  ThumbsUp,
 } from "lucide-react";
+import FeedbackButtons, { type FeedbackRating } from "@/components/feedback/FeedbackButtons";
+import FeedbackModal from "@/components/feedback/FeedbackModal";
 import type { SupportArticle, SupportTopic } from "@/content/support";
 import SiteFooter from "@/components/shared/SiteFooter";
+import { toastMessages } from "@/components/toasts/toastMessages";
+import { useToast } from "@/components/toasts/toasts";
 import { ButtonLink } from "@/components/ui/button";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type SupportArticlePageProps = {
   article: SupportArticle;
@@ -26,7 +29,19 @@ export default function SupportArticlePage({
   allTopics,
   allArticles,
 }: SupportArticlePageProps) {
+  const { showToast } = useToast();
   const [helpful, setHelpful] = useState<boolean | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [feedback, setFeedback] = useState<{
+    rating: FeedbackRating;
+    note: string | null;
+  } | null>(null);
+  const [isSavingFeedback, setIsSavingFeedback] = useState(false);
+  const [isDownvoteModalOpen, setIsDownvoteModalOpen] = useState(false);
+  const downvotePreviousFeedbackRef = useRef<{
+    rating: FeedbackRating;
+    note: string | null;
+  } | null>(null);
 
   const relatedArticles = useMemo(
     () =>
@@ -35,6 +50,131 @@ export default function SupportArticlePage({
         .filter((item): item is SupportArticle => Boolean(item)),
     [article.relatedSlugs, allArticles],
   );
+
+  useEffect(() => {
+    let isMounted = true;
+    const supabase = createSupabaseBrowserClient();
+    if (!supabase) return;
+
+    supabase.auth.getUser().then(({ data }) => {
+      if (!isMounted) return;
+      setIsAuthenticated(Boolean(data.user));
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const saveFeedback = async (rating: FeedbackRating, note?: string) => {
+    setIsSavingFeedback(true);
+    try {
+      const response = await fetch("/api/feedback/article", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "set",
+          articleSlug: article.slug,
+          rating,
+          note,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error("Could not save article feedback.");
+      }
+      const data = (await response.json().catch(() => ({}))) as {
+        feedback?: { rating: FeedbackRating; note: string | null };
+      };
+      setFeedback(data.feedback ?? { rating, note: rating === "up" ? null : note ?? null });
+      showToast(toastMessages.articleFeedbackSaved);
+    } catch {
+      showToast(toastMessages.articleFeedbackFailed);
+      throw new Error("Article feedback save failed");
+    } finally {
+      setIsSavingFeedback(false);
+    }
+  };
+
+  const clearFeedback = async () => {
+    setIsSavingFeedback(true);
+    try {
+      const response = await fetch("/api/feedback/article", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "clear",
+          articleSlug: article.slug,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error("Could not clear article feedback.");
+      }
+      setFeedback(null);
+    } catch {
+      showToast(toastMessages.articleFeedbackFailed);
+      throw new Error("Article feedback clear failed");
+    } finally {
+      setIsSavingFeedback(false);
+    }
+  };
+
+  const onThumbsUp = async () => {
+    if (!isAuthenticated) {
+      setHelpful(true);
+      return;
+    }
+
+    const previous = feedback;
+    if (feedback?.rating === "up") {
+      setFeedback(null);
+      try {
+        await clearFeedback();
+      } catch {
+        setFeedback(previous);
+      }
+      return;
+    }
+
+    setFeedback({ rating: "up", note: null });
+    try {
+      await saveFeedback("up");
+    } catch {
+      setFeedback(previous);
+    }
+  };
+
+  const onThumbsDown = async () => {
+    if (!isAuthenticated) {
+      setHelpful(false);
+      return;
+    }
+
+    const previous = feedback;
+    if (feedback?.rating === "down") {
+      setFeedback(null);
+      try {
+        await clearFeedback();
+      } catch {
+        setFeedback(previous);
+      }
+      return;
+    }
+
+    setFeedback({ rating: "down", note: null });
+    downvotePreviousFeedbackRef.current = previous;
+    setIsDownvoteModalOpen(true);
+  };
+
+  const submitDownvote = async (note: string) => {
+    const previous = downvotePreviousFeedbackRef.current ?? feedback;
+    try {
+      await saveFeedback("down", note);
+    } catch {
+      setFeedback(previous);
+    } finally {
+      downvotePreviousFeedbackRef.current = null;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-stone-50 font-sans">
@@ -61,29 +201,17 @@ export default function SupportArticlePage({
 
               <div className="mt-10 border-t border-stone-100 pt-6">
                 <p className="mb-3 text-sm font-medium text-stone-700">Was this article helpful?</p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setHelpful(true)}
-                    className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
-                      helpful === true
-                        ? "border-green-400 bg-green-50 text-green-700"
-                        : "border-stone-200 text-stone-600 hover:border-stone-300"
-                    }`}
-                  >
-                    <ThumbsUp className="h-4 w-4" /> Yes
-                  </button>
-                  <button
-                    onClick={() => setHelpful(false)}
-                    className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
-                      helpful === false
-                        ? "border-red-300 bg-red-50 text-red-600"
-                        : "border-stone-200 text-stone-600 hover:border-stone-300"
-                    }`}
-                  >
-                    <ThumbsDown className="h-4 w-4" /> No
-                  </button>
-                </div>
-                {helpful !== null ? (
+                <FeedbackButtons
+                  rating={isAuthenticated ? feedback?.rating ?? null : helpful === null ? null : helpful ? "up" : "down"}
+                  disabled={isSavingFeedback}
+                  onUp={() => {
+                    void onThumbsUp();
+                  }}
+                  onDown={() => {
+                    void onThumbsDown();
+                  }}
+                />
+                {!isAuthenticated && helpful !== null ? (
                   <p className="mt-3 text-sm text-stone-500">
                     {helpful ? (
                       "Glad it helped!"
@@ -167,6 +295,21 @@ export default function SupportArticlePage({
       </div>
 
       <SiteFooter />
+      <FeedbackModal
+        open={isDownvoteModalOpen}
+        title="Tell us what went wrong"
+        placeholder="Please tell us what was unhelpful so we can improve this article."
+        isSubmitting={isSavingFeedback}
+        initialNote={feedback?.rating === "down" ? feedback.note : ""}
+        onCloseWithoutNote={() => {
+          setIsDownvoteModalOpen(false);
+          void submitDownvote("");
+        }}
+        onSubmit={(note) => {
+          setIsDownvoteModalOpen(false);
+          void submitDownvote(note);
+        }}
+      />
     </div>
   );
 }

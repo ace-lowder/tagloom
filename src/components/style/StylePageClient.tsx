@@ -18,6 +18,8 @@ import {
   X,
 } from "lucide-react";
 
+import FeedbackButtons from "@/components/feedback/FeedbackButtons";
+import FeedbackModal from "@/components/feedback/FeedbackModal";
 import { toastMessages } from "@/components/toasts/toastMessages";
 import { useToast, type ToastInput } from "@/components/toasts/toasts";
 import BrandMark from "@/components/brand/BrandMark";
@@ -35,6 +37,7 @@ import {
 export default function StylePageClient() {
   const { showToast } = useToast();
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
+  const [showFeedbackModalSample, setShowFeedbackModalSample] = useState(false);
 
   const runLoadingDemo = (key: string) => {
     setLoadingKey(key);
@@ -481,7 +484,61 @@ export default function StylePageClient() {
             </div>
           </Card>
         </Section>
+
+        <Section title="Feedback">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card className="space-y-3 p-5">
+              <p className="text-sm font-semibold text-stone-800">
+                Feedback button states
+              </p>
+              <div className="flex items-center gap-4">
+                <FeedbackButtons
+                  rating={null}
+                  onUp={() => {}}
+                  onDown={() => {}}
+                />
+                <FeedbackButtons
+                  rating="up"
+                  onUp={() => {}}
+                  onDown={() => {}}
+                />
+                <FeedbackButtons
+                  rating="down"
+                  onUp={() => {}}
+                  onDown={() => {}}
+                />
+                <FeedbackButtons
+                  rating={null}
+                  disabled
+                  onUp={() => {}}
+                  onDown={() => {}}
+                />
+              </div>
+            </Card>
+
+            <Card className="space-y-3 p-5">
+              <p className="text-sm font-semibold text-stone-800">
+                Downvote modal sample
+              </p>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowFeedbackModalSample(true)}
+              >
+                Open feedback modal
+              </Button>
+            </Card>
+          </div>
+        </Section>
       </div>
+
+      <FeedbackModal
+        open={showFeedbackModalSample}
+        title="Sample feedback modal"
+        placeholder="Please tell us what went wrong with these tags so we can improve future tags."
+        onCloseWithoutNote={() => setShowFeedbackModalSample(false)}
+        onSubmit={() => setShowFeedbackModalSample(false)}
+      />
     </main>
   );
 }
