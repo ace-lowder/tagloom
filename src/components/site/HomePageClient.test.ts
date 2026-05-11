@@ -6,8 +6,8 @@ describe("HomePageClient benefits", () => {
   it("uses the expected feature card links", () => {
     expect(benefits.map((benefit) => [benefit.title, benefit.href])).toEqual([
       ["Get found in Etsy search", "/blog/how-to-rank-higher-on-etsy#why-tags-matter"],
-      ["13 tags in seconds", "/blog/etsy-tag-tips-every-seller-should-know"],
-      ["Stop guessing keywords.", "/blog/mistakes-new-etsy-sellers-make"],
+      ["Get tags in seconds", "/blog/etsy-tag-tips-every-seller-should-know"],
+      ["No more guesswork", "/blog/mistakes-new-etsy-sellers-make"],
     ]);
   });
 });
