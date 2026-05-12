@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { applyApiProtection, jsonFromBlockedResult } from "@/lib/apiProtection";
 import { logServerError } from "@/lib/errorLogging";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type ContactPayload = {
   name?: string;
@@ -22,6 +24,7 @@ const MAX_NAME_LENGTH = 100;
 const MAX_EMAIL_LENGTH = 254;
 const MAX_SUBJECT_LENGTH = 160;
 const MAX_MESSAGE_LENGTH = 4000;
+const MAX_ERROR_MESSAGE_LENGTH = 1000;
 const RESEND_EMAILS_URL = "https://api.resend.com/emails";
 
 function sanitizeInput(value: unknown): string {
@@ -125,6 +128,92 @@ async function sendSupportMessage(payload: SanitizedPayload, meta: { ip: string 
   if (!response.ok) {
     throw new Error(`Resend email failed with ${response.status}.`);
   }
+
+  const json = (await response.json().catch(() => null)) as { id?: unknown } | null;
+  return typeof json?.id === "string" ? json.id : null;
+}
+
+function truncateErrorMessage(message: string) {
+  return message.length > MAX_ERROR_MESSAGE_LENGTH
+    ? message.slice(0, MAX_ERROR_MESSAGE_LENGTH)
+    : message;
+}
+
+function getRequestMeta(req: NextRequest) {
+  return {
+    ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null,
+    userAgent: req.headers.get("user-agent"),
+  };
+}
+
+async function getOptionalUserId() {
+  const supabase = createSupabaseServerClient();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase.auth.getUser();
+  if (error) return null;
+
+  return data.user?.id ?? null;
+}
+
+type SupportMessageInsert = {
+  user_id: string | null;
+  name: string | null;
+  email: string;
+  subject: string;
+  message: string;
+  status: "pending";
+  email_domain: string | null;
+  ip_address: string | null;
+  user_agent: string | null;
+};
+
+async function insertSupportMessage(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  supportMessage: SupportMessageInsert,
+) {
+  const { data, error } = await (
+    admin!.from("support_messages") as ReturnType<NonNullable<typeof admin>["from"]> & {
+      insert: (
+        values: SupportMessageInsert,
+      ) => {
+        select: (columns: string) => {
+          single: () => Promise<{ data: { id: string } | null; error: unknown }>;
+        };
+      };
+    }
+  )
+    .insert(supportMessage)
+    .select("id")
+    .single();
+
+  if (error || !data?.id) return { ok: false as const, error };
+  return { ok: true as const, id: data.id };
+}
+
+async function updateSupportMessageStatus(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  supportMessageId: string,
+  patch: {
+    status: "sent" | "failed";
+    resend_message_id?: string | null;
+    error_message?: string | null;
+  },
+) {
+  const { error } = await (
+    admin!.from("support_messages") as ReturnType<NonNullable<typeof admin>["from"]> & {
+      update: (values: Record<string, unknown>) => {
+        eq: (column: string, value: string) => Promise<{ error: unknown }>;
+      };
+    }
+  )
+    .update({
+      ...patch,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", supportMessageId);
+
+  return { error };
 }
 
 export async function POST(req: NextRequest) {
@@ -150,20 +239,102 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: validation.error }, { status: 400 });
   }
 
-  try {
-    await sendSupportMessage(validation.value, {
-      ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null,
-      userAgent: req.headers.get("user-agent"),
+  const meta = getRequestMeta(req);
+  const userId = await getOptionalUserId();
+  const admin = createSupabaseAdminClient();
+
+  if (!admin) {
+    await logServerError({
+      source: "api.support.contact.persist_admin_missing",
+      route: "/api/support/contact",
+      method: req.method,
+      status: 500,
+      error: new Error("Supabase admin client unavailable."),
+      userId,
+      metadata: {
+        stage: "persist_admin_missing",
+        emailDomain: getEmailDomain(validation.value.email),
+      },
     });
+    return NextResponse.json(
+      { ok: false, error: "Could not submit your message." },
+      { status: 500 },
+    );
+  }
+
+  const insertedSupportMessage = await insertSupportMessage(admin, {
+    user_id: userId,
+    name: validation.value.name,
+    email: validation.value.email,
+    subject: validation.value.subject,
+    message: validation.value.message,
+    status: "pending",
+    email_domain: getEmailDomain(validation.value.email),
+    ip_address: meta.ip,
+    user_agent: meta.userAgent,
+  });
+
+  if (!insertedSupportMessage.ok) {
+    await logServerError({
+      source: "api.support.contact.persist_insert",
+      route: "/api/support/contact",
+      method: req.method,
+      status: 500,
+      error: insertedSupportMessage.error ?? new Error("Support message insert failed."),
+      userId,
+      metadata: {
+        stage: "persist_insert",
+        emailDomain: getEmailDomain(validation.value.email),
+      },
+    });
+    return NextResponse.json(
+      { ok: false, error: "Could not submit your message." },
+      { status: 500 },
+    );
+  }
+
+  const supportMessageId = insertedSupportMessage.id;
+
+  try {
+    const resendMessageId = await sendSupportMessage(validation.value, meta);
+    const sentUpdate = await updateSupportMessageStatus(admin, supportMessageId, {
+      status: "sent",
+      resend_message_id: resendMessageId,
+    });
+
+    if (sentUpdate.error) {
+      await logServerError({
+        source: "api.support.contact.persist_sent_update",
+        route: "/api/support/contact",
+        method: req.method,
+        status: 500,
+        error: sentUpdate.error,
+        userId,
+        metadata: {
+          stage: "persist_sent_update",
+          supportMessageId,
+        },
+      });
+    }
   } catch (error) {
+    const normalizedErrorMessage = truncateErrorMessage(
+      error instanceof Error ? error.message : String(error),
+    );
+    await updateSupportMessageStatus(admin, supportMessageId, {
+      status: "failed",
+      error_message: normalizedErrorMessage,
+    });
+
     await logServerError({
       source: "api.support.contact.resend_send",
       route: "/api/support/contact",
       method: req.method,
       status: 500,
       error,
+      userId,
       metadata: {
         stage: "resend_send",
+        supportMessageId,
         emailDomain: getEmailDomain(validation.value.email),
         subjectLength: validation.value.subject.length,
         messageLength: validation.value.message.length,
