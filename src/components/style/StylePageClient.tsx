@@ -34,7 +34,11 @@ import {
 
 // === Components ===
 
-export default function StylePageClient() {
+export default function StylePageClient({
+  embedded = false,
+}: {
+  embedded?: boolean;
+}) {
   const { showToast } = useToast();
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
   const [showFeedbackModalSample, setShowFeedbackModalSample] = useState(false);
@@ -45,8 +49,20 @@ export default function StylePageClient() {
   };
 
   return (
-    <main className="min-h-screen bg-surface-lower px-5 pb-20 pt-28 text-ink">
-      <div className="mx-auto max-w-6xl space-y-12">
+    <main
+      className={
+        embedded
+          ? "min-h-full bg-surface-lower text-ink"
+          : "min-h-screen bg-surface-lower px-5 pb-20 pt-28 text-ink"
+      }
+    >
+      <div
+        className={
+          embedded
+            ? "mx-auto max-w-6xl space-y-12 px-5 py-6"
+            : "mx-auto max-w-6xl space-y-12"
+        }
+      >
         <Section title="Typography">
           <div className="space-y-3">
             <h1 className="text-5xl font-semibold">Heading one</h1>

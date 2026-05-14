@@ -1,5 +1,5 @@
-import StylePageClient from "@/components/style/StylePageClient";
+import { redirect } from "next/navigation";
 
 export default function StylePage() {
-  return <StylePageClient />;
+  redirect("/admin/style");
 }

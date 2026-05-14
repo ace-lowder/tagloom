@@ -41,6 +41,17 @@ Local verification:
 If you do not want local/dev traffic sent to GA, omit
 `NEXT_PUBLIC_GA_MEASUREMENT_ID`.
 
+## Admin Dashboard
+
+`/admin` and all `/admin/*` routes are private.
+
+- Only `ace.lowder@gmail.com` is allowed access.
+- Unauthenticated users are redirected to `/login?next=/admin`.
+- Authenticated non-admin users are redirected to `/`.
+- Dashboard pages are read-only and use Supabase service-role reads on the server.
+- Admin pages support a shared range switch: `All / 1d / 7d / 30d`.
+- GA traffic reporting remains in Google Analytics for now.
+
 ## Database Migrations
 
 Apply Supabase migrations before running features that read persisted data. The
