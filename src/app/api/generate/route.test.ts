@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { applyApiProtection } from "@/lib/apiProtection";
 import { logServerError } from "@/lib/errorLogging";
-import { generateTags } from "@/lib/tag-generation";
+import { generateTags } from "@/lib/generation";
 import { POST } from "./route";
 
 const getUserMock = vi.fn();
@@ -34,7 +34,7 @@ vi.mock("@/lib/stripeBillingSync", () => ({
   syncBillingProjectionForUser: vi.fn(),
 }));
 
-vi.mock("@/lib/tag-generation", () => ({
+vi.mock("@/lib/generation", () => ({
   generateTags: vi.fn(),
   getPlaceholderTags: vi.fn(() => ({
     target: ["placeholder target"],

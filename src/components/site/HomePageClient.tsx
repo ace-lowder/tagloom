@@ -15,7 +15,7 @@ import {
 import PricingCards, {
   type PricingPlanId,
 } from "@/components/pricing/PricingCards";
-import TagGenerator from "@/components/tagsy/TagGenerator";
+import Generator from "@/components/generator/Generator";
 import { Card } from "@/components/ui/card";
 import { buttonClassNames } from "@/components/ui/button";
 import SiteFooter from "@/components/shared/SiteFooter";
@@ -248,7 +248,7 @@ function HeroSection({ onGenerate }: HeroSectionProps) {
         </motion.div>
 
         <div className="mt-24">
-          <TagGenerator />
+          <Generator />
         </div>
       </div>
     </section>

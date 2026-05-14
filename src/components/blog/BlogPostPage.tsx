@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Calendar } from "lucide-react";
-import { DEFAULT_BLOG_BOTTOM_CTA, type BlogPost } from "@/content/blog";
+import { DEFAULT_BLOG_BOTTOM_CTA } from "@/content/blogDefaults";
+import type { BlogPost } from "@/content/blog";
 import SiteFooter from "@/components/shared/SiteFooter";
 import { triggerGeneratorCta } from "@/lib/generatorCta";
 
@@ -129,7 +130,7 @@ export default function BlogPostPage({ post }: BlogPostPageProps) {
               </div>
             ) : null}
 
-            <div className="prose-tagsy prose-blog" dangerouslySetInnerHTML={{ __html: post.contentHtml }} />
+            <div className="prose-content prose-blog" dangerouslySetInnerHTML={{ __html: post.contentHtml }} />
 
             <section className="mt-12 rounded-2xl border border-orange-200 bg-gradient-to-br from-orange-50 to-white p-6 sm:p-7">
               {cta.eyebrow ? (

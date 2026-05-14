@@ -1,7 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import AdminCopyButton from "@/components/admin/AdminCopyButton";
-import AdminRowCopyButton from "@/components/admin/AdminRowCopyButton";
+import { AdminCopyButton, AdminRowCopyButton } from "@/components/admin/AdminComponents";
 
 describe("admin copy controls", () => {
   it("copies compact JSON payload", async () => {

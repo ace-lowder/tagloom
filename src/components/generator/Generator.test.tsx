@@ -2,7 +2,7 @@ import React from "react";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ToastProvider } from "@/components/toasts/ToastProvider";
-import TagGenerator from "./TagGenerator";
+import Generator from "./Generator";
 
 function renderWithToasts(ui: React.ReactElement) {
   return render(<ToastProvider>{ui}</ToastProvider>);
@@ -170,7 +170,7 @@ beforeEach(() => {
   window.sessionStorage.clear();
 });
 
-describe("TagGenerator demo chips", () => {
+describe("Generator demo chips", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
@@ -186,7 +186,7 @@ describe("TagGenerator demo chips", () => {
     const expected = sanitizeExpectedTags(fixture.tags.target, fixture.tags.discovery);
 
     renderWithToasts(
-      <TagGenerator
+      <Generator
         demoConfig={{
           timings: TEST_TIMINGS,
           fixtures: [fixture],
@@ -220,7 +220,7 @@ describe("TagGenerator demo chips", () => {
     const expected = sanitizeExpectedTags(fixture.tags.target, fixture.tags.discovery);
 
     renderWithToasts(
-      <TagGenerator
+      <Generator
         demoConfig={{
           timings: TEST_TIMINGS,
           fixtures: [fixture],
@@ -249,7 +249,7 @@ describe("TagGenerator demo chips", () => {
     const expected = sanitizeExpectedTags(fixture.tags.target, fixture.tags.discovery);
 
     renderWithToasts(
-      <TagGenerator
+      <Generator
         demoConfig={{
           timings: TEST_TIMINGS,
           fixtures: [fixture],
@@ -274,7 +274,7 @@ describe("TagGenerator demo chips", () => {
     const expected = sanitizeExpectedTags(fixture.tags.target, fixture.tags.discovery);
 
     renderWithToasts(
-      <TagGenerator
+      <Generator
         demoConfig={{
           timings: CLEAR_TEST_TIMINGS,
           fixtures: [fixture],
@@ -314,7 +314,7 @@ describe("TagGenerator demo chips", () => {
     };
 
     renderWithToasts(
-      <TagGenerator
+      <Generator
         demoConfig={{
           timings: TEST_TIMINGS,
           fixtures: [fixture],
@@ -347,7 +347,7 @@ describe("TagGenerator demo chips", () => {
     };
 
     renderWithToasts(
-      <TagGenerator
+      <Generator
         demoConfig={{
           timings: CLEAR_TEST_TIMINGS,
           fixtures: [fixture],
@@ -370,7 +370,7 @@ describe("TagGenerator demo chips", () => {
 
   it("keeps default placeholder when refocusing after user interaction", async () => {
     renderWithToasts(
-      <TagGenerator
+      <Generator
         demoConfig={{
           timings: TEST_TIMINGS,
           fixtures: [
@@ -407,7 +407,7 @@ describe("TagGenerator demo chips", () => {
     };
 
     renderWithToasts(
-      <TagGenerator
+      <Generator
         demoConfig={{
           timings: TEST_TIMINGS,
           fixtures: [fixture],
@@ -427,7 +427,7 @@ describe("TagGenerator demo chips", () => {
   });
 });
 
-describe("TagGenerator auth unlock flow", () => {
+describe("Generator auth unlock flow", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
@@ -492,7 +492,7 @@ describe("TagGenerator auth unlock flow", () => {
 
     vi.stubGlobal("fetch", fetchMock);
 
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     const titleInput = screen.getByPlaceholderText(
       "e.g. Handmade ceramic coffee mug with minimalist design",
@@ -569,7 +569,7 @@ describe("TagGenerator auth unlock flow", () => {
 
     vi.stubGlobal("fetch", fetchMock);
 
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     const titleInput = screen.getByPlaceholderText(
       "e.g. Handmade ceramic coffee mug with minimalist design",
@@ -610,7 +610,7 @@ describe("TagGenerator auth unlock flow", () => {
 
     vi.stubGlobal("fetch", fetchMock);
 
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     const titleInput = screen.getByPlaceholderText(
       "e.g. Handmade ceramic coffee mug with minimalist design",
@@ -632,7 +632,7 @@ describe("TagGenerator auth unlock flow", () => {
   });
 });
 
-describe("TagGenerator CTA event", () => {
+describe("Generator CTA event", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
@@ -644,7 +644,7 @@ describe("TagGenerator CTA event", () => {
     const scrollIntoView = vi.fn();
     Element.prototype.scrollIntoView = scrollIntoView;
 
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     act(() => {
       window.dispatchEvent(new CustomEvent("tagloom:generator-cta"));
@@ -665,7 +665,7 @@ describe("TagGenerator CTA event", () => {
   });
 });
 
-describe("TagGenerator usage label info", () => {
+describe("Generator usage label info", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
@@ -691,7 +691,7 @@ describe("TagGenerator usage label info", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     expect(await screen.findByText("76/100 generations remaining")).toBeInTheDocument();
 
@@ -744,7 +744,7 @@ describe("TagGenerator usage label info", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalled();
@@ -754,7 +754,7 @@ describe("TagGenerator usage label info", () => {
   });
 });
 
-describe("TagGenerator generation history mode", () => {
+describe("Generator generation history mode", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
@@ -837,7 +837,7 @@ describe("TagGenerator generation history mode", () => {
 
   it("hides the history switch in demo mode and shows it after user interaction with authenticated history", async () => {
     mockHistoryFetch([historyItem()]);
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     expect(
       screen.queryByRole("button", { name: "Show generation history" }),
@@ -852,7 +852,7 @@ describe("TagGenerator generation history mode", () => {
 
   it("switches to the history viewer and back without clearing generator state", async () => {
     mockHistoryFetch([historyItem()]);
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     const titleInput = screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER);
     fireEvent.focus(titleInput);
@@ -878,7 +878,7 @@ describe("TagGenerator generation history mode", () => {
 
   it("animates description reveal only on first focus after load", async () => {
     mockHistoryFetch([historyItem()]);
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     const titleInput = screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER);
     fireEvent.focus(titleInput);
@@ -896,7 +896,7 @@ describe("TagGenerator generation history mode", () => {
 
   it("renders the mode switch as an icon toggle with accessible labels and pressed state", async () => {
     mockHistoryFetch([historyItem()]);
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     fireEvent.focus(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER));
 
@@ -919,7 +919,7 @@ describe("TagGenerator generation history mode", () => {
 
   it("locks shell height in history mode and releases it when returning to generator", async () => {
     mockHistoryFetch([historyItem()]);
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     fireEvent.focus(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER));
     expect(screen.getByTestId("generator-scroll-panel")).toHaveClass(
@@ -969,7 +969,7 @@ describe("TagGenerator generation history mode", () => {
       }),
     );
     mockHistoryFetch([historyItem()]);
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     expect(screen.getByText("Tagloom Generator")).toBeInTheDocument();
     expect(screen.queryByText("Generation History")).not.toBeInTheDocument();
@@ -977,7 +977,7 @@ describe("TagGenerator generation history mode", () => {
 
   it("renders the empty history state when no drafts or generated rows exist", async () => {
     mockHistoryFetch([]);
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     fireEvent.focus(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER));
     await openHistory();
@@ -995,7 +995,7 @@ describe("TagGenerator generation history mode", () => {
         description: "Lightweight hoops with a polished minimalist finish",
       }),
     ]);
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     fireEvent.focus(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER));
     await openHistory();
@@ -1019,7 +1019,7 @@ describe("TagGenerator generation history mode", () => {
       .mockImplementation(() => undefined);
 
     mockHistoryFetch([historyItem({ targetTags: ["tag one", "tag one"], discoveryTags: ["tag two"] })]);
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     fireEvent.focus(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER));
     await openHistory();
@@ -1095,7 +1095,7 @@ describe("TagGenerator generation history mode", () => {
       }),
     );
     mockHistoryFetch([historyItem()]);
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     expect(screen.queryByText("Listing Description")).not.toBeInTheDocument();
     const titleInput = screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER);
@@ -1111,7 +1111,7 @@ describe("TagGenerator generation history mode", () => {
 
   it("selects a draft row and loads it", async () => {
     mockHistoryFetch([]);
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     const titleInput = screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER);
     fireEvent.focus(titleInput);
@@ -1126,7 +1126,7 @@ describe("TagGenerator generation history mode", () => {
 
   it("requires confirmation before deleting a selected draft and clears selection", async () => {
     mockHistoryFetch([historyItem()]);
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     const titleInput = screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER);
     fireEvent.focus(titleInput);
@@ -1146,7 +1146,7 @@ describe("TagGenerator generation history mode", () => {
 
   it("requires confirmation before archiving a generated row and hides it from default history", async () => {
     const fetchMock = mockHistoryFetch([historyItem()]);
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     fireEvent.focus(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER));
     await openHistory();
@@ -1173,7 +1173,7 @@ describe("TagGenerator generation history mode", () => {
         archivedAt: "2026-05-08T13:00:00.000Z",
       }),
     ]);
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     fireEvent.focus(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER));
     await openHistory();
@@ -1217,7 +1217,7 @@ describe("TagGenerator generation history mode", () => {
         archivedAt: "2026-05-08T13:00:00.000Z",
       }),
     ]);
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     fireEvent.focus(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER));
     await openHistory();
@@ -1244,7 +1244,7 @@ describe("TagGenerator generation history mode", () => {
 
   it("status header third click includes archived rows without refetch", async () => {
     const fetchMock = mockHistoryFetch([historyItem({ archivedAt: "2026-05-08T13:00:00.000Z", title: "Archived title" })]);
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     fireEvent.focus(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER));
     await openHistory();
@@ -1274,7 +1274,7 @@ describe("TagGenerator generation history mode", () => {
       historyItem({ id: "hist_old", title: "Old", createdAt: "2026-05-07T12:00:00.000Z" }),
       historyItem({ id: "hist_new", title: "New", createdAt: "2026-05-08T12:00:00.000Z" }),
     ]);
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     fireEvent.focus(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER));
     await openHistory();
@@ -1304,7 +1304,7 @@ describe("TagGenerator generation history mode", () => {
       historyItem({ id: "hist_b", title: "B title", createdAt: "2026-05-07T12:00:00.000Z" }),
       historyItem({ id: "hist_a", title: "A title", createdAt: "2026-05-08T12:00:00.000Z" }),
     ]);
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     fireEvent.focus(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER));
     await openHistory();
@@ -1331,7 +1331,7 @@ describe("TagGenerator generation history mode", () => {
 
   it("initial history fetch includes archived rows", async () => {
     const fetchMock = mockHistoryFetch([historyItem()]);
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
     fireEvent.focus(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER));
 
     await screen.findByRole("button", { name: "Show generation history" });
@@ -1344,7 +1344,7 @@ describe("TagGenerator generation history mode", () => {
   });
 });
 
-describe("TagGenerator generation feedback", () => {
+describe("Generator generation feedback", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
@@ -1413,7 +1413,7 @@ describe("TagGenerator generation feedback", () => {
     const fetchMock = setupFeedbackFetch();
     vi.stubGlobal("fetch", fetchMock);
 
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     expect(screen.queryByLabelText("Thumbs up")).not.toBeInTheDocument();
 
@@ -1445,7 +1445,7 @@ describe("TagGenerator generation feedback", () => {
     const fetchMock = createFetchMockForGenerator(deferredGenerate);
     vi.stubGlobal("fetch", fetchMock);
 
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
     fireEvent.change(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER), {
       target: { value: "Generated listing title" },
     });
@@ -1459,7 +1459,7 @@ describe("TagGenerator generation feedback", () => {
     const fetchMock = setupFeedbackFetch();
     vi.stubGlobal("fetch", fetchMock);
 
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
     fireEvent.change(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER), {
       target: { value: "Generated listing title" },
     });
@@ -1477,7 +1477,7 @@ describe("TagGenerator generation feedback", () => {
     const fetchMock = setupFeedbackFetch();
     vi.stubGlobal("fetch", fetchMock);
 
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
     fireEvent.change(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER), {
       target: { value: "Generated listing title" },
     });
@@ -1504,7 +1504,7 @@ describe("TagGenerator generation feedback", () => {
     const fetchMock = setupFeedbackFetch();
     vi.stubGlobal("fetch", fetchMock);
 
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
     fireEvent.change(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER), {
       target: { value: "Generated listing title" },
     });
@@ -1534,7 +1534,7 @@ describe("TagGenerator generation feedback", () => {
     const fetchMock = setupFeedbackFetch();
     vi.stubGlobal("fetch", fetchMock);
 
-    renderWithToasts(<TagGenerator demoConfig={{ timings: TEST_TIMINGS }} />);
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     fireEvent.change(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER), {
       target: { value: "stop demo" },

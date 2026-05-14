@@ -7,7 +7,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type RefObject,
 } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Clock, Copy, Info, LockOpen, Sparkles } from "lucide-react";
@@ -25,462 +24,65 @@ import { GENERATOR_CTA_EVENT } from "@/lib/generatorCta";
 import { cn } from "@/lib/utils";
 import GradientBackground from "./GradientBackground";
 import {
-  GenerationHistoryPanel,
+  HistoryPanel,
   type GenerationHistoryItem,
   type HistoryMode,
   type HistorySortKey,
   type HistorySortState,
-} from "./GenerationHistoryPanel";
+} from "./HistoryPanel";
+import {
+  DEFAULT_DEMO_TIMINGS,
+  DEFAULT_TITLE_PLACEHOLDER,
+  DEMO_FIXTURES,
+  DESCRIPTION_MAX,
+  GENERATED_TAG_CHIP_CLASSNAME,
+  TITLE_MAX,
+  USAGE_HINT_CLOSE_DELAY_MS,
+  CTA_SCROLL_CORRECTION_DELAY_MS,
+} from "./generatorConstants";
+import {
+  clearHistoryCache,
+  clearPendingContext,
+  generateContextId,
+  loadPendingContext,
+  readHistoryCache,
+  savePendingContext,
+  writeHistoryCache,
+} from "./generatorStorage";
+import { getUsageHintText, sanitizeMergedTags } from "./generatorTags";
+import {
+  archiveGeneration,
+  fetchAccountUsage,
+  fetchGenerationHistory,
+  requestGeneration,
+  restoreGeneration,
+  saveGenerationFeedback,
+} from "./generatorApi";
+import type {
+  ClearPhase,
+  DemoPhase,
+  DemoTimings,
+  DescriptionRevealMode,
+  DraftHistoryState,
+  GenerationFeedback,
+  GeneratorProps,
+  HistoryConfirmAction,
+  PaywallState,
+  PendingContext,
+  TimerMeta,
+} from "./generatorTypes";
 
-type TagGeneratorProps = {
-  onFocus?: () => void;
-  glowRef?: RefObject<HTMLDivElement>;
-  demoConfig?: {
-    timings?: Partial<DemoTimings>;
-    fixtures?: DemoFixture[];
-  };
-};
-
-type GenerateOkResponse = {
-  status: "ok";
-  requestId: string | null;
-  generationId: string;
-  tags: {
-    target: string[];
-    discovery: string[];
-  };
-  source: "model" | "fallback";
-  entitlementUsed:
-    | "free_credit"
-    | "single_use"
-    | "subscription_monthly"
-    | "subscription_yearly";
-};
-
-type GeneratePaywallResponse = {
-  status: "paywall";
-  reason: "auth_required" | "payment_required" | "limit_reached";
-  requestId: string | null;
-  message: string;
-  placeholders: {
-    target: string[];
-    discovery: string[];
-  };
-};
-
-type GenerateResponse = GenerateOkResponse | GeneratePaywallResponse;
-type AccountUsageResponse = {
-  usageLabel: string | null;
-  monthlyResetAt?: string | null;
-};
-type GenerationHistoryResponse = {
-  items: GenerationHistoryItem[];
-  page: number;
-  hasPrev: boolean;
-  hasNext: boolean;
-};
-type GenerationFeedback = { rating: FeedbackRating; note: string | null };
-type DraftHistoryState = {
-  id: string;
-  title: string;
-  description: string;
-  updatedAt: string;
-};
-type HistoryCache = {
-  generatedItems: GenerationHistoryItem[];
-  activeGeneratedItems?: GenerationHistoryItem[];
-  selectedGeneratedId: string | null;
-  drafts: DraftHistoryState[];
-  selectedDraftId: string | null;
-  mode: HistoryMode;
-  sortState: HistorySortState;
-  showArchived: boolean;
-  savedAt: number;
-};
-type LegacyHistoryCache = Partial<HistoryCache> & {
-  page0?: GenerationHistoryItem[];
-  selectedId?: string | null;
-  draft?: Partial<DraftHistoryState> | null;
-};
-
-type PaywallState = {
-  reason: "auth_required" | "payment_required" | "limit_reached";
-  message: string;
-  requestId: string | null;
-};
-
-type PendingContext = {
-  id: string;
-  title: string;
-  description: string;
-};
-
-type HistoryConfirmAction =
-  | { type: "delete-draft"; item: GenerationHistoryItem }
-  | { type: "archive-generation"; item: GenerationHistoryItem }
-  | { type: "restore-generation"; item: GenerationHistoryItem };
-
-type DemoPhase = "typing" | "generating" | "revealing" | "clearing";
-type ClearPhase = "idle" | "fading" | "collapsing";
-type DescriptionRevealMode = "idle" | "first-focus" | "none";
-
-type DemoFixture = {
-  title: string;
-  tags: {
-    target: string[];
-    discovery: string[];
-  };
-};
-
-type DemoTimings = {
-  typingStartDelayMs: number;
-  typingCharMs: number;
-  generatingDelayMs: number;
-  generatingLoadMs: number;
-  revealStepMs: number;
-  revealTailMs: number;
-  showDwellMs: number;
-  clearFadeMs: number;
-  clearCollapseMs: number;
-  backspaceCharMs: number;
-  cyclePauseMs: number;
-};
-
-type TimerMeta = {
-  callback: (() => void) | null;
-  delayMs: number;
-  remainingMs: number;
-  startedAtMs: number;
-};
-
-const DEMO_FIXTURES: DemoFixture[] = [
-  {
-    title: "Handmade ceramic coffee mug with minimalist design",
-    tags: {
-      target: [
-        "ceramic mug",
-        "handmade pottery",
-        "minimalist cup",
-        "coffee lover gift",
-        "artisan mug",
-        "stoneware cup",
-        "modern ceramic",
-      ],
-      discovery: [
-        "pottery gift",
-        "hand thrown mug",
-        "unique coffee mug",
-        "kitchen gift",
-        "home decor",
-        "cozy gift",
-      ],
-    },
-  },
-  {
-    title: "Vintage floral pressed flower bookmark set",
-    tags: {
-      target: [
-        "pressed flower",
-        "floral bookmark",
-        "book lover gift",
-        "botanical art",
-        "dried flowers",
-        "vintage bookmark",
-        "gift for reader",
-      ],
-      discovery: [
-        "handmade bookmark",
-        "nature art",
-        "wildflower print",
-        "stocking stuffer",
-        "teacher gift",
-        "cottagecore",
-      ],
-    },
-  },
-  {
-    title: "Custom engraved wooden cutting board for kitchen",
-    tags: {
-      target: [
-        "custom cutting board",
-        "engraved wood",
-        "personalized gift",
-        "wedding gift",
-        "kitchen decor",
-        "wooden board",
-        "housewarming gift",
-      ],
-      discovery: [
-        "custom kitchen",
-        "laser engraved",
-        "anniversary gift",
-        "rustic kitchen",
-        "foodie gift",
-        "bamboo board",
-      ],
-    },
-  },
-];
-const DEFAULT_DEMO_TIMINGS: DemoTimings = {
-  typingStartDelayMs: 700,
-  typingCharMs: 45,
-  generatingDelayMs: 450,
-  generatingLoadMs: 1500,
-  revealStepMs: 80,
-  revealTailMs: 300,
-  showDwellMs: 3500,
-  clearFadeMs: 160,
-  clearCollapseMs: 240,
-  backspaceCharMs: 9,
-  cyclePauseMs: 500,
-};
-
-const CONTEXT_STORAGE_PREFIX = "tagloom:genctx:";
-const TITLE_MAX = 140;
-const DESCRIPTION_MAX = 6000;
-const DEFAULT_TITLE_PLACEHOLDER =
-  "e.g. Handmade ceramic coffee mug with minimalist design";
-const USAGE_HINT_CLOSE_DELAY_MS = 500;
-const CTA_SCROLL_CORRECTION_DELAY_MS = 380;
-const HISTORY_PAGE_SIZE = 100;
-const HISTORY_CACHE_KEY = "tagloom:history:v2";
-const GENERATED_TAG_CHIP_CLASSNAME =
-  "cursor-default rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm text-stone-700 shadow-sm";
-
-function getContextStorageKey(id: string) {
-  return `${CONTEXT_STORAGE_PREFIX}${id}`;
-}
-
-function generateContextId() {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return `ctx_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-}
-
-function savePendingContext(context: PendingContext) {
-  sessionStorage.setItem(
-    getContextStorageKey(context.id),
-    JSON.stringify(context),
-  );
-}
-
-function loadPendingContext(id: string): PendingContext | null {
-  const raw = sessionStorage.getItem(getContextStorageKey(id));
-  if (!raw) return null;
-
-  try {
-    const parsed = JSON.parse(raw) as PendingContext;
-    if (!parsed?.id || !parsed?.title) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-function clearPendingContext(id: string) {
-  sessionStorage.removeItem(getContextStorageKey(id));
-}
-
-function sanitizeTags(tags: string[]) {
-  const seen = new Set<string>();
-  const cleaned: string[] = [];
-
-  for (const rawTag of tags) {
-    const tag = typeof rawTag === "string" ? rawTag.trim() : "";
-    if (!tag || seen.has(tag)) continue;
-    seen.add(tag);
-    cleaned.push(tag);
-  }
-
-  return cleaned;
-}
-
-function sanitizeMergedTags(target: string[], discovery: string[]) {
-  return sanitizeTags([...target, ...discovery]);
-}
-
-function HistoryModeToggle({
-  historyMode,
-  onToggle,
-  className,
-}: {
-  historyMode: HistoryMode;
-  onToggle: () => void;
-  className?: string;
-}) {
-  const isHistory = historyMode === "history";
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-label={isHistory ? "Show generator" : "Show generation history"}
-      aria-pressed={isHistory}
-      className={cn(
-        "relative inline-flex h-[36px] w-[64px] items-center rounded-full border border-stone-200 bg-white/85 p-[3px] transition-colors hover:bg-stone-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300/70",
-        className,
-      )}
-    >
-      <span
-        aria-hidden="true"
-        className="absolute left-[3px] top-[3px] flex h-7 w-7 items-center justify-center"
-      >
-        <Sparkles className="h-3.5 w-3.5 text-stone-500 opacity-50" />
-      </span>
-      <span
-        aria-hidden="true"
-        className="absolute left-[31px] top-[3px] flex h-7 w-7 items-center justify-center"
-      >
-        <Clock className="h-3.5 w-3.5 text-stone-500 opacity-50" />
-      </span>
-      <motion.span
-        aria-hidden="true"
-        className="absolute left-[3px] top-[3px] flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-orange-600 shadow-sm"
-        animate={{ x: isHistory ? 28 : 0 }}
-        transition={{ type: "tween", duration: 0.18, ease: "easeOut" }}
-      >
-        {isHistory ? (
-          <Clock className="h-3.5 w-3.5 text-white" />
-        ) : (
-          <Sparkles className="h-3.5 w-3.5 text-white" />
-        )}
-      </motion.span>
-    </button>
-  );
-}
-
-function readHistoryCache(): HistoryCache | null {
-  if (typeof window === "undefined") return null;
-  const raw = window.localStorage.getItem(HISTORY_CACHE_KEY);
-  if (!raw) return null;
-
-  try {
-    const parsed = JSON.parse(raw) as LegacyHistoryCache;
-    if (!parsed) return null;
-    const legacyDraft = parsed.draft;
-    const generatedItems = Array.isArray(parsed.generatedItems)
-      ? parsed.generatedItems
-      : Array.isArray(parsed.activeGeneratedItems)
-        ? parsed.activeGeneratedItems
-        : Array.isArray(parsed.page0)
-          ? parsed.page0
-          : [];
-    return {
-      generatedItems,
-      selectedGeneratedId:
-        typeof parsed.selectedGeneratedId === "string"
-          ? parsed.selectedGeneratedId
-          : typeof parsed.selectedId === "string" &&
-              parsed.selectedId !== "draft"
-            ? parsed.selectedId
-            : null,
-      drafts: Array.isArray(parsed.drafts)
-        ? parsed.drafts
-            .filter(
-              (draft): draft is DraftHistoryState =>
-                Boolean(draft) &&
-                typeof draft.id === "string" &&
-                typeof draft.title === "string" &&
-                typeof draft.description === "string",
-            )
-            .map((draft) => ({
-              id: draft.id,
-              title: draft.title,
-              description: draft.description,
-              updatedAt:
-                typeof draft.updatedAt === "string"
-                  ? draft.updatedAt
-                  : new Date().toISOString(),
-            }))
-        : legacyDraft &&
-            typeof legacyDraft.title === "string" &&
-            typeof legacyDraft.description === "string"
-          ? [
-              {
-                id: "draft",
-                title: legacyDraft.title,
-                description: legacyDraft.description,
-                updatedAt:
-                  typeof legacyDraft.updatedAt === "string"
-                    ? legacyDraft.updatedAt
-                    : new Date().toISOString(),
-              },
-            ]
-          : [],
-      selectedDraftId:
-        typeof parsed.selectedDraftId === "string"
-          ? parsed.selectedDraftId
-          : null,
-      mode: "generator",
-      sortState:
-        parsed.sortState &&
-        typeof parsed.sortState === "object" &&
-        ["date", "title", "description", "status"].includes(
-          parsed.sortState.key,
-        ) &&
-        (parsed.sortState.direction === "asc" ||
-          parsed.sortState.direction === "desc")
-          ? parsed.sortState
-          : null,
-      showArchived: Boolean(parsed.showArchived),
-      savedAt: typeof parsed.savedAt === "number" ? parsed.savedAt : Date.now(),
-    };
-  } catch {
-    return null;
-  }
-}
-
-function writeHistoryCache(cache: HistoryCache) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(HISTORY_CACHE_KEY, JSON.stringify(cache));
-  } catch {
-    // noop
-  }
-}
-
-function clearHistoryCache() {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.removeItem(HISTORY_CACHE_KEY);
-  } catch {
-    // noop
-  }
-}
-
-function getUsageHintText(
-  usageLabel: string | null,
-  monthlyResetAt?: string | null,
-) {
-  if (!usageLabel) return null;
-  const normalized = usageLabel.toLowerCase();
-
-  if (normalized.includes("/100")) {
-    if (monthlyResetAt) {
-      return "Monthly includes 100 generations each billing period.";
-    }
-    return "Monthly includes 100 generations each billing period.";
-  }
-  if (normalized.includes("starter")) {
-    return "Starter generations are prepaid and decrease as you generate.";
-  }
-  if (normalized.includes("free")) {
-    return "New accounts get 1 free generation. You can purchase more generations in the pricing section.";
-  }
-
-  return null;
-}
-
-export default function TagGenerator({
+export default function Generator({
   onFocus,
   glowRef,
   demoConfig,
-}: TagGeneratorProps) {
+}: GeneratorProps) {
   const { openAuthModal } = useAuthController();
   const { showToast } = useToast();
   const turnstileRef = useRef<TurnstileFieldHandle | null>(null);
   const turnstileEnabled = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
+  // === State ===
   const [title, setTitle] = useState("");
   const [titlePlaceholder, setTitlePlaceholder] = useState(
     DEFAULT_TITLE_PLACEHOLDER,
@@ -553,6 +155,7 @@ export default function TagGenerator({
   const [historyConfirmAction, setHistoryConfirmAction] =
     useState<HistoryConfirmAction | null>(null);
 
+  // === Timers ===
   const revealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const demoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const collapseRafRef = useRef<number | null>(null);
@@ -581,6 +184,8 @@ export default function TagGenerator({
     remainingMs: 0,
     startedAtMs: 0,
   });
+
+  // === Derived State ===
   const displayHistoryItems = useMemo<GenerationHistoryItem[]>(() => {
     const items = [...historyItems];
     for (const draft of draftHistoryItems) {
@@ -777,6 +382,7 @@ export default function TagGenerator({
     }, CTA_SCROLL_CORRECTION_DELAY_MS);
   }, []);
 
+  // === Demo ===
   const demoFixtures = useMemo(
     () => demoConfig?.fixtures ?? DEMO_FIXTURES,
     [demoConfig?.fixtures],
@@ -835,72 +441,33 @@ export default function TagGenerator({
     revealDescriptionFromFocus,
   ]);
 
+  // === Usage ===
   const refreshUsageLabel = useCallback(async () => {
-    try {
-      const response = await fetch("/api/account/usage", { method: "GET" });
-      if (!response.ok) {
-        return { usageLabel: null as string | null, resolved: false };
-      }
-      const data = (await response.json()) as AccountUsageResponse;
-      const nextLabel =
-        typeof data.usageLabel === "string" ? data.usageLabel.trim() : "";
-      setUsageLabel(nextLabel || null);
-      setMonthlyResetAt(
-        typeof data.monthlyResetAt === "string" && data.monthlyResetAt.trim()
-          ? data.monthlyResetAt
-          : null,
-      );
-      return { usageLabel: nextLabel || null, resolved: true };
-    } catch {
-      setUsageLabel(null);
-      setMonthlyResetAt(null);
-      return { usageLabel: null as string | null, resolved: false };
-    }
+    const result = await fetchAccountUsage();
+    setUsageLabel(result.usageLabel);
+    setMonthlyResetAt(result.monthlyResetAt);
+    return { usageLabel: result.usageLabel, resolved: result.resolved };
   }, []);
 
+  // === History ===
   const loadHistory = useCallback(async () => {
     setIsHistoryLoading(true);
     try {
-      const fetchedPages: GenerationHistoryItem[][] = [];
-      let page = 0;
-      let hasNext = true;
-
-      while (hasNext) {
-        const response = await fetch(
-          `/api/generations/history?limit=${HISTORY_PAGE_SIZE}&page=${page}&includeArchived=true`,
-          { method: "GET" },
-        );
-        if (response.status === 401) {
-          setIsHistoryAuthenticated(false);
-          setHistoryItems([]);
-          setDraftHistoryItems([]);
-          setSelectedDraftId(null);
-          setSelectedHistoryId(null);
-          setCurrentGenerationId(null);
-          setCurrentGenerationFeedback(null);
-          clearHistoryCache();
-          return;
-        }
-        if (!response.ok) {
-          throw new Error("Could not load history.");
-        }
-
-        const data = (await response.json()) as GenerationHistoryResponse;
-        fetchedPages.push(Array.isArray(data.items) ? data.items : []);
-        hasNext = Boolean(data.hasNext);
-        page += 1;
-      }
-
-      const seen = new Set<string>();
-      const nextItems: GenerationHistoryItem[] = [];
-      for (const item of fetchedPages.flat()) {
-        if (!item?.id || seen.has(item.id)) continue;
-        seen.add(item.id);
-        nextItems.push(item);
+      const data = await fetchGenerationHistory();
+      if (data.status === "unauthenticated") {
+        setIsHistoryAuthenticated(false);
+        setHistoryItems([]);
+        setDraftHistoryItems([]);
+        setSelectedDraftId(null);
+        setSelectedHistoryId(null);
+        setCurrentGenerationId(null);
+        setCurrentGenerationFeedback(null);
+        clearHistoryCache();
+        return;
       }
 
       setIsHistoryAuthenticated(true);
-      setHistoryItems(nextItems);
+      setHistoryItems(data.items);
 
       setSelectedHistoryId((current) => {
         if (!current) {
@@ -909,7 +476,7 @@ export default function TagGenerator({
         if (current === "draft") {
           return current;
         }
-        const matched = nextItems.find((item) => item.id === current) ?? null;
+        const matched = data.items.find((item) => item.id === current) ?? null;
         return matched ? matched.id : null;
       });
     } catch {
@@ -1315,6 +882,7 @@ export default function TagGenerator({
 
   useEffect(() => clearDemoTimer, [clearDemoTimer]);
 
+  // === Generation ===
   const runGeneration = useCallback(
     async (
       inputTitle: string,
@@ -1322,27 +890,12 @@ export default function TagGenerator({
       contextId: string,
       turnstileToken?: string | null,
     ) => {
-      const response = await fetch("/api/generate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(turnstileToken ? { "x-turnstile-token": turnstileToken } : {}),
-        },
-        body: JSON.stringify({
-          title: inputTitle,
-          description: inputDescription,
-          generationContextId: contextId,
-          turnstileToken,
-        }),
+      const data = await requestGeneration({
+        title: inputTitle,
+        description: inputDescription,
+        generationContextId: contextId,
+        turnstileToken: turnstileToken ?? null,
       });
-
-      const data = (await response.json()) as GenerateResponse & {
-        error?: string;
-      };
-
-      if (!response.ok) {
-        throw new Error(data.error || "Could not generate tags.");
-      }
 
       if (data.status === "paywall") {
         setIsUnlockingFromPaywall(false);
@@ -1819,21 +1372,7 @@ export default function TagGenerator({
 
   const archiveGenerationItem = useCallback(
     async (item: GenerationHistoryItem) => {
-      const response = await fetch("/api/generations/history", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ generationId: item.id, action: "archive" }),
-      });
-
-      const data = (await response.json().catch(() => ({}))) as {
-        archivedAt?: string;
-        error?: string;
-      };
-      if (!response.ok) {
-        throw new Error(data.error || "Could not archive generation.");
-      }
-
-      const archivedAt = data.archivedAt ?? new Date().toISOString();
+      const archivedAt = await archiveGeneration(item.id);
       setHistoryItems((current) =>
         current.map((historyItem) =>
           historyItem.id === item.id
@@ -1847,18 +1386,7 @@ export default function TagGenerator({
 
   const restoreGenerationItem = useCallback(
     async (item: GenerationHistoryItem) => {
-      const response = await fetch("/api/generations/history", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ generationId: item.id, action: "restore" }),
-      });
-      const data = (await response.json().catch(() => ({}))) as {
-        archivedAt?: string | null;
-        error?: string;
-      };
-      if (!response.ok) {
-        throw new Error(data.error || "Could not restore generation.");
-      }
+      await restoreGeneration(item.id);
       setHistoryItems((current) =>
         current.map((historyItem) =>
           historyItem.id === item.id
@@ -1881,34 +1409,7 @@ export default function TagGenerator({
     [],
   );
 
-  const saveGenerationFeedback = useCallback(
-    async (
-      action: "set" | "clear",
-      payload: { generationId: string; rating?: FeedbackRating; note?: string },
-    ) => {
-      const response = await fetch("/api/feedback/generation", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action,
-          generationId: payload.generationId,
-          ...(payload.rating ? { rating: payload.rating } : {}),
-          ...(typeof payload.note === "string" ? { note: payload.note } : {}),
-        }),
-      });
-
-      const data = (await response.json().catch(() => ({}))) as {
-        error?: string;
-        feedback?: GenerationFeedback | null;
-      };
-      if (!response.ok) {
-        throw new Error(data.error || "Could not save generation feedback.");
-      }
-      return data.feedback ?? null;
-    },
-    [],
-  );
-
+  // === Feedback ===
   const onGenerationFeedbackUp = useCallback(async () => {
     if (!currentGenerationId || isGenerationFeedbackSaving) return;
     const previous = currentGenerationFeedback;
@@ -1917,7 +1418,10 @@ export default function TagGenerator({
       if (currentGenerationFeedback?.rating === "up") {
         setCurrentGenerationFeedback(null);
         setFeedbackForGenerationInHistory(currentGenerationId, null);
-        await saveGenerationFeedback("clear", { generationId: currentGenerationId });
+        await saveGenerationFeedback({
+          action: "clear",
+          generationId: currentGenerationId,
+        });
         return;
       }
       setCurrentGenerationFeedback({ rating: "up", note: null });
@@ -1925,7 +1429,8 @@ export default function TagGenerator({
         rating: "up",
         note: null,
       });
-      const feedback = await saveGenerationFeedback("set", {
+      const feedback = await saveGenerationFeedback({
+        action: "set",
         generationId: currentGenerationId,
         rating: "up",
       });
@@ -1942,7 +1447,6 @@ export default function TagGenerator({
     currentGenerationFeedback,
     currentGenerationId,
     isGenerationFeedbackSaving,
-    saveGenerationFeedback,
     setFeedbackForGenerationInHistory,
     showToast,
   ]);
@@ -1955,7 +1459,10 @@ export default function TagGenerator({
       try {
         setCurrentGenerationFeedback(null);
         setFeedbackForGenerationInHistory(currentGenerationId, null);
-        await saveGenerationFeedback("clear", { generationId: currentGenerationId });
+        await saveGenerationFeedback({
+          action: "clear",
+          generationId: currentGenerationId,
+        });
       } catch {
         setCurrentGenerationFeedback(previous);
         setFeedbackForGenerationInHistory(currentGenerationId, previous);
@@ -1977,7 +1484,6 @@ export default function TagGenerator({
     currentGenerationFeedback,
     currentGenerationId,
     isGenerationFeedbackSaving,
-    saveGenerationFeedback,
     setFeedbackForGenerationInHistory,
     showToast,
   ]);
@@ -1993,7 +1499,8 @@ export default function TagGenerator({
           rating: "down",
           note: note || null,
         });
-        const feedback = await saveGenerationFeedback("set", {
+        const feedback = await saveGenerationFeedback({
+          action: "set",
           generationId: currentGenerationId,
           rating: "down",
           note,
@@ -2018,7 +1525,6 @@ export default function TagGenerator({
       currentGenerationFeedback,
       currentGenerationId,
       isGenerationFeedbackSaving,
-      saveGenerationFeedback,
       setFeedbackForGenerationInHistory,
       showToast,
     ],
@@ -2680,7 +2186,7 @@ export default function TagGenerator({
               </div>
             ) : (
               <div className="flex h-full min-h-0 flex-1 overflow-hidden">
-                <GenerationHistoryPanel
+                <HistoryPanel
                   items={displayHistoryItems}
                   selectedDraftId={selectedDraftId}
                   selectedGeneratedId={
@@ -2849,5 +2355,56 @@ export default function TagGenerator({
         ) : null}
       </AnimatePresence>
     </div>
+  );
+}
+
+// === Components ===
+
+function HistoryModeToggle({
+  historyMode,
+  onToggle,
+  className,
+}: {
+  historyMode: HistoryMode;
+  onToggle: () => void;
+  className?: string;
+}) {
+  const isHistory = historyMode === "history";
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={isHistory ? "Show generator" : "Show generation history"}
+      aria-pressed={isHistory}
+      className={cn(
+        "relative inline-flex h-[36px] w-[64px] items-center rounded-full border border-stone-200 bg-white/85 p-[3px] transition-colors hover:bg-stone-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300/70",
+        className,
+      )}
+    >
+      <span
+        aria-hidden="true"
+        className="absolute left-[3px] top-[3px] flex h-7 w-7 items-center justify-center"
+      >
+        <Sparkles className="h-3.5 w-3.5 text-stone-500 opacity-50" />
+      </span>
+      <span
+        aria-hidden="true"
+        className="absolute left-[31px] top-[3px] flex h-7 w-7 items-center justify-center"
+      >
+        <Clock className="h-3.5 w-3.5 text-stone-500 opacity-50" />
+      </span>
+      <motion.span
+        aria-hidden="true"
+        className="absolute left-[3px] top-[3px] flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-orange-600 shadow-sm"
+        animate={{ x: isHistory ? 28 : 0 }}
+        transition={{ type: "tween", duration: 0.18, ease: "easeOut" }}
+      >
+        {isHistory ? (
+          <Clock className="h-3.5 w-3.5 text-white" />
+        ) : (
+          <Sparkles className="h-3.5 w-3.5 text-white" />
+        )}
+      </motion.span>
+    </button>
   );
 }

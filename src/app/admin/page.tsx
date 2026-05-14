@@ -1,6 +1,5 @@
 import AdminBarChart from "@/components/admin/AdminBarChart";
-import AdminEmptyState from "@/components/admin/AdminEmptyState";
-import AdminExternalLinks from "@/components/admin/AdminExternalLinks";
+import { AdminEmptyState, AdminExternalLinks } from "@/components/admin/AdminComponents";
 import AdminMetricCard from "@/components/admin/AdminMetricCard";
 import {
   getAdminOverviewData,

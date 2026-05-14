@@ -20,7 +20,7 @@ type NavLink = {
   type: "section" | "route";
 };
 
-type NavbarProps = {
+type SiteNavProps = {
   currentUser: CurrentUser | null;
 };
 
@@ -53,7 +53,7 @@ const ACCOUNT_TYPE_STYLES: Record<AccountType, string> = {
   yearly: "bg-red-100 text-red-700 ring-red-200",
 };
 
-export default function Navbar({ currentUser }: NavbarProps) {
+export default function SiteNav({ currentUser }: SiteNavProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);

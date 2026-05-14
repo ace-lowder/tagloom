@@ -197,7 +197,7 @@ export default function SupportArticlePage({
                 {article.title}
               </h1>
 
-              <div className="prose-tagsy" dangerouslySetInnerHTML={{ __html: article.contentHtml }} />
+              <div className="prose-content" dangerouslySetInnerHTML={{ __html: article.contentHtml }} />
 
               <div className="mt-10 border-t border-stone-100 pt-6">
                 <p className="mb-3 text-sm font-medium text-stone-700">Was this article helpful?</p>

@@ -6,7 +6,7 @@ import {
 } from "@/lib/stripeBillingSync";
 import { logServerError } from "@/lib/errorLogging";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { generateTags, getPlaceholderTags } from "@/lib/tag-generation";
+import { generateTags, getPlaceholderTags } from "@/lib/generation";
 
 type GenerateRequest = {
   title?: string;

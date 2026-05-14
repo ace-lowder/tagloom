@@ -1,7 +1,4 @@
-import AdminEmptyState from "@/components/admin/AdminEmptyState";
-import AdminExportButton from "@/components/admin/AdminExportButton";
-import AdminRowCopyButton from "@/components/admin/AdminRowCopyButton";
-import AdminSectionHeader from "@/components/admin/AdminSectionHeader";
+import { AdminEmptyState, AdminExportButton, AdminRowCopyButton, AdminSectionHeader } from "@/components/admin/AdminComponents";
 import AdminTable from "@/components/admin/AdminTable";
 import { parseAdminSort } from "@/lib/adminTable";
 import { formatTimestamp, getAdminSupportData, previewText } from "@/lib/adminDashboard";

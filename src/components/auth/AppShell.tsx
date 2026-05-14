@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import Navbar from "@/components/tagsy/Navbar";
+import SiteNav from "@/components/site/SiteNav";
 import { AuthControllerProvider } from "@/components/auth/AuthController";
 import type { CurrentUser } from "@/lib/auth";
 
@@ -13,7 +13,7 @@ type AppShellProps = {
 export default function AppShell({ currentUser, children }: AppShellProps) {
   return (
     <AuthControllerProvider>
-      <Navbar currentUser={currentUser} />
+      <SiteNav currentUser={currentUser} />
       {children}
     </AuthControllerProvider>
   );

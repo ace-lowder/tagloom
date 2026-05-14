@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 // === Components ===
 
-export function GenerationHistoryPanel({
+export function HistoryPanel({
   items,
   selectedDraftId,
   selectedGeneratedId,
@@ -17,7 +17,7 @@ export function GenerationHistoryPanel({
   onDeleteDraft,
   onSelectItem,
   onSortHeaderClick,
-}: GenerationHistoryPanelProps) {
+}: HistoryPanelProps) {
   const visibleItems = sortHistoryItems(
     showArchived ? items : items.filter((item) => !item.archivedAt),
     sortState,
@@ -305,7 +305,7 @@ export type HistorySortState = {
   direction: HistorySortDirection;
 } | null;
 
-type GenerationHistoryPanelProps = {
+type HistoryPanelProps = {
   items: GenerationHistoryItem[];
   selectedDraftId: string | null;
   selectedGeneratedId: string | null;
