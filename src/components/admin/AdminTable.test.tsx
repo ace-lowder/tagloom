@@ -6,7 +6,7 @@ describe("AdminTable", () => {
   it("renders empty message once with normal row padding", () => {
     render(
       <AdminTable
-        columns="grid-cols-[1fr_120px_44px]"
+        columns="grid-cols-[1fr_120px]"
         headers={[{ label: "A" }, { label: "B" }]}
       >
         {null}
@@ -22,12 +22,11 @@ describe("AdminTable", () => {
   it("does not render empty message when rows exist", () => {
     render(
       <AdminTable
-        columns="grid-cols-[1fr_44px]"
+        columns="grid-cols-[1fr]"
         headers={[{ label: "A" }]}
       >
-        <AdminTable.Row columns="grid-cols-[1fr_44px]">
+        <AdminTable.Row columns="grid-cols-[1fr]">
           <AdminTable.Cell>Row</AdminTable.Cell>
-          <AdminTable.Cell className="px-2 py-2" />
         </AdminTable.Row>
       </AdminTable>,
     );
@@ -39,15 +38,14 @@ describe("AdminTable", () => {
   it("uses full-cell sortable links and active sort indicator", () => {
     render(
       <AdminTable
-        columns="grid-cols-[1fr_44px]"
+        columns="grid-cols-[1fr]"
         headers={[{ label: "Created", key: "created_at" }]}
         sort={{ key: "created_at", direction: "desc" }}
         basePath="/admin/usage"
         searchParams={{ range: "1d", sort: "created_at", direction: "desc" }}
       >
-        <AdminTable.Row columns="grid-cols-[1fr_44px]">
+        <AdminTable.Row columns="grid-cols-[1fr]">
           <AdminTable.Cell>Row</AdminTable.Cell>
-          <AdminTable.Cell className="px-2 py-2" />
         </AdminTable.Row>
       </AdminTable>,
     );
@@ -61,7 +59,7 @@ describe("AdminTable", () => {
   it("clears sort params on third-click state", () => {
     render(
       <AdminTable
-        columns="grid-cols-[1fr_44px]"
+        columns="grid-cols-[1fr]"
         headers={[{ label: "Created", key: "created_at" }]}
         sort={{ key: "created_at", direction: "asc" }}
         sortParam="sort"
@@ -69,14 +67,27 @@ describe("AdminTable", () => {
         basePath="/admin/usage"
         searchParams={{ range: "7d", sort: "created_at", direction: "asc" }}
       >
-        <AdminTable.Row columns="grid-cols-[1fr_44px]">
+        <AdminTable.Row columns="grid-cols-[1fr]">
           <AdminTable.Cell>Row</AdminTable.Cell>
-          <AdminTable.Cell className="px-2 py-2" />
         </AdminTable.Row>
       </AdminTable>,
     );
 
     const headerLink = screen.getByRole("link", { name: /Created/i });
     expect(headerLink.getAttribute("href")).toBe("/admin/usage?range=7d");
+  });
+
+  it("does not render a blank action header column", () => {
+    render(
+      <AdminTable columns="grid-cols-[1fr_1fr]" headers={[{ label: "Left" }, { label: "Right" }]}>
+        <AdminTable.Row columns="grid-cols-[1fr_1fr]">
+          <AdminTable.Cell>A</AdminTable.Cell>
+          <AdminTable.Cell>B</AdminTable.Cell>
+        </AdminTable.Row>
+      </AdminTable>,
+    );
+
+    expect(screen.getAllByText(/Left|Right/)).toHaveLength(2);
+    expect(screen.queryByRole("columnheader")).not.toBeInTheDocument();
   });
 });

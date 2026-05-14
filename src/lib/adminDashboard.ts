@@ -79,6 +79,7 @@ export type UsageSortKey =
   | "title"
   | "source"
   | "entitlement_used";
+export type EntitlementSortKey = "label" | "count";
 export type GenerationFeedbackSortKey =
   | "created_at"
   | "rating"
@@ -114,6 +115,20 @@ export type AdminChartBucket = {
   paid: number;
 };
 
+export type AdminMetricComparison = {
+  current: number;
+  previous: number;
+  delta: number;
+  percentChange: number;
+};
+
+export type AdminComparison = {
+  signups: AdminMetricComparison;
+  feedback: AdminMetricComparison;
+  messages: AdminMetricComparison;
+  errors: AdminMetricComparison;
+} | null;
+
 export type OverviewData = {
   counts: {
     signups: number;
@@ -121,6 +136,7 @@ export type OverviewData = {
     messages: number;
     errors: number;
   };
+  comparison: AdminComparison;
   signupChart: AdminChartBucket[];
   generationChart: AdminChartBucket[];
   externalLinks: ExternalLinks;
@@ -152,6 +168,46 @@ type ExternalLinks = {
   vercel: string;
   openai: string;
 };
+
+export function getAdminComparisonWindow(range: AdminRange, now = new Date()) {
+  if (range === "all") return null;
+
+  const durationMs =
+    range === "1d" ? MS_DAY : range === "7d" ? 7 * MS_DAY : 30 * MS_DAY;
+
+  const currentEnd = new Date(now);
+  const currentStart = new Date(currentEnd.getTime() - durationMs);
+  const previousEnd = currentStart;
+  const previousStart = new Date(previousEnd.getTime() - durationMs);
+
+  return {
+    currentStart: currentStart.toISOString(),
+    currentEnd: currentEnd.toISOString(),
+    previousStart: previousStart.toISOString(),
+    previousEnd: previousEnd.toISOString(),
+  };
+}
+
+export function calculateAdminMetricComparison(
+  current: number,
+  previous: number,
+): AdminMetricComparison {
+  const delta = current - previous;
+  let percentChange = 0;
+
+  if (previous === 0) {
+    percentChange = current === 0 ? 0 : 100;
+  } else {
+    percentChange = Math.round((delta / previous) * 100);
+  }
+
+  return {
+    current,
+    previous,
+    delta,
+    percentChange,
+  };
+}
 
 export function sortEnvStatusRows(
   rows: Array<{ key: string; configured: boolean }>,
@@ -304,6 +360,23 @@ async function countRows(
   return count ?? 0;
 }
 
+async function countRowsBetween(
+  admin: NonNullable<ReturnType<typeof createSupabaseAdminClient>>,
+  table: string,
+  start: string,
+  end: string,
+  filters: Array<{ column: string; value: string }> = [],
+): Promise<number> {
+  let query = admin
+    .from(table)
+    .select("id", { count: "exact", head: true })
+    .gte("created_at", start)
+    .lt("created_at", end);
+  for (const filter of filters) query = query.eq(filter.column, filter.value);
+  const { count } = await query;
+  return count ?? 0;
+}
+
 async function fetchRows<T>(
   admin: NonNullable<ReturnType<typeof createSupabaseAdminClient>>,
   table: string,
@@ -362,6 +435,7 @@ function getEffectiveRange(range: AdminRange): AdminRange {
 export async function getAdminOverviewData(range: AdminRange): Promise<DashboardResult<OverviewData>> {
   const fallback: OverviewData = {
     counts: { signups: 0, feedback: 0, messages: 0, errors: 0 },
+    comparison: null,
     signupChart: buildChartBuckets(getEffectiveRange(range)),
     generationChart: buildChartBuckets(getEffectiveRange(range)),
     externalLinks: getExternalLinks(),
@@ -371,6 +445,7 @@ export async function getAdminOverviewData(range: AdminRange): Promise<Dashboard
   if (!admin) return notConfiguredResult(fallback);
 
   const rangeStart = getAdminRangeStart(range);
+  const comparisonWindow = getAdminComparisonWindow(range);
   const chartRange = getEffectiveRange(range);
   const chartRangeStart = getAdminRangeStart(chartRange)!;
 
@@ -399,6 +474,96 @@ export async function getAdminOverviewData(range: AdminRange): Promise<Dashboard
   ]);
 
   const charts = buildOverviewCharts(chartRange, chartSignupRows, chartGenerationRows);
+  let comparison: AdminComparison = null;
+
+  if (comparisonWindow) {
+    const [
+      signupsCurrent,
+      signupsPrevious,
+      generationFeedbackCurrent,
+      generationFeedbackPrevious,
+      supportFeedbackCurrent,
+      supportFeedbackPrevious,
+      supportMessagesCurrent,
+      supportMessagesPrevious,
+      errorLogsCurrent,
+      errorLogsPrevious,
+    ] = await Promise.all([
+      countRowsBetween(
+        admin,
+        "profiles",
+        comparisonWindow.currentStart,
+        comparisonWindow.currentEnd,
+      ),
+      countRowsBetween(
+        admin,
+        "profiles",
+        comparisonWindow.previousStart,
+        comparisonWindow.previousEnd,
+      ),
+      countRowsBetween(
+        admin,
+        "generation_feedback",
+        comparisonWindow.currentStart,
+        comparisonWindow.currentEnd,
+      ),
+      countRowsBetween(
+        admin,
+        "generation_feedback",
+        comparisonWindow.previousStart,
+        comparisonWindow.previousEnd,
+      ),
+      countRowsBetween(
+        admin,
+        "support_article_feedback",
+        comparisonWindow.currentStart,
+        comparisonWindow.currentEnd,
+      ),
+      countRowsBetween(
+        admin,
+        "support_article_feedback",
+        comparisonWindow.previousStart,
+        comparisonWindow.previousEnd,
+      ),
+      countRowsBetween(
+        admin,
+        "support_messages",
+        comparisonWindow.currentStart,
+        comparisonWindow.currentEnd,
+      ),
+      countRowsBetween(
+        admin,
+        "support_messages",
+        comparisonWindow.previousStart,
+        comparisonWindow.previousEnd,
+      ),
+      countRowsBetween(
+        admin,
+        "error_logs",
+        comparisonWindow.currentStart,
+        comparisonWindow.currentEnd,
+      ),
+      countRowsBetween(
+        admin,
+        "error_logs",
+        comparisonWindow.previousStart,
+        comparisonWindow.previousEnd,
+      ),
+    ]);
+
+    comparison = {
+      signups: calculateAdminMetricComparison(signupsCurrent, signupsPrevious),
+      feedback: calculateAdminMetricComparison(
+        generationFeedbackCurrent + supportFeedbackCurrent,
+        generationFeedbackPrevious + supportFeedbackPrevious,
+      ),
+      messages: calculateAdminMetricComparison(
+        supportMessagesCurrent,
+        supportMessagesPrevious,
+      ),
+      errors: calculateAdminMetricComparison(errorLogsCurrent, errorLogsPrevious),
+    };
+  }
 
   return {
     ok: true,
@@ -410,6 +575,7 @@ export async function getAdminOverviewData(range: AdminRange): Promise<Dashboard
         messages: supportMessages,
         errors: errorLogs,
       },
+      comparison,
       signupChart: charts.signupChart,
       generationChart: charts.generationChart,
       externalLinks: getExternalLinks(),
@@ -429,9 +595,24 @@ function aggregateCounts(rows: GenerationRow[], field: "entitlement_used"): Coun
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 }
 
+export function sortEntitlementCounts(
+  rows: CountByLabel[],
+  sort: { key: EntitlementSortKey; direction: "asc" | "desc" },
+) {
+  return [...rows].sort((a, b) => {
+    if (sort.key === "count") {
+      return sort.direction === "asc" ? a.count - b.count : b.count - a.count;
+    }
+
+    const result = a.label.localeCompare(b.label, undefined, { sensitivity: "base" });
+    return sort.direction === "asc" ? result : -result;
+  });
+}
+
 export async function getAdminUsageData(
   range: AdminRange,
-  sort: AdminSortState<UsageSortKey> = null,
+  generationSort: AdminSortState<UsageSortKey> = null,
+  entitlementSort: AdminSortState<EntitlementSortKey> = null,
 ): Promise<DashboardResult<UsageData>> {
   const fallback: UsageData = { byEntitlement: [], recentGenerations: [] };
 
@@ -439,8 +620,12 @@ export async function getAdminUsageData(
   if (!admin) return notConfiguredResult(fallback);
 
   const rangeStart = getAdminRangeStart(range);
-  const effectiveSort = getAdminSortOrDefault(sort, {
+  const effectiveGenerationSort = getAdminSortOrDefault(generationSort, {
     key: "created_at",
+    direction: "desc",
+  });
+  const effectiveEntitlementSort = getAdminSortOrDefault(entitlementSort, {
+    key: "count",
     direction: "desc",
   });
   const recentGenerations = await fetchRows<GenerationRow>(
@@ -450,14 +635,18 @@ export async function getAdminUsageData(
     50,
     rangeStart,
     [],
-    { column: effectiveSort.key, direction: effectiveSort.direction },
+    { column: effectiveGenerationSort.key, direction: effectiveGenerationSort.direction },
+  );
+  const byEntitlement = sortEntitlementCounts(
+    aggregateCounts(recentGenerations, "entitlement_used"),
+    effectiveEntitlementSort,
   );
 
   return {
     ok: true,
     configured: true,
     data: {
-      byEntitlement: aggregateCounts(recentGenerations, "entitlement_used"),
+      byEntitlement,
       recentGenerations,
     },
   };

@@ -19,6 +19,9 @@ describe("admin copy controls", () => {
   it("row copy button exposes accessible label", () => {
     render(<AdminRowCopyButton payload={{ id: "row-1" }} />);
 
-    expect(screen.getByRole("button", { name: "Copy row JSON" })).toBeInTheDocument();
+    const button = screen.getByRole("button", { name: "Copy row JSON" });
+    expect(button).toBeInTheDocument();
+    expect(button).toHaveClass("h-8", "w-8", "bg-transparent");
+    expect(button.className).not.toMatch(/\bborder\b/);
   });
 });

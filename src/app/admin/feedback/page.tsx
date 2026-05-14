@@ -46,7 +46,7 @@ export default async function AdminFeedbackPage({
           action={<AdminExportButton payload={data.generationFeedback} />}
         />
         <AdminTable
-          columns="grid-cols-[74px_minmax(170px,0.9fr)_minmax(320px,1.7fr)_170px_44px]"
+          columns="grid-cols-[74px_minmax(170px,0.9fr)_minmax(320px,1.7fr)_170px]"
           headers={[
             { label: "Rating", key: "rating" },
             { label: "Title", key: "title_snapshot" },
@@ -60,14 +60,16 @@ export default async function AdminFeedbackPage({
           searchParams={searchParams}
         >
           {data.generationFeedback.map((row) => (
-            <AdminTable.Row key={row.id} columns="grid-cols-[74px_minmax(170px,0.9fr)_minmax(320px,1.7fr)_170px_44px]" className="group">
+            <AdminTable.Row key={row.id} columns="grid-cols-[74px_minmax(170px,0.9fr)_minmax(320px,1.7fr)_170px]" className="group">
               <AdminTable.Cell>
                 {row.rating === "up" ? <ThumbsUp className="h-4 w-4 text-green-600" /> : <ThumbsDown className="h-4 w-4 text-orange-700" />}
               </AdminTable.Cell>
               <AdminTable.Cell>{previewText(row.title_snapshot, 60)}</AdminTable.Cell>
               <AdminTable.Cell className="text-stone-500">{previewText(row.note, 220)}</AdminTable.Cell>
-              <AdminTable.Cell className="whitespace-nowrap text-stone-500">{formatTimestamp(row.created_at)}</AdminTable.Cell>
-              <AdminTable.Cell className="flex justify-end px-2 py-2"><AdminRowCopyButton payload={row} /></AdminTable.Cell>
+              <AdminTable.Cell className="relative whitespace-nowrap pr-12 text-stone-500">
+                {formatTimestamp(row.created_at)}
+                <AdminRowCopyButton payload={row} />
+              </AdminTable.Cell>
             </AdminTable.Row>
           ))}
         </AdminTable>
@@ -79,7 +81,7 @@ export default async function AdminFeedbackPage({
           action={<AdminExportButton payload={data.supportArticleFeedback} />}
         />
         <AdminTable
-          columns="grid-cols-[74px_minmax(190px,1fr)_minmax(260px,1.5fr)_170px_44px]"
+          columns="grid-cols-[74px_minmax(190px,1fr)_minmax(260px,1.5fr)_170px]"
           headers={[
             { label: "Rating", key: "rating" },
             { label: "Article", key: "article_slug" },
@@ -93,14 +95,16 @@ export default async function AdminFeedbackPage({
           searchParams={searchParams}
         >
           {data.supportArticleFeedback.map((row) => (
-            <AdminTable.Row key={row.id} columns="grid-cols-[74px_minmax(190px,1fr)_minmax(260px,1.5fr)_170px_44px]" className="group">
+            <AdminTable.Row key={row.id} columns="grid-cols-[74px_minmax(190px,1fr)_minmax(260px,1.5fr)_170px]" className="group">
               <AdminTable.Cell>
                 {row.rating === "up" ? <ThumbsUp className="h-4 w-4 text-green-600" /> : <ThumbsDown className="h-4 w-4 text-orange-700" />}
               </AdminTable.Cell>
               <AdminTable.Cell>{row.article_slug}</AdminTable.Cell>
               <AdminTable.Cell className="text-stone-500">{previewText(row.note)}</AdminTable.Cell>
-              <AdminTable.Cell className="whitespace-nowrap text-stone-500">{formatTimestamp(row.created_at)}</AdminTable.Cell>
-              <AdminTable.Cell className="flex justify-end px-2 py-2"><AdminRowCopyButton payload={row} /></AdminTable.Cell>
+              <AdminTable.Cell className="relative whitespace-nowrap pr-12 text-stone-500">
+                {formatTimestamp(row.created_at)}
+                <AdminRowCopyButton payload={row} />
+              </AdminTable.Cell>
             </AdminTable.Row>
           ))}
         </AdminTable>

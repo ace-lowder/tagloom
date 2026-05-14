@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   buildOverviewCharts,
+  calculateAdminMetricComparison,
   getChartBucketCount,
+  getAdminComparisonWindow,
   getSupabaseDashboardLink,
+  sortEntitlementCounts,
   sortEnvStatusRows,
 } from "@/lib/adminDashboard";
 
@@ -73,5 +76,79 @@ describe("sortEnvStatusRows", () => {
 
     expect(sortEnvStatusRows(rows, { key: "key", direction: "asc" })[0]?.key).toBe("A_KEY");
     expect(sortEnvStatusRows(rows, { key: "configured", direction: "desc" })[0]?.configured).toBe(true);
+  });
+});
+
+describe("sortEntitlementCounts", () => {
+  const rows = [
+    { label: "monthly", count: 4 },
+    { label: "free", count: 10 },
+    { label: "single_use", count: 2 },
+  ];
+
+  it("defaults can use count desc ordering", () => {
+    const sorted = sortEntitlementCounts(rows, { key: "count", direction: "desc" });
+    expect(sorted.map((row) => row.label)).toEqual(["free", "monthly", "single_use"]);
+  });
+
+  it("sorts by label asc", () => {
+    const sorted = sortEntitlementCounts(rows, { key: "label", direction: "asc" });
+    expect(sorted.map((row) => row.label)).toEqual(["free", "monthly", "single_use"]);
+  });
+
+  it("sorts by count asc", () => {
+    const sorted = sortEntitlementCounts(rows, { key: "count", direction: "asc" });
+    expect(sorted.map((row) => row.count)).toEqual([2, 4, 10]);
+  });
+});
+
+describe("comparison helpers", () => {
+  it("calculates metric deltas and percent changes", () => {
+    expect(calculateAdminMetricComparison(20, 10)).toMatchObject({
+      delta: 10,
+      percentChange: 100,
+    });
+    expect(calculateAdminMetricComparison(0, 1)).toMatchObject({
+      delta: -1,
+      percentChange: -100,
+    });
+    expect(calculateAdminMetricComparison(1, 0)).toMatchObject({
+      delta: 1,
+      percentChange: 100,
+    });
+    expect(calculateAdminMetricComparison(0, 0)).toMatchObject({
+      delta: 0,
+      percentChange: 0,
+    });
+  });
+
+  it("builds comparison windows for rolling ranges and no window for all", () => {
+    const now = new Date("2026-05-14T12:00:00.000Z");
+
+    const window1d = getAdminComparisonWindow("1d", now);
+    const window7d = getAdminComparisonWindow("7d", now);
+    const window30d = getAdminComparisonWindow("30d", now);
+
+    expect(window1d).not.toBeNull();
+    expect(window7d).not.toBeNull();
+    expect(window30d).not.toBeNull();
+    expect(getAdminComparisonWindow("all", now)).toBeNull();
+
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    const sevenDayMs = 7 * oneDayMs;
+    const thirtyDayMs = 30 * oneDayMs;
+
+    expect(
+      new Date(window1d!.currentEnd).getTime() -
+        new Date(window1d!.currentStart).getTime(),
+    ).toBe(oneDayMs);
+    expect(
+      new Date(window7d!.currentEnd).getTime() -
+        new Date(window7d!.currentStart).getTime(),
+    ).toBe(sevenDayMs);
+    expect(
+      new Date(window30d!.currentEnd).getTime() -
+        new Date(window30d!.currentStart).getTime(),
+    ).toBe(thirtyDayMs);
   });
 });

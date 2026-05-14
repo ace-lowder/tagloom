@@ -39,7 +39,7 @@ export default async function AdminHealthPage({
       <section>
         <AdminSectionHeader title="Recent Errors" action={<AdminExportButton payload={data.errorLogs} />} />
         <AdminTable
-          columns="grid-cols-[minmax(170px,1fr)_minmax(140px,0.9fr)_130px_110px_minmax(260px,1.6fr)_170px_44px]"
+          columns="grid-cols-[minmax(170px,1fr)_minmax(140px,0.9fr)_130px_110px_minmax(260px,1.6fr)_170px]"
           headers={[
             { label: "Source", key: "source" },
             { label: "Route", key: "route" },
@@ -55,14 +55,16 @@ export default async function AdminHealthPage({
           searchParams={searchParams}
         >
           {data.errorLogs.map((row) => (
-            <AdminTable.Row key={row.id} columns="grid-cols-[minmax(170px,1fr)_minmax(140px,0.9fr)_130px_110px_minmax(260px,1.6fr)_170px_44px]" className="group">
+            <AdminTable.Row key={row.id} columns="grid-cols-[minmax(170px,1fr)_minmax(140px,0.9fr)_130px_110px_minmax(260px,1.6fr)_170px]" className="group">
               <AdminTable.Cell>{row.source}</AdminTable.Cell>
               <AdminTable.Cell className="text-stone-500">{row.route ?? "-"}</AdminTable.Cell>
               <AdminTable.Cell>{row.method ?? "-"}/{row.status ?? "-"}</AdminTable.Cell>
               <AdminTable.Cell>{row.code ?? "-"}</AdminTable.Cell>
               <AdminTable.Cell className="text-stone-500">{previewText(row.message)}</AdminTable.Cell>
-              <AdminTable.Cell className="whitespace-nowrap text-stone-500">{formatTimestamp(row.created_at)}</AdminTable.Cell>
-              <AdminTable.Cell className="flex justify-end px-2 py-2"><AdminRowCopyButton payload={row} /></AdminTable.Cell>
+              <AdminTable.Cell className="relative whitespace-nowrap pr-12 text-stone-500">
+                {formatTimestamp(row.created_at)}
+                <AdminRowCopyButton payload={row} />
+              </AdminTable.Cell>
             </AdminTable.Row>
           ))}
         </AdminTable>
@@ -71,7 +73,7 @@ export default async function AdminHealthPage({
       <section>
         <AdminSectionHeader title="Environment Status" />
         <AdminTable
-          columns="grid-cols-[minmax(360px,1fr)_130px_44px]"
+          columns="grid-cols-[minmax(360px,1fr)_130px]"
           headers={[
             { label: "Key", key: "key" },
             { label: "Configured", key: "configured" },
@@ -83,10 +85,12 @@ export default async function AdminHealthPage({
           searchParams={searchParams}
         >
           {data.env.map((row) => (
-            <AdminTable.Row key={row.key} columns="grid-cols-[minmax(360px,1fr)_130px_44px]" className="group">
+            <AdminTable.Row key={row.key} columns="grid-cols-[minmax(360px,1fr)_130px]" className="group">
               <AdminTable.Cell>{row.key}</AdminTable.Cell>
-              <AdminTable.Cell>{row.configured ? "yes" : "no"}</AdminTable.Cell>
-              <AdminTable.Cell className="px-2 py-2">&nbsp;</AdminTable.Cell>
+              <AdminTable.Cell className="relative pr-12">
+                {row.configured ? "yes" : "no"}
+                <AdminRowCopyButton payload={row} />
+              </AdminTable.Cell>
             </AdminTable.Row>
           ))}
         </AdminTable>

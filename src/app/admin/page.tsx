@@ -21,10 +21,26 @@ export default async function AdminOverviewPage({
       {!result.ok ? <AdminEmptyState message={result.error} /> : null}
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <AdminMetricCard label="Signups" value={data.counts.signups} />
-        <AdminMetricCard label="Feedback" value={data.counts.feedback} />
-        <AdminMetricCard label="Messages" value={data.counts.messages} />
-        <AdminMetricCard label="Errors" value={data.counts.errors} />
+        <AdminMetricCard
+          label="Signups"
+          value={data.counts.signups}
+          comparison={data.comparison?.signups ?? null}
+        />
+        <AdminMetricCard
+          label="Feedback"
+          value={data.counts.feedback}
+          comparison={data.comparison?.feedback ?? null}
+        />
+        <AdminMetricCard
+          label="Messages"
+          value={data.counts.messages}
+          comparison={data.comparison?.messages ?? null}
+        />
+        <AdminMetricCard
+          label="Errors"
+          value={data.counts.errors}
+          comparison={data.comparison?.errors ?? null}
+        />
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
