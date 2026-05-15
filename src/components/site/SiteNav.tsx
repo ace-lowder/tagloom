@@ -1,57 +1,35 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { CreditCard, LogOut, Menu, User, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
+
 import BrandMark from "@/components/brand/BrandMark";
 import { useAuthController } from "@/components/auth/AuthController";
 import { AUTH_SUCCESS_EVENT, sanitizeNextPath } from "@/lib/authModal";
 import { triggerGeneratorCta } from "@/lib/generatorCta";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import type { CurrentUser } from "@/lib/auth";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import {
+  buildPrimaryAction,
+  DesktopNavLinks,
+  MobileNavLinks,
+  MobileProfileCard,
+  NAV_LINKS,
+  PrimaryNavAction,
+  ProfileCard,
+  ProfileMenu,
+  type AccountType,
+} from "@/components/site/SiteNavParts";
 
-type NavLink = {
-  label: string;
-  href: string;
-  type: "section" | "route";
-};
+// === Types ===
 
 type SiteNavProps = {
   currentUser: CurrentUser | null;
 };
 
-type AccountType = "verified" | "monthly" | "yearly";
-
-const NAV_LINKS: NavLink[] = [
-  { label: "Features", href: "features", type: "section" },
-  { label: "Pricing", href: "pricing", type: "section" },
-  { label: "Blog", href: "/blog", type: "route" },
-  { label: "Support", href: "/support", type: "route" },
-  { label: "FAQ", href: "faq", type: "section" },
-];
-
-const DESKTOP_NAV_LINK_CLASS =
-  "-m-2 px-2 py-2 text-sm font-medium text-stone-600 transition-colors hover:text-stone-900";
-const DESKTOP_NAV_LABEL_CLASS =
-  "relative pb-0.5 after:absolute after:bottom-[-4px] after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-orange-500 after:transition-transform after:duration-[250ms] group-hover:after:scale-x-100";
-const MOBILE_NAV_LINK_CLASS =
-  "block rounded-lg px-3 py-2.5 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50";
-
-const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
-  verified: "Verified",
-  monthly: "Monthly",
-  yearly: "Yearly",
-};
-
-const ACCOUNT_TYPE_STYLES: Record<AccountType, string> = {
-  verified: "bg-green-100 text-green-700 ring-green-200",
-  monthly: "bg-blue-100 text-blue-700 ring-blue-200",
-  yearly: "bg-red-100 text-red-700 ring-red-200",
-};
+// === Components ===
 
 export default function SiteNav({ currentUser }: SiteNavProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -188,174 +166,46 @@ export default function SiteNav({ currentUser }: SiteNavProps) {
   const displayEmail = currentUser?.email || "Account";
   const avatarInitials = getAvatarInitials(currentUser?.email ?? null);
 
-  const primaryAction = !accountType
-    ? null
-    : {
-        label: accountType === "verified" ? "View Plans" : "Manage Plan",
-        icon: CreditCard,
-        onClick: accountType === "verified" ? goToPricing : goToBilling,
-      };
+  const primaryAction = buildPrimaryAction(accountType, goToPricing, goToBilling);
+
   const hasProfileMenu = Boolean(
     (currentUser && accountType && primaryAction) || isAuthResolving,
   );
 
-  const renderProfileCard = (mobile = false) => {
-    if (isAuthResolving && !currentUser) {
-      return (
-        <Card className={mobile ? "border-stone-100 p-4" : "p-4 shadow-xl"}>
-          <div className="flex items-center gap-3">
-            <div className="h-11 w-11 shrink-0 animate-pulse rounded-xl bg-orange-100" />
-            <div className="min-w-0 flex-1 space-y-2">
-              <div className="h-4 w-32 animate-pulse rounded bg-stone-100" />
-              <div className="h-3 w-24 animate-pulse rounded bg-stone-100" />
-            </div>
-          </div>
-          <div className="mt-4 h-9 animate-pulse rounded-xl bg-stone-100" />
-        </Card>
-      );
-    }
-
-    if (!currentUser || !accountType || !primaryAction) return null;
-    const PrimaryIcon = primaryAction.icon;
-
-    return (
-      <Card className={mobile ? "border-stone-100 p-4" : "p-4 shadow-xl"}>
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-sm font-semibold text-orange-700 ring-1 ring-orange-200">
-            {avatarInitials}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-stone-900">
-              {displayEmail}
-            </p>
-            {accountType !== "verified" ? (
-              <span
-                className={`mt-1 inline-flex items-center rounded-full px-1.5 py-0.5 text-[11px] font-semibold leading-none ring-1 ${ACCOUNT_TYPE_STYLES[accountType]}`}
-              >
-                {ACCOUNT_TYPE_LABELS[accountType]}
-              </span>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="mt-4 grid grid-cols-[1fr_auto] gap-2">
-          <Button
-            type="button"
-            onClick={primaryAction.onClick}
-            variant="secondary"
-            size="md"
-            className="px-3 py-2.5"
-          >
-            <PrimaryIcon className="h-3.5 w-3.5" />
-            <span>{primaryAction.label}</span>
-          </Button>
-          <Button
-            type="button"
-            onClick={onSignOut}
-            variant="secondary"
-            size="md"
-            isLoading={isLoggingOut}
-            loadingLabel="Logging out"
-            className="px-3 py-2.5"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            <span>Log out</span>
-          </Button>
-        </div>
-      </Card>
-    );
-  };
-
-  const renderNavLink = (link: NavLink, mobile = false) => {
-    const className = mobile ? MOBILE_NAV_LINK_CLASS : DESKTOP_NAV_LINK_CLASS;
-
-    if (link.type === "section") {
-      return (
-        <button
-          key={link.label}
-          type="button"
-          onClick={() => goToSection(link.href)}
-          className={mobile ? className : `group ${className}`}
-        >
-          {mobile ? (
-            link.label
-          ) : (
-            <span className={DESKTOP_NAV_LABEL_CLASS}>{link.label}</span>
-          )}
-        </button>
-      );
-    }
-
-    if (link.href === "/support") {
-      return (
-        <button
-          key={link.label}
-          type="button"
-          onClick={goToSupport}
-          className={mobile ? className : `group ${className}`}
-        >
-          {mobile ? (
-            link.label
-          ) : (
-            <span className={DESKTOP_NAV_LABEL_CLASS}>{link.label}</span>
-          )}
-        </button>
-      );
-    }
-
-    return (
-      <Link
-        key={link.label}
-        href={link.href}
-        onClick={closeAllMenus}
-        className={mobile ? className : `group ${className}`}
-      >
-        {mobile ? (
-          link.label
-        ) : (
-          <span className={DESKTOP_NAV_LABEL_CLASS}>{link.label}</span>
-        )}
-      </Link>
-    );
-  };
+  const renderProfileCard = (mobile = false) => (
+    <ProfileCard
+      accountType={accountType}
+      avatarInitials={avatarInitials}
+      currentUserEmail={displayEmail}
+      isAuthResolving={isAuthResolving && !currentUser}
+      isLoggingOut={isLoggingOut}
+      mobile={mobile}
+      onPrimaryAction={primaryAction?.onClick ?? null}
+      onSignOut={onSignOut}
+      primaryAction={primaryAction}
+    />
+  );
 
   return (
     <nav className="fixed left-0 right-0 top-0 z-50 border-b border-stone-100 bg-white/80 backdrop-blur-lg">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
         <BrandMark href="/" size="nav" className="flex-shrink-0" />
 
-        <div className="hidden items-center gap-7 md:flex">
-          {NAV_LINKS.map((link) => renderNavLink(link))}
-        </div>
+        <DesktopNavLinks
+          links={NAV_LINKS}
+          onSectionClick={goToSection}
+          onSupportClick={goToSupport}
+          onRouteClick={closeAllMenus}
+        />
 
         <div className="hidden items-center gap-4 md:flex">
           {hasProfileMenu ? (
-            <div className="relative" ref={profileMenuRef}>
-              <button
-                type="button"
-                aria-label="Open profile menu"
-                aria-expanded={profileOpen}
-                aria-controls="navbar-profile-menu"
-                onClick={() => setProfileOpen((open) => !open)}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-700 shadow-sm transition-colors hover:border-orange-300 hover:text-orange-600"
-              >
-                <User className="h-4 w-4" aria-hidden="true" />
-              </button>
-              <AnimatePresence>
-                {profileOpen ? (
-                  <motion.div
-                    id="navbar-profile-menu"
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.14, ease: "easeOut" }}
-                    className="absolute right-0 top-[calc(100%+10px)] z-[70] w-72"
-                  >
-                    {renderProfileCard()}
-                  </motion.div>
-                ) : null}
-              </AnimatePresence>
-            </div>
+            <ProfileMenu
+              profileOpen={profileOpen}
+              onToggleProfile={() => setProfileOpen((open) => !open)}
+              profileMenuRef={profileMenuRef}
+              renderProfileCard={renderProfileCard}
+            />
           ) : (
             <button
               type="button"
@@ -370,14 +220,8 @@ export default function SiteNav({ currentUser }: SiteNavProps) {
               Log in
             </button>
           )}
-          <Button
-            type="button"
-            onClick={startGeneratorFlow}
-            size="sm"
-            className="rounded-lg px-4 py-2 shadow-[0_3px_14px_rgba(249,115,22,0.3)]"
-          >
-            Get Tags
-          </Button>
+
+          <PrimaryNavAction onClick={startGeneratorFlow} />
         </div>
 
         <button
@@ -401,38 +245,33 @@ export default function SiteNav({ currentUser }: SiteNavProps) {
             exit={{ opacity: 0, y: -8 }}
             className="flex h-[calc(100dvh-73px)] flex-col border-b border-stone-100 bg-white px-5 pb-5 pt-2 md:hidden"
           >
-            <div className="space-y-1">
-              {NAV_LINKS.map((link) => renderNavLink(link, true))}
-              <Button
-                type="button"
-                onClick={() => {
-                  startGeneratorFlow();
-                  setMobileOpen(false);
-                }}
-                className="mt-3 w-full rounded-lg py-2.5 shadow-[0_3px_14px_rgba(249,115,22,0.3)]"
-              >
-                Get Tags
-              </Button>
-            </div>
+            <MobileNavLinks
+              links={NAV_LINKS}
+              onSectionClick={goToSection}
+              onSupportClick={goToSupport}
+              onRouteClick={closeAllMenus}
+            />
+
+            <PrimaryNavAction
+              mobile
+              onClick={() => {
+                startGeneratorFlow();
+                setMobileOpen(false);
+              }}
+            />
 
             <div className="mt-auto flex flex-col gap-3 pt-5">
-              {hasProfileMenu ? (
-                renderProfileCard(true)
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileOpen(false);
-                    openAuthModal({
-                      source: "navbar_mobile",
-                      next: pathname || "/",
-                    });
-                  }}
-                  className="block w-full rounded-lg border border-stone-200 py-2.5 text-center text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50"
-                >
-                  Log in
-                </button>
-              )}
+              <MobileProfileCard
+                hasProfileMenu={hasProfileMenu}
+                renderProfileCard={renderProfileCard}
+                onOpenAuthModal={() => {
+                  setMobileOpen(false);
+                  openAuthModal({
+                    source: "navbar_mobile",
+                    next: pathname || "/",
+                  });
+                }}
+              />
             </div>
           </motion.div>
         ) : null}
@@ -440,6 +279,8 @@ export default function SiteNav({ currentUser }: SiteNavProps) {
     </nav>
   );
 }
+
+// === Helpers ===
 
 function dispatchSupportReset() {
   window.dispatchEvent(new CustomEvent("tagloom:support-reset"));
@@ -452,12 +293,14 @@ function resolveAccountType(currentUser: CurrentUser): AccountType {
   ) {
     return "yearly";
   }
+
   if (
     currentUser.subscriptionActive &&
     currentUser.subscriptionTier === "monthly"
   ) {
     return "monthly";
   }
+
   return "verified";
 }
 

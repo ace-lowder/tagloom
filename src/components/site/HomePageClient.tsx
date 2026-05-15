@@ -1,16 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import {
-  ArrowRight,
-  ChevronDown,
-  Clock,
-  Tag,
-  TrendingUp,
-  Zap,
-} from "lucide-react";
+import { ArrowRight, ChevronDown, Tag } from "lucide-react";
 
 import PricingCards, {
   type PricingPlanId,
@@ -23,6 +16,13 @@ import {
   consumePendingGeneratorCta,
   dispatchGeneratorCta,
 } from "@/lib/generatorCta";
+import {
+  benefits,
+  faqs,
+  type FAQAnswerPart,
+  type BenefitItem,
+  type FAQEntry,
+} from "@/content/home";
 
 export type HomePricingState = {
   isLoggedIn: boolean;
@@ -40,109 +40,7 @@ const fadeInUp = {
 
 const stagger = { visible: { transition: { staggerChildren: 0.1 } } };
 
-type BenefitItem = {
-  icon: typeof TrendingUp;
-  title: string;
-  description: string;
-  href: string;
-};
-
-type FAQEntry = {
-  question: string;
-  answer: ReactNode;
-};
-
-export const benefits: BenefitItem[] = [
-  {
-    icon: TrendingUp,
-    title: "Get found in Etsy search",
-    description:
-      "We craft tags based on what buyers are actually searching for so your listings get found by the right people.",
-    href: "/blog/how-to-rank-higher-on-etsy#why-tags-matter",
-  },
-  {
-    icon: Clock,
-    title: "Get tags in seconds",
-    description:
-      "Stop wasting time on keyword research and generate optimized tags for your listing in seconds.",
-    href: "/blog/etsy-tag-tips-every-seller-should-know",
-  },
-  {
-    icon: Zap,
-    title: "No more guesswork",
-    description:
-      "Every tag is selected to match you with Etsy customers and make your listing discoverable.",
-    href: "/blog/mistakes-new-etsy-sellers-make",
-  },
-];
-
-const faqs: FAQEntry[] = [
-  {
-    question: "How does Tagloom generate tags?",
-    answer:
-      "Tagloom analyzes your title and description, identifies high-intent keywords, and builds a balanced 13-tag set that combines direct search terms with broader discovery terms. We find the best combination of tags that will boost sales for your listing.",
-  },
-  {
-    question: "Will these tags work for my niche?",
-    answer:
-      "Yes. Your tags are generated using the niche terms from your listing title and description. We generate optimized tags for both exact-match shopper intent and discovery, then add generalized synonyms to keep you relevant across categories.",
-  },
-  {
-    question: "Do I need to connect my Etsy account to Tagloom?",
-    answer:
-      "No, you don't need to connect anything. Generate your tags here, then quickly copy and paste them into your Etsy listing.",
-  },
-  {
-    question: "Can I generate tags for free?",
-    answer:
-      "Yes, every account gets 1 free generation so you can test Tagloom before upgrading.",
-  },
-  {
-    question: "Can I switch between Monthly and Yearly plans?",
-    answer: (
-      <>
-        Yes, you can switch between Monthly and Yearly anytime from your{" "}
-        <Link
-          href="/billing"
-          className="font-medium text-orange-700 hover:text-orange-800"
-        >
-          billing settings
-        </Link>
-        .
-      </>
-    ),
-  },
-  {
-    question: "What happens when I run out of monthly generations?",
-    answer:
-      "Your Monthly generation limit resets on your billing date. If you need more before then you can upgrade to Yearly for unlimited generations or buy Starter generations.",
-  },
-  {
-    question: "Where can I manage my plan?",
-    answer: (
-      <>
-        Open the profile icon in the top-right corner, click{" "}
-        <Link
-          href="/billing"
-          className="font-medium text-orange-700 hover:text-orange-800"
-        >
-          Manage Plan
-        </Link>
-        , and view your billing settings there.
-      </>
-    ),
-  },
-  {
-    question: "How many tags does Etsy allow?",
-    answer:
-      "Etsy allows 13 tags per listing. Tagloom generates an optimized list of 13 tags that takes advantage of the character limit to make the most of every tag slot.",
-  },
-  {
-    question: "Can I cancel anytime?",
-    answer:
-      "Yes, you can cancel anytime in billing and your plan stays active until the end of your current period. At the end of your period, your plan will cancel and you will not be charged.",
-  },
-];
+export { benefits } from "@/content/home";
 
 type HomePageClientProps = {
   pricingState: HomePricingState;
@@ -553,7 +451,7 @@ function BottomCtaSection({ onGenerate }: BottomCtaSectionProps) {
 
 type FAQItemProps = {
   question: string;
-  answer: ReactNode;
+  answer: FAQAnswerPart[];
 };
 
 function FAQItem({ question, answer }: FAQItemProps) {
@@ -577,7 +475,21 @@ function FAQItem({ question, answer }: FAQItemProps) {
         animate={{ height: open ? "auto" : 0, opacity: open ? 1 : 0 }}
         className="overflow-hidden"
       >
-        <p className="pb-5 leading-relaxed text-stone-600">{answer}</p>
+        <p className="pb-5 leading-relaxed text-stone-600">
+          {answer.map((part, index) =>
+            part.type === "text" ? (
+              <span key={`${question}-text-${index}`}>{part.text}</span>
+            ) : (
+              <Link
+                key={`${question}-link-${part.href}-${index}`}
+                href={part.href}
+                className="font-medium text-orange-700 hover:text-orange-800"
+              >
+                {part.text}
+              </Link>
+            ),
+          )}
+        </p>
       </motion.div>
     </div>
   );
