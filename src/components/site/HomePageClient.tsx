@@ -119,7 +119,7 @@ function HeroSection({ onGenerate }: HeroSectionProps) {
             <span className="md:whitespace-nowrap">
               Get the Etsy sales you deserve
             </span>
-            <span className="mt-2 block bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
+            <span className="mt-2 block pb-1 leading-[1.12] bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
               Better Tags. More sales.
             </span>
           </motion.h1>
