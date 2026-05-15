@@ -130,19 +130,20 @@ function HeroSection({ onGenerate }: HeroSectionProps) {
             Enter your listing info and generate tags that will get you Etsy
             sales
           </motion.p>
-          <motion.button
-            variants={fadeInUp}
-            onClick={onGenerate}
-            className={buttonClassNames({
-              className: "gap-2 px-6 shadow-[0_4px_20px_rgba(249,115,22,0.35)]",
-            })}
-            style={{
-              boxShadow: "0 4px 20px rgba(249,115,22,0.35)",
-            }}
-          >
-            Generate free tags
-            <ArrowRight className="h-4 w-4" />
-          </motion.button>
+          <motion.div variants={fadeInUp} className="inline-flex">
+            <button
+              onClick={onGenerate}
+              className={buttonClassNames({
+                className: "gap-2 px-6 shadow-[0_4px_20px_rgba(249,115,22,0.35)]",
+              })}
+              style={{
+                boxShadow: "0 4px 20px rgba(249,115,22,0.35)",
+              }}
+            >
+              Generate free tags
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </motion.div>
         </motion.div>
 
         <div className="mt-24">
@@ -428,20 +429,21 @@ function BottomCtaSection({ onGenerate }: BottomCtaSectionProps) {
             >
               Generate optimized tags for your Etsy listing in seconds
             </motion.p>
-            <motion.button
-              variants={fadeInUp}
-              onClick={onGenerate}
-              className={buttonClassNames({
-                className:
-                  "gap-2 px-8 py-4 shadow-[0_6px_28px_rgba(249,115,22,0.32)]",
-              })}
-              style={{
-                boxShadow: "0 6px 28px rgba(249,115,22,0.32)",
-              }}
-            >
-              Generate Free Tags
-              <ArrowRight className="h-5 w-5" />
-            </motion.button>
+            <motion.div variants={fadeInUp} className="inline-flex">
+              <button
+                onClick={onGenerate}
+                className={buttonClassNames({
+                  className:
+                    "gap-2 px-8 py-4 shadow-[0_6px_28px_rgba(249,115,22,0.32)]",
+                })}
+                style={{
+                  boxShadow: "0 6px 28px rgba(249,115,22,0.32)",
+                }}
+              >
+                Generate Free Tags
+                <ArrowRight className="h-5 w-5" />
+              </button>
+            </motion.div>
           </motion.div>
         </motion.div>
       </div>
