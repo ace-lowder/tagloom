@@ -121,3 +121,9 @@ from public.support_article_feedback
 group by rating
 order by source, rating;
 ```
+
+## Manual Generation Benchmark
+
+Tag generation has a manual paid benchmark that is not part of tests/build/CI.
+
+See `benchmarks/README.md` for setup, when to run it, and how to compare results.

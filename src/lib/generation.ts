@@ -1,5 +1,7 @@
 import OpenAI from "openai";
 
+export const GENERATION_LOGIC_VERSION = "1.0";
+
 const ignoreTokens = new Set([
   "a",
   "an",
