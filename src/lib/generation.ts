@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 
-export const GENERATION_LOGIC_VERSION = "1.0";
+export const GENERATION_LOGIC_VERSION = "1.1";
 
 const ignoreTokens = new Set([
   "a",
@@ -28,6 +28,73 @@ const ignoreTokens = new Set([
   "to",
   "when",
   "with",
+]);
+
+const directBoilerplateTokens = new Set([
+  "www",
+  "http",
+  "https",
+  "etsy",
+  "com",
+  "listing",
+  "account",
+  "settings",
+  "links",
+  "seller",
+  "guarantee",
+  "refund",
+  "shipping",
+  "policies",
+  "policy",
+  "materials",
+  "details",
+  "minimum",
+  "dpi",
+  "tiff",
+]);
+
+const fileSpecTokens = new Set([
+  "svg",
+  "eps",
+  "ai",
+  "pdf",
+  "png",
+  "jpg",
+  "jpeg",
+]);
+
+const measurementSpecTokens = new Set([
+  "thickness",
+  "cm",
+  "mm",
+  "inch",
+  "inches",
+  "size",
+  "sizes",
+  "dimension",
+  "dimensions",
+]);
+
+const boilerplateContextTokens = new Set([
+  "minimum",
+  "dpi",
+  "file",
+  "files",
+  "format",
+  "formats",
+  "seller",
+  "types",
+  "download",
+  "downloadable",
+  "thickness",
+  "cm",
+  "mm",
+  "inch",
+  "inches",
+  "size",
+  "sizes",
+  "dimension",
+  "dimensions",
 ]);
 
 type Keywords = {
@@ -89,6 +156,42 @@ function uniqueTokens(tokens: string[]): string[] {
   return [...new Set(tokens)];
 }
 
+function hasBoilerplateNeighbor(tokens: string[], index: number): boolean {
+  const neighbors: string[] = [];
+  for (let offset = -2; offset <= 2; offset += 1) {
+    if (offset === 0) continue;
+    const token = tokens[index + offset];
+    if (token) neighbors.push(token);
+  }
+  return neighbors.some((token) => boilerplateContextTokens.has(token));
+}
+
+function isDescriptionBoilerplateToken(token: string): boolean {
+  return directBoilerplateTokens.has(token);
+}
+
+function buildDescriptionTokens(description: string): string[] {
+  const tokens = tokenize(description);
+  const filtered: string[] = [];
+
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index];
+
+    if (isDescriptionBoilerplateToken(token)) continue;
+
+    if (fileSpecTokens.has(token) && hasBoilerplateNeighbor(tokens, index)) {
+      continue;
+    }
+
+    if (measurementSpecTokens.has(token) && hasBoilerplateNeighbor(tokens, index)) {
+      continue;
+    }
+    filtered.push(token);
+  }
+
+  return uniqueTokens(filtered);
+}
+
 function buildKeywords(
   targetTags: string[],
   title: string,
@@ -96,7 +199,7 @@ function buildKeywords(
 ): Keywords {
   const used = uniqueTokens(targetTags.flatMap((tag) => tokenize(tag)));
   const titleTokens = uniqueTokens(tokenize(title));
-  const descriptionTokens = uniqueTokens(tokenize(description));
+  const descriptionTokens = buildDescriptionTokens(description);
 
   return {
     used,
@@ -348,7 +451,7 @@ function splitFallbackTags(
   description: string,
 ): { targetTags: string[]; discoveryTags: string[] } {
   const titleWords = uniqueTokens(tokenize(title));
-  const descriptionWords = uniqueTokens(tokenize(description));
+  const descriptionWords = buildDescriptionTokens(description);
   const base = normalizeResponse([...titleWords, ...descriptionWords]);
   const targetTags = base.slice(0, 8);
   const used = new Set(targetTags);
@@ -376,14 +479,14 @@ export async function generateTags(title: string, description: string): Promise<
   const client = new OpenAI({ apiKey: key });
   const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
-  const firstPrompt = `Imagine you are a real Etsy customer trying to find this exact item. Write the phrases you would type into the Etsy search bar to find it. Return valid JSON only. It's important that each phrase must be <= 20 characters. Phrases should be what an average person is most likely to type off the top of their head. Only phrases a non-technical person, who doesn't know how search engines work, would type. Once you, as an average Etsy user, have to pause and think about the next phrase, it's time to stop. Output: ["phrase 1", "phrase 2"]. Title: ${title}, Description: ${description || "(none)"}`;
+  const firstPrompt = `Imagine you are a real Etsy customer trying to find this exact item. Write the phrases you would type into the Etsy search bar to find it. Return valid JSON only. It's important that each phrase must be <= 20 characters. Phrases should be what an average person is most likely to type off the top of their head. Only phrases a non-technical person, who doesn't know how search engines work, would type. Ignore shop policies, shipping text, guarantees, URLs, care instructions, dimensions, file requirements, ordering instructions, color variation disclaimers, and seller notes. Only write phrases a buyer would search to find the product itself. Once you, as an average Etsy user, have to pause and think about the next phrase, it's time to stop. Output: ["phrase 1", "phrase 2"]. Title: ${title}, Description: ${description || "(none)"}`;
 
   const firstResponse = await requestOpenAIArray(client, model, firstPrompt);
   const normalizedTargets = normalizeResponse(firstResponse);
   const targetTags = normalizedTargets.slice(0, 8);
 
   const keywords = buildKeywords(targetTags, title, description);
-  const secondPrompt = `Imagine you are generating Etsy-style metadata tags for discoverability (coverage and variety). Phrases need to be relevant to the item and make sense as a search phrase to find the item. Phrases should try to end with noun that describes the item. If the noun has to be reused, use the shortest item noun. Generate at least 13 phrases <= 20 characters each. Return valid JSON only. Use the following object to help generate ${JSON.stringify(
+  const secondPrompt = `Imagine you are generating Etsy-style metadata tags for discoverability (coverage and variety). Phrases need to be relevant to the item and make sense as a search phrase to find the item. Phrases should try to end with noun that describes the item. If the noun has to be reused, use the shortest item noun. Ignore boilerplate words from policies, URLs, dimensions, file specs, care instructions, download instructions, and seller notes. Do not turn those into tags. Tags must describe the product a buyer wants to find. Generate at least 13 phrases <= 20 characters each. Return valid JSON only. Use the following object to help generate ${JSON.stringify(
     keywords,
   )}. Used should be avoid being used as much as possible. Title is your highest-priority keyword pool. Description is your secondary keyword pool. Output: ["phrase 1", "phrase 2"]`;
 
