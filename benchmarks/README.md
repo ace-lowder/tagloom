@@ -23,6 +23,11 @@ Do not run it for:
 
 - File: `benchmarks/listings.csv`
 - Columns: `id,category,title,description`
+- Source listings: `benchmarks/source-listings/`
+
+`benchmarks/listings.csv` is the benchmark input dataset.
+`benchmarks/source-listings/` stores the original manually collected listing descriptions for audit and rebuild purposes.
+Do not delete source listings unless intentionally replacing the benchmark dataset.
 
 ## Run
 
