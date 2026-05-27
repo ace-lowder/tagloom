@@ -36,6 +36,14 @@ type Keywords = {
   description: string[];
 };
 
+type FillerCandidate = {
+  phrase: string;
+  tokens: string[];
+  source: "title" | "description";
+  wordCount: number;
+  sourceIndex: number;
+};
+
 export type GenerationSource = "model" | "fallback";
 
 export type GeneratedTags = {
@@ -118,27 +126,10 @@ function fillDiscoveryFromKeywords(
   excluded: Set<string>,
   needed: number,
 ): string[] {
-  const phrases: string[] = [];
-  const seen = new Set<string>(excluded);
-  const pool = [...keywords.title, ...keywords.description];
+  const candidates = buildFillerCandidates(keywords, excluded);
+  const phrases = selectFillerCandidates(candidates, keywords, excluded, needed);
 
-  for (let i = 0; i < pool.length && phrases.length < needed; i += 1) {
-    const unigram = normalizeResponse([pool[i]])[0];
-    if (unigram && !seen.has(unigram)) {
-      seen.add(unigram);
-      phrases.push(unigram);
-    }
-
-    if (phrases.length >= needed) break;
-    if (!pool[i + 1]) continue;
-
-    const bigram = normalizeResponse([`${pool[i]} ${pool[i + 1]}`])[0];
-    if (bigram && !seen.has(bigram)) {
-      seen.add(bigram);
-      phrases.push(bigram);
-    }
-  }
-
+  const seen = new Set<string>([...excluded, ...phrases]);
   while (phrases.length < needed) {
     const placeholder = `discovery tag ${phrases.length + 1}`;
     const normalized = normalizeResponse([placeholder])[0];
@@ -148,6 +139,123 @@ function fillDiscoveryFromKeywords(
   }
 
   return phrases.slice(0, needed);
+}
+
+function buildFillerCandidates(
+  keywords: Keywords,
+  excluded: Set<string>,
+): FillerCandidate[] {
+  const candidates: FillerCandidate[] = [];
+  const seen = new Set<string>(excluded);
+  const phraseLengths = [4, 3, 2, 1];
+  const sources: Array<{ name: "title" | "description"; tokens: string[] }> = [
+    { name: "title", tokens: keywords.title },
+    { name: "description", tokens: keywords.description },
+  ];
+
+  for (const source of sources) {
+    for (const phraseLength of phraseLengths) {
+      if (source.tokens.length < phraseLength) continue;
+
+      for (
+        let start = 0;
+        start <= source.tokens.length - phraseLength;
+        start += 1
+      ) {
+        const raw = source.tokens.slice(start, start + phraseLength).join(" ");
+        const normalized = normalizeResponse([raw])[0];
+        if (!normalized) continue;
+        if (normalized.length > 20) continue;
+        if (seen.has(normalized)) continue;
+
+        seen.add(normalized);
+        candidates.push({
+          phrase: normalized,
+          tokens: uniqueTokens(tokenize(normalized)),
+          source: source.name,
+          wordCount: normalized.split(" ").length,
+          sourceIndex: start,
+        });
+      }
+    }
+  }
+
+  return candidates;
+}
+
+function scoreFillerCandidate(
+  candidate: FillerCandidate,
+  usedTokens: Set<string>,
+): number {
+  const newTokenCount = candidate.tokens.filter((token) => !usedTokens.has(token)).length;
+  const missingTokenPenalty = candidate.tokens.length - newTokenCount;
+  const oneWordPenalty = candidate.wordCount === 1 ? 10 : 0;
+  const distanceTo20 = 20 - candidate.phrase.length;
+  const sourceBonus = candidate.source === "title" ? 0.5 : 0;
+
+  return (
+    newTokenCount * 1000 +
+    candidate.wordCount * 80 +
+    candidate.phrase.length * 8 -
+    missingTokenPenalty * 20 -
+    oneWordPenalty -
+    distanceTo20 +
+    sourceBonus
+  );
+}
+
+function selectFillerCandidates(
+  candidates: FillerCandidate[],
+  keywords: Keywords,
+  excluded: Set<string>,
+  needed: number,
+): string[] {
+  const phrases: string[] = [];
+  const seen = new Set<string>(excluded);
+  const usedTokens = new Set<string>(keywords.used);
+  const remaining = [...candidates];
+
+  while (phrases.length < needed && remaining.length > 0) {
+    let bestIndex = -1;
+    let bestScore = Number.NEGATIVE_INFINITY;
+
+    for (let i = 0; i < remaining.length; i += 1) {
+      const candidate = remaining[i];
+      if (seen.has(candidate.phrase)) continue;
+
+      const score = scoreFillerCandidate(candidate, usedTokens);
+      if (score > bestScore) {
+        bestScore = score;
+        bestIndex = i;
+        continue;
+      }
+
+      if (score === bestScore && bestIndex >= 0) {
+        const best = remaining[bestIndex];
+        if (candidate.source !== best.source) {
+          if (candidate.source === "title") bestIndex = i;
+          continue;
+        }
+        if (candidate.sourceIndex !== best.sourceIndex) {
+          if (candidate.sourceIndex < best.sourceIndex) bestIndex = i;
+          continue;
+        }
+      }
+    }
+
+    if (bestIndex < 0) break;
+
+    const [selected] = remaining.splice(bestIndex, 1);
+    if (seen.has(selected.phrase)) continue;
+    seen.add(selected.phrase);
+    phrases.push(selected.phrase);
+
+    for (const token of selected.tokens) {
+      usedTokens.add(token);
+    }
+  }
+
+  return phrases;
 }
 
 function prioritizeDiscoveryByUsedKeywords(
