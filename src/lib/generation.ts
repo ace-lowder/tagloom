@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 
-export const GENERATION_LOGIC_VERSION = "1.4";
+export const GENERATION_LOGIC_VERSION = "1.5";
 export const MAX_GENERATION_DESCRIPTION_LENGTH = 1200;
 const MAX_COMPACT_DESCRIPTION_LENGTH = 500;
 
@@ -176,6 +176,12 @@ const descriptionFillerTokens = new Set([
   "appear",
   "contact",
   "help",
+  "s",
+  "no",
+  "due",
+  "slightly",
+  "fully",
+  "containing",
 ]);
 
 const compactDescriptionProcessTokens = new Set([
@@ -193,6 +199,7 @@ const compactDescriptionProcessTokens = new Set([
   "links",
   "file",
   "files",
+  "pdf",
   "message",
   "reach",
   "gladly",
@@ -210,6 +217,39 @@ const compactDescriptionProcessTokens = new Set([
   "colour",
   "colours",
   "everyone",
+  "email",
+  "emails",
+  "containing",
+  "monitor",
+  "monitors",
+  "minute",
+  "minutes",
+  "party",
+  "parties",
+  "fully",
+  "slightly",
+  "due",
+  "choose",
+  "circle",
+  "square",
+  "touch",
+  "turns",
+  "kind",
+  "easy",
+  "way",
+  "brand",
+  "compatible",
+  "compatibility",
+  "recommend",
+  "recommended",
+  "requires",
+  "require",
+  "usage",
+  "device",
+  "devices",
+  "app",
+  "apps",
+  "software",
 ]);
 
 const lowQualityTagLeadingTokens = new Set([
@@ -228,6 +268,12 @@ const lowQualityTagLeadingTokens = new Set([
   "spam",
   "shipping",
   "shipped",
+  "email",
+  "fully",
+  "slightly",
+  "choose",
+  "touch",
+  "fast",
 ]);
 
 const lowQualityTagProcessTokens = new Set([
@@ -244,6 +290,7 @@ const lowQualityTagProcessTokens = new Set([
   "links",
   "file",
   "files",
+  "pdf",
   "message",
   "reach",
   "out",
@@ -258,6 +305,27 @@ const lowQualityTagProcessTokens = new Set([
   "everyone",
   "vary",
   "varies",
+  "email",
+  "emails",
+  "containing",
+  "monitor",
+  "monitors",
+  "minute",
+  "minutes",
+  "party",
+  "parties",
+  "fully",
+  "slightly",
+  "due",
+  "choose",
+  "circle",
+  "square",
+  "touch",
+  "turns",
+  "kind",
+  "easy",
+  "way",
+  "brand",
 ]);
 
 const lowQualityTagSafePhrases = new Set([
@@ -268,6 +336,12 @@ const lowQualityTagSafePhrases = new Set([
   "8oz candle",
   "3d nail art",
   "custom gift",
+  "birthday party",
+  "party decor",
+  "party invite",
+  "circle sticker",
+  "square sticker",
+  "brand sticker",
 ]);
 
 const generationSeparatorsPattern = /(?:•|\||★|☆|✓|✔|→|=>)/g;
@@ -336,6 +410,14 @@ function normalizeDescriptionCheckToken(token: string): string {
     .replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, "");
 }
 
+function normalizePossessiveText(text: string): string {
+  const withoutPossessives = text
+    .replace(/\b([a-z0-9]+)(?:'s|’s)\b/gi, "$1")
+    .replace(/\b([a-z0-9]+)(?:s'|s’)\b/gi, "$1s");
+
+  return withoutPossessives.replace(/\b(?:s|re|ll|ve)\b/gi, " ");
+}
+
 function isDescriptionFillerToken(token: string): boolean {
   return descriptionFillerTokens.has(token);
 }
@@ -364,7 +446,8 @@ function stripDescriptionFillerWords(description: string): string {
 
 export function cleanGenerationDescription(description: string): string {
   const normalized = String(description ?? "").normalize("NFKC");
-  const noUrls = normalized.replace(urlPattern, " ");
+  const normalizedPossessives = normalizePossessiveText(normalized);
+  const noUrls = normalizedPossessives.replace(urlPattern, " ");
   const noEmails = noUrls.replace(emailPattern, " ");
   const noEmoji = emojiAndPictographicPattern
     ? noEmails.replace(emojiAndPictographicPattern, " ")
@@ -380,22 +463,75 @@ export function cleanGenerationDescription(description: string): string {
   return trimToDescriptionLimit(recollapsedWhitespace);
 }
 
+function isCompatibilityContextToken(tokens: string[], index: number): boolean {
+  const token = tokens[index];
+  if (!token) return false;
+
+  const deviceTerms = new Set([
+    "ipad",
+    "pro",
+    "air",
+    "apple",
+    "pencil",
+    "tablet",
+    "tablets",
+    "ios",
+    "android",
+    "goodnotes",
+    "notability",
+  ]);
+  if (!deviceTerms.has(token)) return false;
+
+  const contextTerms = new Set([
+    "compatible",
+    "compatibility",
+    "works",
+    "work",
+    "recommend",
+    "recommended",
+    "requires",
+    "require",
+    "usage",
+    "use",
+    "with",
+    "using",
+    "device",
+    "devices",
+    "app",
+    "apps",
+    "software",
+  ]);
+
+  for (let offset = -6; offset <= 6; offset += 1) {
+    if (offset === 0) continue;
+    const neighbor = tokens[index + offset];
+    if (neighbor && contextTerms.has(neighbor)) return true;
+  }
+
+  return false;
+}
+
 export function compactGenerationDescription(description: string): string {
   const cleaned = cleanGenerationDescription(description);
   if (!cleaned) return "";
 
+  const cleanedTokens = cleaned
+    .split(/\s+/)
+    .map((token) => normalizeDescriptionCheckToken(token))
+    .filter(Boolean);
+
   const seen = new Set<string>();
   const kept: string[] = [];
 
-  for (const originalToken of cleaned.split(/\s+/)) {
-    if (!originalToken) continue;
-    const normalizedToken = normalizeDescriptionCheckToken(originalToken);
+  for (let index = 0; index < cleanedTokens.length; index += 1) {
+    const normalizedToken = cleanedTokens[index];
     if (!normalizedToken) continue;
     if (isDescriptionFillerToken(normalizedToken)) continue;
     if (isDescriptionBoilerplateToken(normalizedToken)) continue;
     if (isCompactableMeasurementToken(normalizedToken)) continue;
     if (/^\d+(?:\.\d+)?$/.test(normalizedToken)) continue;
     if (compactDescriptionProcessTokens.has(normalizedToken)) continue;
+    if (isCompatibilityContextToken(cleanedTokens, index)) continue;
     if (seen.has(normalizedToken)) continue;
 
     seen.add(normalizedToken);
@@ -518,6 +654,7 @@ function isLowQualityGeneratedTag(tag: string): boolean {
 
   const tokens = tokenize(normalizedTag);
   if (tokens.length === 0) return true;
+  if (tokens[tokens.length - 1] === "s") return true;
   if (lowQualityTagLeadingTokens.has(tokens[0])) return true;
 
   const processTokenCount = tokens.filter((token) =>
@@ -534,6 +671,7 @@ function isLowQualityGeneratedTag(tag: string): boolean {
   );
   if (hasCompactMeasurement) return true;
   if (hasSpecContextToken && hasNumericToken) return true;
+  if (hasBadProcessPair(tokens)) return true;
 
   const fillerOrProcessTokenCount = tokens.filter(
     (token) =>
@@ -542,6 +680,20 @@ function isLowQualityGeneratedTag(tag: string): boolean {
   if (tokens.length >= 4 && fillerOrProcessTokenCount * 2 >= tokens.length) {
     return true;
   }
+
+  return false;
+}
+
+function hasBadProcessPair(tokens: string[]): boolean {
+  const tokenSet = new Set(tokens);
+  const has = (...items: string[]) => items.every((item) => tokenSet.has(item));
+
+  if (has("email", "pdf")) return true;
+  if (has("monitor", "due")) return true;
+  if (has("minutes", "design")) return true;
+  if (has("quantity", "color")) return true;
+  if (has("quantity", "stone")) return true;
+  if (has("apple", "pencil")) return true;
 
   return false;
 }
@@ -814,9 +966,9 @@ export async function generateTags(title: string, description: string): Promise<
   const targetTags = normalizedTargets.slice(0, 8);
 
   const keywords = buildKeywords(targetTags, title, compactDescription);
-  const secondPrompt = `Imagine you are generating Etsy-style metadata tags for discoverability (coverage and variety). Phrases need to be relevant to the item and make sense as a search phrase to find the item. Phrases should try to end with noun that describes the item. If the noun has to be reused, use the shortest item noun. Create product-search tags, not description fragments. Prefer 2-4 word keyword phrases that a customer would reasonably type on Etsy. Use the description only for product attributes like item type, material, color, style, occasion, recipient, theme, and use case. Use dimensions or quantities only when they are common buyer search terms, not manufacturing specs or package details. Do not output grammar/filler phrases, contact/help text, policy/logistics text, care text, file-delivery text, or random sentence fragments. Before returning, silently self-check every phrase. Remove any phrase that sounds like a sentence fragment, instruction, policy, support/contact text, shipping/download/file text, color-variation disclaimer, dimension/spec fragment, or random prose. Replace it with a product-focused Etsy search phrase using item type, material, style, color, theme, occasion, recipient, or use case. Tags must describe the product a buyer wants to find. Generate at least 13 phrases <= 20 characters each. Return valid JSON only. Use the following object to help generate ${JSON.stringify(
+  const secondPrompt = `Imagine you are generating Etsy-style metadata tags for discoverability (coverage and variety). Phrases need to be relevant to the item and make sense as a search phrase to find the item. Phrases should try to end with noun that describes the item. If the noun has to be reused, use the shortest item noun. Create product-search tags, not description fragments. Prefer 2-4 word keyword phrases that a customer would reasonably type on Etsy. Use the description only for product attributes like item type, material, color, style, occasion, recipient, theme, and use case. Use dimensions or quantities only when they are common buyer search terms, not manufacturing specs or package details. Do not output grammar/filler phrases, contact/help text, policy/logistics text, care text, file-delivery text, or random sentence fragments. Do not use device compatibility terms unless the item itself is for that device. Before returning, silently self-check every phrase. Remove any phrase that sounds like a sentence fragment, instruction, policy, support/contact text, shipping/download/file text, color-variation disclaimer, dimension/spec fragment, or random prose. Replace it with a product-focused Etsy search phrase using item type, material, style, color, theme, occasion, recipient, or use case. Tags must describe the product a buyer wants to find. Generate at least 13 phrases <= 20 characters each. Return valid JSON only. Use the following object to help generate ${JSON.stringify(
     keywords,
-  )}. Used should be avoid being used as much as possible. Title is your highest-priority keyword pool. Description is your secondary keyword pool. Output: ["phrase 1", "phrase 2"]`;
+  )}. Avoid reusing words from Used when possible. Title is your highest-priority keyword pool. Description is your secondary keyword pool. Output: ["phrase 1", "phrase 2"]`;
 
   const secondResponse = await requestOpenAIArray(client, model, secondPrompt);
   const targetSet = new Set(targetTags);

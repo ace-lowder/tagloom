@@ -54,8 +54,17 @@ describe("generation fallback filler quality", () => {
     expect(new Set(normalized).size).toBe(normalized.length);
   });
 
-  it("uses generation logic version 1.4", () => {
-    expect(GENERATION_LOGIC_VERSION).toBe("1.4");
+  it("uses generation logic version 1.5", () => {
+    expect(GENERATION_LOGIC_VERSION).toBe("1.5");
+  });
+
+  it("normalizes possessives without standalone leftovers", () => {
+    const cleaned = cleanGenerationDescription("Customize your child’s name and seller's note");
+    const tokens = normalizeTokens(cleaned);
+
+    expect(tokens).toContain("child");
+    expect(tokens).not.toContain("s");
+    expect(cleaned).not.toContain("seller s");
   });
 
   it("cleans generation descriptions safely", () => {
@@ -150,6 +159,48 @@ describe("generation fallback filler quality", () => {
     }
   });
 
+  it("strips digital download and support residue from compact descriptions", () => {
+    const description =
+      "email containing pdf download link check spam junk folder inbox within minutes fully free child’s party invite design colours may vary due monitor";
+    const compacted = compactGenerationDescription(description);
+    const tokens = normalizeTokens(compacted);
+
+    for (const token of [
+      "email",
+      "containing",
+      "pdf",
+      "link",
+      "spam",
+      "junk",
+      "folder",
+      "inbox",
+      "within",
+      "minutes",
+      "fully",
+      "s",
+      "due",
+      "monitor",
+    ]) {
+      expect(tokens).not.toContain(token);
+    }
+    expect(tokens).toContain("invite");
+    expect(tokens).toContain("design");
+  });
+
+  it("drops compatibility context device tokens in compact descriptions", () => {
+    const description =
+      "digital planner works with ipad pro ipad air apple pencil goodnotes notability floral weekly planner template";
+    const compacted = compactGenerationDescription(description);
+    const tokens = normalizeTokens(compacted);
+
+    for (const token of ["pro", "air", "apple", "pencil"]) {
+      expect(tokens).not.toContain(token);
+    }
+    for (const token of ["digital", "planner", "floral", "weekly", "template"]) {
+      expect(tokens).toContain(token);
+    }
+  });
+
   it("keeps useful compact product terms in compact descriptions", () => {
     const description =
       "3d nail art 8oz candle 5x7 print svg bundle nickel free earrings custom gift";
@@ -178,39 +229,49 @@ describe("generation fallback filler quality", () => {
 
   it("filters low quality generated fragments but keeps useful phrases", () => {
     const filtered = filterLowQualityGeneratedTags([
-      "link file check spam",
-      "feel reach out happy",
-      "free works customize",
-      "product shipped once",
-      "inbox within colours",
-      "2 quantity 3 width",
-      "nickel free earrings",
-      "svg bundle",
+      "fully free child s",
+      "email containing pdf",
+      "slightly due monitor",
+      "minutes no design",
+      "stone color quantity",
+      "pro air apple pencil",
+      "touch turns one kind",
+      "choose circle square",
+      "fast easy way brand",
+      "birthday party",
+      "party decor",
+      "party invite",
+      "circle sticker",
+      "square sticker",
+      "brand sticker",
+      "nickel free",
       "digital download",
-      "5x7 print",
-      "8oz candle",
-      "3d nail art",
       "custom gift",
     ]);
 
     for (const bad of [
-      "link file check spam",
-      "feel reach out happy",
-      "free works customize",
-      "product shipped once",
-      "inbox within colours",
-      "2 quantity 3 width",
+      "fully free child s",
+      "email containing pdf",
+      "slightly due monitor",
+      "minutes no design",
+      "stone color quantity",
+      "pro air apple pencil",
+      "touch turns one kind",
+      "choose circle square",
+      "fast easy way brand",
     ]) {
       expect(filtered).not.toContain(bad);
     }
 
     for (const good of [
-      "nickel free earrings",
-      "svg bundle",
+      "birthday party",
+      "party decor",
+      "party invite",
+      "circle sticker",
+      "square sticker",
+      "brand sticker",
+      "nickel free",
       "digital download",
-      "5x7 print",
-      "8oz candle",
-      "3d nail art",
       "custom gift",
     ]) {
       expect(filtered).toContain(good);
