@@ -1,11 +1,24 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { GENERATION_LOGIC_VERSION, generateTags } from "./generation";
+import {
+  cleanGenerationDescription,
+  GENERATION_LOGIC_VERSION,
+  generateTags,
+  MAX_GENERATION_DESCRIPTION_LENGTH,
+} from "./generation";
 
 function normalizeTag(tag: string): string {
   return tag
     .toLowerCase()
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function normalizeTokens(text: string): string[] {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean);
 }
 
 describe("generation fallback filler quality", () => {
@@ -39,8 +52,42 @@ describe("generation fallback filler quality", () => {
     expect(new Set(normalized).size).toBe(normalized.length);
   });
 
-  it("uses generation logic version 1.1", () => {
-    expect(GENERATION_LOGIC_VERSION).toBe("1.1");
+  it("uses generation logic version 1.2", () => {
+    expect(GENERATION_LOGIC_VERSION).toBe("1.2");
+  });
+
+  it("cleans generation descriptions safely", () => {
+    const noisyDescription = [
+      "Digital template svg 3d 8oz 5x7 printable invite sticker",
+      "Contact us at hello@example.com or visit https://example.com/listing and www.etsy.com/shop/demo",
+      "Need help? ✅ ★ -> 😀 📦",
+      "   extra   spacing   ",
+    ].join(" ");
+    const cleaned = cleanGenerationDescription(noisyDescription);
+    const lowered = cleaned.toLowerCase();
+
+    expect(lowered).toContain("digital");
+    expect(lowered).toContain("template");
+    expect(lowered).toContain("svg");
+    expect(lowered).toContain("3d");
+    expect(lowered).toContain("8oz");
+    expect(lowered).toContain("5x7");
+    expect(cleaned).not.toMatch(/https?:\/\//i);
+    expect(cleaned).not.toMatch(/\bwww\./i);
+    expect(cleaned).not.toMatch(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i);
+    expect(cleaned).not.toContain("✅");
+    expect(cleaned).not.toContain("😀");
+    expect(cleaned).not.toMatch(/\s{2,}/);
+  });
+
+  it("caps cleaned description length", () => {
+    const longDescription = `${"digital template ".repeat(200)}5x7`;
+    const cleaned = cleanGenerationDescription(longDescription);
+
+    expect(cleaned.length).toBeLessThanOrEqual(MAX_GENERATION_DESCRIPTION_LENGTH);
+    expect(cleaned.endsWith(" ")).toBe(false);
+    expect(cleaned).toContain("digital");
+    expect(cleaned).toContain("template");
   });
 
   it("prefers multi-word discovery phrases when enough keywords exist", async () => {
@@ -91,7 +138,9 @@ describe("generation fallback filler quality", () => {
       "Elegant floral invite design with editable text plus www etsy com listing account settings links minimum dpi svg tiff seller types ai eps.";
 
     const result = await generateTags(title, description);
-    const allText = [...result.tags.target, ...result.tags.discovery].join(" ");
+    const allTokens = normalizeTokens(
+      [...result.tags.target, ...result.tags.discovery].join(" "),
+    );
     const banned = [
       "www",
       "etsy",
@@ -106,7 +155,7 @@ describe("generation fallback filler quality", () => {
     expect(result.source).toBe("fallback");
     expect([...result.tags.target, ...result.tags.discovery]).toHaveLength(13);
     for (const token of banned) {
-      expect(allText).not.toContain(token);
+      expect(allTokens).not.toContain(token);
     }
   });
 
@@ -124,6 +173,24 @@ describe("generation fallback filler quality", () => {
         allText.includes(word),
       ),
     ).toBe(true);
+  });
+
+  it("uses cleaned description in fallback generation", async () => {
+    const title = "Custom Birthday Party Invite";
+    const description =
+      "Digital template svg 3d 8oz 5x7 printable sticker invite -- visit https://example.com now, email hello@example.com, and message us 😀 ✓";
+
+    const result = await generateTags(title, description);
+    const allText = [...result.tags.target, ...result.tags.discovery].join(" ");
+    const allTokens = normalizeTokens(allText);
+
+    expect(result.source).toBe("fallback");
+    expect(allText).not.toMatch(/https?:\/\//i);
+    expect(allText).not.toMatch(/\bwww\./i);
+    expect(allText).not.toMatch(/@/);
+    expect(["digital", "template", "svg", "3d", "8oz", "5x7", "sticker", "invite"].some((word) =>
+      allTokens.includes(word),
+    )).toBe(true);
   });
 
   it("filters file-spec terms only in spec context", async () => {
