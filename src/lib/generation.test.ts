@@ -52,8 +52,8 @@ describe("generation fallback filler quality", () => {
     expect(new Set(normalized).size).toBe(normalized.length);
   });
 
-  it("uses generation logic version 1.2", () => {
-    expect(GENERATION_LOGIC_VERSION).toBe("1.2");
+  it("uses generation logic version 1.3", () => {
+    expect(GENERATION_LOGIC_VERSION).toBe("1.3");
   });
 
   it("cleans generation descriptions safely", () => {
@@ -78,6 +78,33 @@ describe("generation fallback filler quality", () => {
     expect(cleaned).not.toContain("✅");
     expect(cleaned).not.toContain("😀");
     expect(cleaned).not.toMatch(/\s{2,}/);
+  });
+
+  it("strips filler words from cleaned descriptions", () => {
+    const description =
+      "if does not appear so you can let us know and we ll gladly help digital template";
+    const cleaned = cleanGenerationDescription(description);
+    const tokens = normalizeTokens(cleaned);
+
+    for (const filler of ["if", "does", "not", "so", "you", "can", "let", "us", "we", "ll", "help", "appear"]) {
+      expect(tokens).not.toContain(filler);
+    }
+    expect(tokens).toContain("digital");
+    expect(tokens).toContain("template");
+  });
+
+  it("strips compact measurement and package noise from cleaned descriptions", () => {
+    const description =
+      "2cm thickness 0.3cm 10pcs 6mm widest point 3d 8oz 5x7 digital template svg";
+    const cleaned = cleanGenerationDescription(description);
+    const tokens = normalizeTokens(cleaned);
+
+    for (const noisy of ["2cm", "0", "3cm", "10pcs", "6mm", "cm", "mm", "pcs"]) {
+      expect(tokens).not.toContain(noisy);
+    }
+    for (const useful of ["3d", "8oz", "5x7", "digital", "template", "svg"]) {
+      expect(tokens).toContain(useful);
+    }
   });
 
   it("caps cleaned description length", () => {
@@ -188,6 +215,26 @@ describe("generation fallback filler quality", () => {
     expect(allText).not.toMatch(/https?:\/\//i);
     expect(allText).not.toMatch(/\bwww\./i);
     expect(allText).not.toMatch(/@/);
+    expect(["digital", "template", "svg", "3d", "8oz", "5x7", "sticker", "invite"].some((word) =>
+      allTokens.includes(word),
+    )).toBe(true);
+  });
+
+  it("uses compacted descriptions in fallback generation", async () => {
+    const title = "Custom Birthday Party Invite";
+    const description =
+      "if does not appear so you can let us know and we ll gladly help 2cm thickness 0.3cm 10pcs 6mm point digital template svg 3d 8oz 5x7 printable sticker invite";
+
+    const result = await generateTags(title, description);
+    const allTokens = normalizeTokens([...result.tags.target, ...result.tags.discovery].join(" "));
+
+    expect(result.source).toBe("fallback");
+    for (const filler of ["if", "does", "not", "so", "you", "can", "let", "us", "we", "ll", "help", "appear"]) {
+      expect(allTokens).not.toContain(filler);
+    }
+    for (const noisy of ["2cm", "10pcs", "6mm", "cm", "mm", "pcs"]) {
+      expect(allTokens).not.toContain(noisy);
+    }
     expect(["digital", "template", "svg", "3d", "8oz", "5x7", "sticker", "invite"].some((word) =>
       allTokens.includes(word),
     )).toBe(true);

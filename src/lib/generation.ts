@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 
-export const GENERATION_LOGIC_VERSION = "1.2";
+export const GENERATION_LOGIC_VERSION = "1.3";
 export const MAX_GENERATION_DESCRIPTION_LENGTH = 1200;
 
 const ignoreTokens = new Set([
@@ -98,6 +98,85 @@ const boilerplateContextTokens = new Set([
   "dimensions",
 ]);
 
+const descriptionFillerTokens = new Set([
+  "about",
+  "above",
+  "after",
+  "again",
+  "all",
+  "also",
+  "any",
+  "because",
+  "before",
+  "below",
+  "but",
+  "can",
+  "could",
+  "did",
+  "do",
+  "does",
+  "doing",
+  "done",
+  "dont",
+  "each",
+  "even",
+  "few",
+  "get",
+  "gets",
+  "got",
+  "had",
+  "has",
+  "have",
+  "having",
+  "here",
+  "if",
+  "into",
+  "just",
+  "let",
+  "ll",
+  "may",
+  "might",
+  "more",
+  "most",
+  "need",
+  "not",
+  "now",
+  "only",
+  "our",
+  "ours",
+  "please",
+  "re",
+  "same",
+  "should",
+  "so",
+  "some",
+  "than",
+  "then",
+  "there",
+  "these",
+  "they",
+  "those",
+  "through",
+  "us",
+  "ve",
+  "very",
+  "was",
+  "we",
+  "were",
+  "what",
+  "which",
+  "who",
+  "why",
+  "will",
+  "would",
+  "you",
+  "your",
+  "yours",
+  "appear",
+  "contact",
+  "help",
+]);
+
 const generationSeparatorsPattern = /(?:•|\||★|☆|✓|✔|→|=>)/g;
 const urlPattern = /\b(?:https?:\/\/|www\.)\S+/gi;
 const emailPattern = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
@@ -147,6 +226,38 @@ function trimToDescriptionLimit(text: string): string {
   return truncated.trim();
 }
 
+function normalizeDescriptionCheckToken(token: string): string {
+  return token
+    .toLowerCase()
+    .replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, "");
+}
+
+function isDescriptionFillerToken(token: string): boolean {
+  return descriptionFillerTokens.has(token);
+}
+
+function isCompactableMeasurementToken(token: string): boolean {
+  if (token === "3d" || token === "8oz" || token === "5x7") return false;
+  if (token === "cm" || token === "mm" || token === "inch" || token === "inches") return true;
+  if (token === "pcs") return true;
+  return /^(\d+(?:\.\d+)?)(cm|mm|pcs)$/.test(token);
+}
+
+function stripDescriptionFillerWords(description: string): string {
+  const kept: string[] = [];
+
+  for (const originalToken of description.split(/\s+/)) {
+    if (!originalToken) continue;
+    const normalizedToken = normalizeDescriptionCheckToken(originalToken);
+    if (!normalizedToken) continue;
+    if (isDescriptionFillerToken(normalizedToken)) continue;
+    if (isCompactableMeasurementToken(normalizedToken)) continue;
+    kept.push(originalToken);
+  }
+
+  return kept.join(" ");
+}
+
 export function cleanGenerationDescription(description: string): string {
   const normalized = String(description ?? "").normalize("NFKC");
   const noUrls = normalized.replace(urlPattern, " ");
@@ -159,8 +270,10 @@ export function cleanGenerationDescription(description: string): string {
     .replace(repeatedSymbolPattern, " ")
     .replace(punctuationRunPattern, " ");
   const collapsedWhitespace = noRepeatedSymbols.replace(/\s+/g, " ").trim();
+  const noFillerWords = stripDescriptionFillerWords(collapsedWhitespace);
+  const recollapsedWhitespace = noFillerWords.replace(/\s+/g, " ").trim();
 
-  return trimToDescriptionLimit(collapsedWhitespace);
+  return trimToDescriptionLimit(recollapsedWhitespace);
 }
 
 function normalizeResponse(input: string[]): string[] {
@@ -220,6 +333,8 @@ function buildDescriptionTokens(description: string): string[] {
     const token = tokens[index];
 
     if (isDescriptionBoilerplateToken(token)) continue;
+    if (isDescriptionFillerToken(token)) continue;
+    if (isCompactableMeasurementToken(token)) continue;
 
     if (fileSpecTokens.has(token) && hasBoilerplateNeighbor(tokens, index)) {
       continue;
@@ -523,14 +638,14 @@ export async function generateTags(title: string, description: string): Promise<
   const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
   const cleanedDescription = cleanGenerationDescription(description);
 
-  const firstPrompt = `Imagine you are a real Etsy customer trying to find this exact item. Write the phrases you would type into the Etsy search bar to find it. Return valid JSON only. It's important that each phrase must be <= 20 characters. Phrases should be what an average person is most likely to type off the top of their head. Only phrases a non-technical person, who doesn't know how search engines work, would type. Ignore text about buying, shipping, refunds, guarantees, care, dimensions, sizing charts, color variation, downloads, file formats, editing instructions, personalization steps, contact/help messages, URLs, and seller notes. Do not copy random fragments from the description. Only return phrases a buyer would type to find this product. Once you, as an average Etsy user, have to pause and think about the next phrase, it's time to stop. Output: ["phrase 1", "phrase 2"]. Title: ${title}, Description: ${cleanedDescription || "(none)"}`;
+  const firstPrompt = `Imagine you are a real Etsy customer trying to find this exact item. Write the phrases you would type into the Etsy search bar to find it. Return valid JSON only. It's important that each phrase must be <= 20 characters. Phrases should be what an average person is most likely to type off the top of their head. Only phrases a non-technical person, who doesn't know how search engines work, would type. Tags should be standalone buyer search phrases, not sentence fragments. Prioritize searchable product keywords: item type, material, style, color, theme, occasion, recipient, and use case. Do not include filler words or partial phrases like if, so, you, can, does, not, appear, may, vary, contact, help. Ignore dimensions, package counts, sizing-chart details, policies, shipping, refunds, guarantees, care instructions, download instructions, file-format specs, personalization steps, color variation disclaimers, URLs, and seller notes unless a detail is clearly something buyers search for, like 5x7 print or 8oz candle. Do not copy random fragments from the description. Only return phrases a buyer would type to find this product. Once you, as an average Etsy user, have to pause and think about the next phrase, it's time to stop. Output: ["phrase 1", "phrase 2"]. Title: ${title}, Description: ${cleanedDescription || "(none)"}`;
 
   const firstResponse = await requestOpenAIArray(client, model, firstPrompt);
   const normalizedTargets = normalizeResponse(firstResponse);
   const targetTags = normalizedTargets.slice(0, 8);
 
   const keywords = buildKeywords(targetTags, title, cleanedDescription);
-  const secondPrompt = `Imagine you are generating Etsy-style metadata tags for discoverability (coverage and variety). Phrases need to be relevant to the item and make sense as a search phrase to find the item. Phrases should try to end with noun that describes the item. If the noun has to be reused, use the shortest item noun. Use the description only for product attributes like item type, material, color, style, occasion, recipient, theme, and use case. Ignore logistics, policy, care, dimension, file-format, download, editing, personalization-instruction, and contact/help text. Do not turn partial sentences or boilerplate fragments into tags. Tags must describe the product a buyer wants to find. Generate at least 13 phrases <= 20 characters each. Return valid JSON only. Use the following object to help generate ${JSON.stringify(
+  const secondPrompt = `Imagine you are generating Etsy-style metadata tags for discoverability (coverage and variety). Phrases need to be relevant to the item and make sense as a search phrase to find the item. Phrases should try to end with noun that describes the item. If the noun has to be reused, use the shortest item noun. Create product-search tags, not description fragments. Prefer 2-4 word keyword phrases that a customer would reasonably type on Etsy. Use the description only for product attributes like item type, material, color, style, occasion, recipient, theme, and use case. Use dimensions or quantities only when they are common buyer search terms, not manufacturing specs or package details. Do not output grammar/filler phrases, contact/help text, policy/logistics text, care text, file-delivery text, or random sentence fragments. Tags must describe the product a buyer wants to find. Generate at least 13 phrases <= 20 characters each. Return valid JSON only. Use the following object to help generate ${JSON.stringify(
     keywords,
   )}. Used should be avoid being used as much as possible. Title is your highest-priority keyword pool. Description is your secondary keyword pool. Output: ["phrase 1", "phrase 2"]`;
 
