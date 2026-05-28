@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   cleanGenerationDescription,
+  compactGenerationDescription,
+  filterLowQualityGeneratedTags,
   GENERATION_LOGIC_VERSION,
   generateTags,
   MAX_GENERATION_DESCRIPTION_LENGTH,
@@ -52,8 +54,8 @@ describe("generation fallback filler quality", () => {
     expect(new Set(normalized).size).toBe(normalized.length);
   });
 
-  it("uses generation logic version 1.3", () => {
-    expect(GENERATION_LOGIC_VERSION).toBe("1.3");
+  it("uses generation logic version 1.4", () => {
+    expect(GENERATION_LOGIC_VERSION).toBe("1.4");
   });
 
   it("cleans generation descriptions safely", () => {
@@ -115,6 +117,104 @@ describe("generation fallback filler quality", () => {
     expect(cleaned.endsWith(" ")).toBe(false);
     expect(cleaned).toContain("digital");
     expect(cleaned).toContain("template");
+  });
+
+  it("compacts descriptions by removing process and prose residue", () => {
+    const description =
+      "link file check spam folder inbox within colours vary steps color everyone quantity width product shipped once digital template wedding invite floral design";
+    const compacted = compactGenerationDescription(description);
+    const tokens = normalizeTokens(compacted);
+
+    for (const token of [
+      "link",
+      "file",
+      "check",
+      "spam",
+      "folder",
+      "inbox",
+      "within",
+      "colours",
+      "vary",
+      "steps",
+      "color",
+      "everyone",
+      "quantity",
+      "width",
+      "shipped",
+      "once",
+    ]) {
+      expect(tokens).not.toContain(token);
+    }
+    for (const token of ["digital", "template", "wedding", "invite", "floral", "design"]) {
+      expect(tokens).toContain(token);
+    }
+  });
+
+  it("keeps useful compact product terms in compact descriptions", () => {
+    const description =
+      "3d nail art 8oz candle 5x7 print svg bundle nickel free earrings custom gift";
+    const compacted = compactGenerationDescription(description);
+    const tokens = normalizeTokens(compacted);
+
+    for (const token of [
+      "3d",
+      "nail",
+      "art",
+      "8oz",
+      "candle",
+      "5x7",
+      "print",
+      "svg",
+      "bundle",
+      "nickel",
+      "free",
+      "earrings",
+      "custom",
+      "gift",
+    ]) {
+      expect(tokens).toContain(token);
+    }
+  });
+
+  it("filters low quality generated fragments but keeps useful phrases", () => {
+    const filtered = filterLowQualityGeneratedTags([
+      "link file check spam",
+      "feel reach out happy",
+      "free works customize",
+      "product shipped once",
+      "inbox within colours",
+      "2 quantity 3 width",
+      "nickel free earrings",
+      "svg bundle",
+      "digital download",
+      "5x7 print",
+      "8oz candle",
+      "3d nail art",
+      "custom gift",
+    ]);
+
+    for (const bad of [
+      "link file check spam",
+      "feel reach out happy",
+      "free works customize",
+      "product shipped once",
+      "inbox within colours",
+      "2 quantity 3 width",
+    ]) {
+      expect(filtered).not.toContain(bad);
+    }
+
+    for (const good of [
+      "nickel free earrings",
+      "svg bundle",
+      "digital download",
+      "5x7 print",
+      "8oz candle",
+      "3d nail art",
+      "custom gift",
+    ]) {
+      expect(filtered).toContain(good);
+    }
   });
 
   it("prefers multi-word discovery phrases when enough keywords exist", async () => {
@@ -237,6 +337,40 @@ describe("generation fallback filler quality", () => {
     }
     expect(["digital", "template", "svg", "3d", "8oz", "5x7", "sticker", "invite"].some((word) =>
       allTokens.includes(word),
+    )).toBe(true);
+  });
+
+  it("uses compact context in fallback generation", async () => {
+    const title = "Floral Wedding Invitation";
+    const description =
+      "link file check spam folder inbox within colours vary steps color everyone quantity width product shipped once digital template wedding invite floral design";
+
+    const result = await generateTags(title, description);
+    const allTokens = normalizeTokens([...result.tags.target, ...result.tags.discovery].join(" "));
+
+    expect(result.source).toBe("fallback");
+    for (const token of [
+      "link",
+      "file",
+      "check",
+      "spam",
+      "folder",
+      "inbox",
+      "within",
+      "colours",
+      "vary",
+      "steps",
+      "color",
+      "everyone",
+      "quantity",
+      "width",
+      "shipped",
+      "once",
+    ]) {
+      expect(allTokens).not.toContain(token);
+    }
+    expect(["digital", "template", "wedding", "invite", "floral", "design"].some((token) =>
+      allTokens.includes(token),
     )).toBe(true);
   });
 
