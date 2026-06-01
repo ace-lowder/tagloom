@@ -54,8 +54,8 @@ describe("generation fallback filler quality", () => {
     expect(new Set(normalized).size).toBe(normalized.length);
   });
 
-  it("uses generation logic version 1.6", () => {
-    expect(GENERATION_LOGIC_VERSION).toBe("1.6");
+  it("uses generation logic version 1.7", () => {
+    expect(GENERATION_LOGIC_VERSION).toBe("1.7");
   });
 
   it("normalizes possessives without standalone leftovers", () => {
@@ -274,6 +274,8 @@ describe("generation fallback filler quality", () => {
       "touch turns one kind",
       "choose circle square",
       "fast easy way brand",
+      "looking create brand",
+      "beautiful bead set",
       "birthday party",
       "party decor",
       "party invite",
@@ -295,6 +297,8 @@ describe("generation fallback filler quality", () => {
       "touch turns one kind",
       "choose circle square",
       "fast easy way brand",
+      "looking create brand",
+      "beautiful bead set",
     ]) {
       expect(filtered).not.toContain(bad);
     }

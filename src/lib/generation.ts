@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 
-export const GENERATION_LOGIC_VERSION = "1.6";
+export const GENERATION_LOGIC_VERSION = "1.7";
 export const MAX_GENERATION_DESCRIPTION_LENGTH = 1200;
 const MAX_COMPACT_DESCRIPTION_LENGTH = 500;
 
@@ -325,6 +325,9 @@ const lowQualityTagLeadingTokens = new Set([
   "choose",
   "touch",
   "fast",
+  "beautiful",
+  "looking",
+  "today",
 ]);
 
 const lowQualityTagProcessTokens = new Set([
@@ -805,6 +808,9 @@ function hasBadProcessPair(tokens: string[]): boolean {
   if (has("quantity", "color")) return true;
   if (has("quantity", "stone")) return true;
   if (has("apple", "pencil")) return true;
+  if (has("looking", "create")) return true;
+  if (has("create", "brand")) return true;
+  if (has("beautiful", "bead")) return true;
 
   return false;
 }
