@@ -1,0 +1,1876 @@
+{
+  "version": "1.5",
+  "createdAt": "2026-06-01T21:47:41.975Z",
+  "dataset": "benchmarks/listings.csv",
+  "summary": {
+    "listings": 30,
+    "generations": 60,
+    "averageTagCount": 13,
+    "oversized": 0,
+    "duplicates": 0,
+    "oneWord": 0,
+    "averageTotalChars": 216.21666666666667
+  },
+  "results": [
+    {
+      "id": "1",
+      "category": "art",
+      "mode": "full",
+      "title": "Celestial Orbit Kinetic Sculpture, Solar System Sculpture, Rotating Kinetic Art,Modern Desktop Decor,Space Model,Decorative Planet Sculpture",
+      "description": "✨ Celestial Orbit Kinetic Sculpture – A stunning metal kinetic art piece that simulates the movement of planets in a solar system model, perfect for modern home or office decor. The rotating sculpture brings the beauty of space to life, making it a striking statement piece.\n\n🌟 Product Details:\n• Size: 26 x 22 x 9 сm| 10.2\"x8.7\"x3.5\" Elegant and compact for desktop display – ideal for desks, shelves, or as a conversation starter.\n• Material: High-quality plastic for durability and a polished finish.\n• Design: A modern solar system model featuring orbiting planets and a rotating central design.\n\n🎁 Why You’ll Love It:\n• A perfect addition to any modern decor – adds sophistication and elegance to any space.\n• Ideal gift for space enthusiasts, science lovers, or anyone who appreciates kinetic art.\n• The rotating feature makes it an interactive and dynamic desktop decor piece.\n\n🔒 Order Now and bring the wonders of the solar system into your space with this captivating celestial orbit kinetic sculpture.",
+      "targetTags": [
+        "kinetic sculpture",
+        "solar system art",
+        "desktop decor",
+        "planet model",
+        "modern art",
+        "space decor",
+        "metal art",
+        "rotating sculpture"
+      ],
+      "discoveryTags": [
+        "science gift idea",
+        "celestial art piece",
+        "unique office decor",
+        "elegant home decor",
+        "modern desktop decor"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 199
+      }
+    },
+    {
+      "id": "1",
+      "category": "art",
+      "mode": "title",
+      "title": "Celestial Orbit Kinetic Sculpture, Solar System Sculpture, Rotating Kinetic Art,Modern Desktop Decor,Space Model,Decorative Planet Sculpture",
+      "description": "",
+      "targetTags": [
+        "kinetic sculpture",
+        "solar system art",
+        "desktop decor",
+        "planet model",
+        "modern decor",
+        "space sculpture",
+        "rotating art",
+        "celestial decor"
+      ],
+      "discoveryTags": [
+        "unique space gift",
+        "decorative sculpture",
+        "artistic planet",
+        "kinetic art piece",
+        "celestial home decor"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 201
+      }
+    },
+    {
+      "id": "2",
+      "category": "art",
+      "mode": "full",
+      "title": "Large Christian Wall Art | Vintage Botanical Floral Scripture Consider Lilies Canvas Print | F170",
+      "description": "Vintage Oil Painting Printed on Cotton Canvas with Matthew 6:28 Added\n\n-Description: Please view our video in the second photo to see close ups and further descriptions of this framed canvas art.\n\n-Art is printed on a premium cotton canvas and permanently mounted to composite backer or birch (for the two larger sides), before being professionally framed. Art is lightweight and very easy to hang with the two sawtooth hangers that are mounted to the back.\n\n-We have six frame options. Five of them are stained premium pine or painted gold metallic. We also have a hardwood oak option that is lightly oiled for a natural wood look. Please note for the oak frame option: As with all oak, the color can vary a little as it is oiled and not stained. The oil brings out the color of each individual piece of wood we use.\n\n\nDimensions- (these are the print dimensions, please note that the frames add about an inch both ways.)\n\n30x20\n\n36x24\n\n42x28\n\n48x32\n\n54x36\n______________________________________________________________________________________________________________________________\n\nShipping and Turn Around Time-\n\nPlease view turn around time at checkout. Etsy will tell you our estimated processing time before you purchase an item. We typically ship on a 3-5 business day turnaround, though that may be longer during the holiday season. The estimated processing time at checkout is always the most reliable estimation.\n\nWe use Fedex Home Delivery to ship. We can ship UPS upon request if you reach out to us after your purchase.\n\n🇨🇦 CANADIAN SHIPPING:\n\nBecause of very large demand, we have begun shipping to Canada. Please be aware, we have no control over customs fees. They are sometimes as expensive as the product itself. We do not reimburse you for customs fees and are in no way responsible for their payment.\n\n______________________________________________________________________________________________________________________________\n\nWhy choose Rooted and Grounded?\n\nWe love what we do and love the idea that what we are making helps you add your personality and character to your home. We are very particular about our product. We take pride in making our art and make sure we are happy with every piece before we send it out. If for any reason you are not happy with your art, please let us know and we will work with you to get you a replacement or refund.\n\n______________________________________________________________________________________________________________________________\n\n***check out our similar products below***\n\nhttps://www.etsy.com/shop/RandGCottonGoods?",
+      "targetTags": [
+        "christian wall art",
+        "botanical canvas",
+        "vintage scripture",
+        "floral print",
+        "matthew 6:28 art",
+        "large canvas print",
+        "framed wall decor",
+        "home decor art"
+      ],
+      "discoveryTags": [
+        "art for living room",
+        "vintage floral decor",
+        "scripture wall decor",
+        "matthew 6 28 print",
+        "large framed art"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 221
+      }
+    },
+    {
+      "id": "2",
+      "category": "art",
+      "mode": "title",
+      "title": "Large Christian Wall Art | Vintage Botanical Floral Scripture Consider Lilies Canvas Print | F170",
+      "description": "",
+      "targetTags": [
+        "christian wall art",
+        "botanical canvas",
+        "vintage scripture",
+        "floral print",
+        "large wall decor",
+        "religious art",
+        "home decor",
+        "lilies artwork"
+      ],
+      "discoveryTags": [
+        "christian wall decor",
+        "religious canvas art",
+        "floral scripture art",
+        "vintage floral print",
+        "large floral canvas"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 215
+      }
+    },
+    {
+      "id": "3",
+      "category": "art",
+      "mode": "full",
+      "title": "Press On Nails Dragonfly with Pink Flower | 3D Nature Fake Nails in Long Almond | Handmade Spring Nail Art for Holiday, Vacation, Birthday",
+      "description": "Design: Lilynailsart\nPhoto: Lilynailsart\n\n🍁 Material: I only work with high-quality materials to create sturdy, long-lasting luxury press-on nails that you can trust.\nMy nails will last for:\n1. 1-2 days using adhesive tabs (provided with the nail set)\n2. 3-4 weeks using nail glue.\nYou can reuse all of the nails multiple times if you take care of them. Follow the instructions provided with the nail set.\n\n🍁 Size:\nXS: 14, 10, 11, 10, 8 mm\nS: 15, 11, 12, 11, 9 mm\nM: 16, 12, 13, 12, 9 mm\nL: 17, 13, 14, 13, 10 mm\nIf you would like a custom size, please fill out the personalization section under the product options.\nI'm happy to help you measure your nail size if you're unsure.\n\n🍁 Each Nail Set Includes:\n• 10 nails of your size\n• 24 adhesive tabs\n• 1 nail file\n• 1 nail glue\n• 1 cuticle stick\n• 1 alcohol wipe\n\n🍁 Processing Time:\nEvery nail in my shop is handmade and hand-painted with love and care.\nPlease allow:\n• 10-14 days for the nails to be made\n• 4-8 days for USPS delivery.\n\n🍁 About the Product:\nAll of my nails are handmade and customized to fit your size. Please note that I can make any size and shape you desire. Feel free to contact me if you'd like some customizations made.\n\n🍁 Customer Service:\nI am happy to resolve any issues with the nails or shipping if you are not satisfied. Whenever you have a problem, I am always ready to help.\nThanks a lot, and I look forward to creating some awesome nails!\nLily",
+      "targetTags": [
+        "press on nails",
+        "dragonfly nails",
+        "pink flower nails",
+        "3d nail art",
+        "almond shape nails",
+        "handmade nails",
+        "spring nail art",
+        "vacation nails"
+      ],
+      "discoveryTags": [
+        "holiday nail design",
+        "nature themed nails",
+        "long lasting nails",
+        "fake nail set",
+        "birthday nail art"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 204
+      }
+    },
+    {
+      "id": "3",
+      "category": "art",
+      "mode": "title",
+      "title": "Press On Nails Dragonfly with Pink Flower | 3D Nature Fake Nails in Long Almond | Handmade Spring Nail Art for Holiday, Vacation, Birthday",
+      "description": "",
+      "targetTags": [
+        "press on nails",
+        "dragonfly nails",
+        "pink flower nails",
+        "3d nail art",
+        "long almond nails",
+        "handmade nails",
+        "spring nails",
+        "vacation nails"
+      ],
+      "discoveryTags": [
+        "artistic nail design",
+        "nature themed nails",
+        "floral nail decor",
+        "colorful press nails",
+        "birthday nail art"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 207
+      }
+    },
+    {
+      "id": "4",
+      "category": "baby",
+      "mode": "full",
+      "title": "Custom Crochet Pacifier Clip, Baby Dummy Clip, Pacifier Holder, Custom Name Baby Accessory, Baby Shower Gifts, Baby Gifts, Newborn Gifts",
+      "description": "Custom Crochet Pacifier Clip, Baby Dummy Clip, Pacifier Holder, Custom Name Baby Accessory, Baby Shower Gifts, Baby Gifts, Newborn Gifts\n\n\n🌹 Crochet Pacifier Clip\n\n- ThisCrochet Pacifier Clip is the ideal gift for baby.\n\n- Also perfect as a gift for your lover, it will be a meaningful gift.\n\n\n🌹D E T A I L\n- Material : Cotton, Wood\n\n*Only carve one side\n\n\n-Note: Currently, we only have two designs: one with 6 beads and one with 8 beads. If the name is fewer than 6 letters, we use the 6-bead design for engraving; If there are more than 6 to 8 letters, we use the 8-bead design. This is to avoid product defects caused by disassembling and reassembling.\n\n\n🌹 H O W - T O - O R D E R\n\n1- Leave the personalization in the 'Personalization Box'.\n\n2- Add it to your cart.\n\n3- Complete your order.\n\n\n🌹If you have any questions, please feel free to contact us, we will reply you as soon as possible!\n\nEnjoy your shopping!",
+      "targetTags": [
+        "baby dummy holder",
+        "custom name clip",
+        "baby shower gift",
+        "newborn gift",
+        "baby accessory",
+        "pacifier holder"
+      ],
+      "discoveryTags": [
+        "handmade baby clip",
+        "crochet baby holder",
+        "baby shower favor",
+        "newborn gift idea",
+        "custom pacifier clip",
+        "newborn shower gift",
+        "baby accessory gift"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 219
+      }
+    },
+    {
+      "id": "4",
+      "category": "baby",
+      "mode": "title",
+      "title": "Custom Crochet Pacifier Clip, Baby Dummy Clip, Pacifier Holder, Custom Name Baby Accessory, Baby Shower Gifts, Baby Gifts, Newborn Gifts",
+      "description": "",
+      "targetTags": [
+        "baby dummy clip",
+        "pacifier holder",
+        "custom name clip",
+        "baby accessory",
+        "baby shower gift",
+        "newborn gift"
+      ],
+      "discoveryTags": [
+        "soft crochet dummy",
+        "handmade baby clip",
+        "colorful baby clip",
+        "unique name holder",
+        "baby gift idea",
+        "custom pacifier clip",
+        "name dummy accessory"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 214
+      }
+    },
+    {
+      "id": "5",
+      "category": "baby",
+      "mode": "full",
+      "title": "Personalized Christmas gift for baby, Handmade felt quiet book, Customized soft Montessori-inspired toy, First birthday present, Busy book",
+      "description": "✨ Unique Gift • Rare Find • Thoughtfully designed • Handmade with love✨\n--------\n✨Dimension and version:\nThere are 4 books of 4 themes: WILD LION, FAIRY GARDEN, BERRY TALE, and BEAR ADVENTURE. Each has 2 versions available for your choice:\n+ Basic version: 7 pages (including 1 cover page), sized at ~ 5.9 x 5.9 x 1.9 inch (15 x 15 x 5 cm)\n+ Full version: 11 pages (including 1 cover page), sized at ~ 5.9 x 5.9 x 2.7 inch (15 x 15 x 7 cm)\n--------\nKeep little hands busy and curious minds enchanted—screen-free—anywhere you go. These are one-of-a-kind, 100% hand-sewn quiet books that bring a mini world of magic right into your child’s lap. Perfect for gifting at first birthdays, second birthdays, baby showers, Christmas, Easter or special occasions!\n--------\n✨ Why your little one will love it:\n• Original styling & rare find: Unlike mass-market toys, each detail is thoughtfully designed from scratch.\n• Sensory & fine motor skills development: Every page builds fine-motor control, hand-eye coordination, and tactile exploration.\n• Soft & portable: No hard parts, no loose or removable pieces—ideal for long trip such as airplane seats, car rides, doctor visits, or quiet time at home.\n• Personalizable: Add the child’s name for an extra-special keepsake.\n--------\n📖 Page-by-Page FAIRY GARDEN (see more in photos of each book for details):\n1. Mushroom house in the flower garden (cover page) - Let's flip the soft felt leaves to peek inside your fairy’s cozy home.\n2. The mouse hides & seeks in the tulip flower - Pull & push string activity to make the little mouse appear—or disappear! Just magical\n3. Daisy petals & who's in the mirror? - Let the baby's tiny fingers feel the handcrafted petals to develop sensory, then catch him/herself reflection in the soft & bendy, baby-safe mirror.\n4. Bear brushing teeth - Practice the brushing motion with a tiny toothbrush—develops dexterity and good habits.\n5. The worm eating through the pear - Using the string to guide the worm through holes - strengthen fine motor skills and focus\n6. Lazy snail button maze - Using tiny fingers to feel the button and move it along a soft and securely sewn mesh track—perfect for fingertip control.\n7. Stacking layers of birthday cake - Arrange cake layers from largest to smallest—early sorting and sequencing fun which develop hand eye coordination with peeling and sticking hooks and loops\nFrom page 8 - for full version only\n8. Ladybug flap surprise - Lift the wings to reveal the hidden baby ladybug in mommy's tummy.\n9. Unicorn ribbon mane - Weave and unweave the silky ribbons, then fan out the mane for magical flair.\n10. Silly worm & carrot zipper play - Zip open to reveal the stretchy worm—pop out, stretch, and hide again!\n11. Peek-a-Boo Bunny - Flip the bunny’s hands over its eyes to play classic “peek-a-boo.”\n\n📖 Page by Page: WILD LION (see more in photos of each book for details):\n1. Peek-a-boo lion (cover page) - Twist the lion’s arms in circles to cover—and uncover—his eyes in classic peek a boo fun.\n2. Zebra leaf tug - Let your baby sway the zebra’s two legs, then pull the soft leaves side to side to reveal hidden stripes.\n3. Banana-eating monkey - Zip and unzip the pouch; guide the banana into the monkey’s mouth. Spin the button eye through its safe mesh track, then lift the leaf flap for extra surprise.\n4. Bear brushing teeth - Tiny toothbrush in paw—builds dexterity and reinforces healthy habits.\n5. Birthday cake stacking - Hooks and loops cake layers stack from largest to smallest—early math and sequencing made sweet.\n6. Sun ribbon rays & mirror - Thread the ribbons through loops to fan out sunbeams, then catch a smile of him/herself in the soft, safe and elastic mirror.\n7. Elephant swing - Wiggle the elephant’s trunk side to side and feel the crinkle of its textured ears—sensory delight!\nFrom page 8 - for full version only\n8. Balloon riding bear - A tactile hand puppet bear in a fuzzy basket -- peel and stick the scratch and feel textures for extra grip.\n9. Rainbow & rising sun - Pull the tab to raise or lower the sun behind a rainbow -- gentle cause and effect play.\n10. Chestnut-eating worm - Guide the worm through holes in the chestnut shell -- threading practice for little fingers.\n11. Airplane glide - Slide the plane diagonally across the page -- perfect for practicing smooth, guided motion.\n\n📖 Page by Page: BERRY TALE (see more in photos of each book for details):\n1. Berry sweet welcome (cover page) - Decorated with strawberries and a bow – sets the tone for a whimsical adventure.\n2. Flower mirror - A soft cotton flower with a flexible, baby-safe mirror as its center. Great for self-recognition and finger exploration.\n3. Peek-a-boo bunny with flower crown - The bunny’s hands flip open for peek-a-boo fun. The flower on the crown gently spins.\n4. Cute pink owl on a branch - Mesh eyes with movable buttons inside – little fingers can slide them safely to explore movement.\n5. Strawberry layer cupcake - Stack the soft hooks and loops cake layers from biggest to smallest. A cherry on top adds the perfect touch.\n6. Mushroom house with fairy puppet - Open the buttoned door to reveal a surprise – a tiny fairy puppet waiting inside!\n7. Unicorn ribbon mane - Weave and unweave the silky ribbons, then fan out the mane for magical flair.\nFrom page 8 - for full version only\n8. Giraffe brushing teeth - Open the giraffe’s mouth and help it brush its teeth – a great fine motor and help develop good habit & self-care skill.\n9. Worm eating through the apple - Using the string to guide the worm through holes - strengthen fine motor skills and focus.\n10. Silly worm & carrot zipper play - Zip open to reveal the stretchy worm—pop out, stretch, and hide again!\n11. Snail hiding behind the leaf - Lift the big leaf flap to find a sliding snail hiding! Move it gently side-to-side along a soft track.\n\n📖 Page by Page: BEAR ADVENTURE (see more in photos of each book for details):\n1. Peek-a-boo bear in a party hat (cover page) - A cheerful brown bear wears a birthday hat and lifts both arms for a fun peek-a-boo greeting.\n2. Birthday cake stacking - Stack soft hooks and loops cake layers from largest to smallest and top it with a felt flame — a sweet sorting game!\n3. Sun rising from the rainbow - Pull the sun string up and down as it peeks out from behind the rainbow — early cause-and-effect play.\n4. Bear riding balloon - A smiling bear in a hot air balloon — use as a finger puppet for interactive storytelling.\n5. Flying plane fun - Slide the airplane up and down diagonally with fingertip control — simple motion with big excitement!\n6. Elephant with flapping ears - Big, crinkly ears flap wide like fans. Move the trunk in circles, lift the legs, and swipe the big green leaves back and forth. Sensory delight!\n7. Silly worm eating pear – zip play - A stretchy, silly worm hides inside a pear — zip open and shut to discover and hide it again.\nFrom page 8 - for full version only\n8. Sun ribbon rays & mirror - Thread the ribbons through loops to fan out sunbeams, then catch a smile of him/herself in the soft, safe and elastic mirror.\n9. Owl on a branch - Mesh eyes with movable buttons inside – little fingers can slide them safely to explore movement.\n10. Hippo brushing teeth - Lift the hippo’s big mouth and use the tiny toothbrush to help brush! Builds good habits and strengthens fine motor control.\n11. Chestnut-eating worm - Guide the worm through holes in the chestnut shell -- threading practice for little fingers.\n\n--------\n🎁 Perfect gift & playtime companion\n• Ideal for trips: Quiet, soft, and mess-free.\n• Screen-free engagement: captivates tiny explorers without electronics.\n• Both baby and parent-friendly: encourages parent-child bonding so that the baby can learn from parent's example activities. Note: parental supervision is advised if the child plays on his/her own.",
+      "targetTags": [
+        "felt quiet book",
+        "montessori toy",
+        "first birthday gift",
+        "busy book",
+        "handmade baby toy",
+        "christmas gift baby",
+        "soft toy for baby",
+        "unique baby gift"
+      ],
+      "discoveryTags": [
+        "felt adventure book",
+        "soft toy for infants",
+        "quiet time book",
+        "soft montessori toy",
+        "handmade felt book"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 217
+      }
+    },
+    {
+      "id": "5",
+      "category": "baby",
+      "mode": "title",
+      "title": "Personalized Christmas gift for baby, Handmade felt quiet book, Customized soft Montessori-inspired toy, First birthday present, Busy book",
+      "description": "",
+      "targetTags": [
+        "felt quiet book",
+        "montessori toy",
+        "first birthday gift",
+        "busy book",
+        "custom baby toy",
+        "handmade baby gift"
+      ],
+      "discoveryTags": [
+        "felt christmas gift",
+        "quiet book present",
+        "soft handmade gift",
+        "handmade custom toy",
+        "busy first birthday",
+        "handmade felt toy",
+        "soft birthday toy"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 217
+      }
+    },
+    {
+      "id": "6",
+      "category": "baby",
+      "mode": "full",
+      "title": "Personalized Nursery Rhymes Book, Custom Baby Name Storybook, Baby Shower Gift for Boy or Girl, Nephew First Birthday Gift, Baby Keepsake",
+      "description": "This personalized children’s nursery rhymes book from Starfall Gift Co. is a cozy keepsake made to be read again and again. Each copy is professionally printed as a real physical book (not a digital download), with soft illustrations and gentle rhymes, poems. and lullabies designed for peaceful bedtime routines.\n\nLooking for something a little different? At Starfall Gift Co., we love custom work. Message us with your idea and we’ll do our best to bring it to life.\n\n✨ Book Details\n• Personalized bedtime story book\n• Soft watercolor/pastel illustration style\n• Includes a custom dedication page + personalized ending\n• Printed as a physical book\n• Available formats/sizes (choose in dropdown):\n– Hardcover 11\"×11\" or 8\"×8\" (heirloom feel, larger page size)\n– Softcover 8\"×8\" or 5.5\"×5.5\" (lightweight, travel-friendly)\n\n✨ How to Personalize\n\n1. Enter your child’s name exactly as you’d like it printed in the personalization box.\n2. Add a dedication “from” name. If you'd like to write your own dedication instead of using the prewritten one, you may provide it here.\n3. Double-check spelling and capitalization before checkout.\n4. Ordering multiple books? Add each one to your cart with its own personalization.\n\n✨ Production & Shipping\n• Made to order and printed by our professional production partner.\n• Orders are produced and shipped using multiple fulfillment locations worldwide whenever possible to help reduce shipping times.\n• Production time and shipping estimates are shown at checkout and may vary by destination and format.\n\n✨ Starfall Quality Guarantee\nWe want you to love your book. If it arrives with any print or quality issues, simply contact us within 30 days of delivery and we’ll replace it or provide a full refund.",
+      "targetTags": [
+        "nursery rhymes book",
+        "baby name book",
+        "baby shower gift",
+        "first birthday gift",
+        "baby keepsake",
+        "custom baby book",
+        "childrens book",
+        "softcover book"
+      ],
+      "discoveryTags": [
+        "keepsake storybook",
+        "baby shower present",
+        "unique baby gift",
+        "nursery rhyme book",
+        "storybook for baby"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 214
+      }
+    },
+    {
+      "id": "6",
+      "category": "baby",
+      "mode": "title",
+      "title": "Personalized Nursery Rhymes Book, Custom Baby Name Storybook, Baby Shower Gift for Boy or Girl, Nephew First Birthday Gift, Baby Keepsake",
+      "description": "",
+      "targetTags": [
+        "nursery rhymes book",
+        "baby name book",
+        "baby shower gift",
+        "first birthday gift",
+        "keepsake book",
+        "custom baby book",
+        "gift for nephew",
+        "boy girl gift"
+      ],
+      "discoveryTags": [
+        "storybook for girl",
+        "baby shower present",
+        "unique baby keepsake",
+        "custom nursery decor",
+        "nursery rhyme book"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 220
+      }
+    },
+    {
+      "id": "7",
+      "category": "candles",
+      "mode": "full",
+      "title": "8oz Essential Oil Soy Wax Candle, Home Decor, Gift For Her, Clean Burning Candle, Cozy Home Decor, Esthetic Candle, Aromatherapy",
+      "description": "Our 8oz soy wax candles are meticulously formulated with 100% pure essential oils, ensuring authentic and therapeutic aromas. Each scent is paired with a distinctive decorative topping, enhancing both the visual and sensory experience. These candles offer a refined blend of natural fragrance and elegant design, ideal for creating a sophisticated ambiance.\n\nscents\n\nlavender vanilla\nLavender vanilla contains 100% essential oil with a combination of lavender buds and rose pedals which are organically sourced and used as a visual display topping.\n\nlemon lavender\nlemon Lavender contains 100% essential oil with a combination of lavender buds and dried lemon slices which are organically sourced and used as a visual display topping.\n\norange\nOrange contains 100% essential oil with a combination of dried orange slices and rose pedals which are organically sourced and used as a visual display topping.\n\ngrapefruit\nGrapefruit contains 100% essential oil with a combination of dried Grapefruit slices and rose pedals which are organically sourced and used as a visual display topping.\n\nlemon grass\nLemon Grass contains 100% essential oil with a combination of Dried lemon grass which are organically sourced and used as a visual display topping.\n\nlemon\nLemon contains 100% essential oil with a combination of dried lemon slices and rose pedals which are organically sourced and used as a visual display topping.\n\njasmine\nJasmine contains 100% essential oil with a combination of dried jasmine buds which are organically sourced and used as a visual display topping.",
+      "targetTags": [
+        "soy wax candle",
+        "essential oil candle",
+        "home decor candle",
+        "gift for her",
+        "aromatherapy candle",
+        "cozy home decor",
+        "clean burning candle",
+        "lavender candle"
+      ],
+      "discoveryTags": [
+        "esthetic home decor",
+        "aromatherapy gift",
+        "cozy candle gift",
+        "elegant design ideal",
+        "sourced used display"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 224
+      }
+    },
+    {
+      "id": "7",
+      "category": "candles",
+      "mode": "title",
+      "title": "8oz Essential Oil Soy Wax Candle, Home Decor, Gift For Her, Clean Burning Candle, Cozy Home Decor, Esthetic Candle, Aromatherapy",
+      "description": "",
+      "targetTags": [
+        "soy wax candle",
+        "essential oil candle",
+        "home decor candle",
+        "gift for her",
+        "clean burning candle",
+        "cozy home decor",
+        "esthetic candle",
+        "aromatherapy candle"
+      ],
+      "discoveryTags": [
+        "natural wax candle",
+        "8oz soy candle",
+        "burning candle gift",
+        "esthetic home decor",
+        "essential oil gift"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 220
+      }
+    },
+    {
+      "id": "8",
+      "category": "candles",
+      "mode": "full",
+      "title": "Custom Photo Candle Add Your Picture And Personalized Text Dating Anniversary Photo Gift Personalized Candle for Couple SL-0319",
+      "description": "Celebrate your love and treasured memories with our Custom Photo Candle, a perfect personalized gift for anniversaries, birthdays, or special occasions. Crafted with care, this beautiful candle allows you to add your favorite photo and personalized text, transforming it into a heartfelt keepsake that captures precious moments.\n\nCANDLE SIZE DIMENSIONS:\n4 OZ MINI CANDLE: Height: 2.7 in Diameter 2.4 in\n9 OZ CANDLE: Height: 3.5 in Diameter 2.8 in\n\nDESCRIPTION:\n+ 100% Soy wax hand poured into glass jars\n+ Cotton wicks (NO lead, zinc, or other metals)\n+ Fragrances are phthalate free!\n🤍 Please note that all labels will include our shops branding at the top as shown\n\nAVAILABLE SCENTS:\n🖤 Atlantis Whisper\nBlends a fresh ocean breeze with earthy driftwood, creating a serene and calming scent.\n\n🖤 Christmas Warmth\nBlends spicy cinnamon, clove, and sweet vanilla with a hint of pine for a cozy holiday scent.\n\n🖤 Cinnamon Vanilla\nMixes warm cinnamon with sweet vanilla for a cozy, inviting scent.\n\n🖤 Coconut Cream + Cardamom\nBlends creamy coconut with warm cardamom for a sweet, exotic scent.\n\n🖤 Peppered Passionfruit\nCombines tropical passionfruit sweetness with a spicy hint of cracked pepper for an energizing scent.\n\n🖤 White Sage + Lavender\nCombines earthy white sage with calming lavender for a soothing, serene scent ideal for relaxation and mindfulness.\n\n🖤 Unscented\nProvides a clean burn that enhances any space without adding fragrance. Its simplicity creates a calm, inviting ambiance.\n\nPlease reach out to us if you have any questions/concerns about anything! Thank you for choosing Simply Lit Candles!",
+      "targetTags": [
+        "custom photo candle",
+        "personalized candle",
+        "anniversary gift",
+        "couple gift",
+        "photo candle gift",
+        "soy wax candle",
+        "hand poured candle",
+        "birthday candle"
+      ],
+      "discoveryTags": [
+        "keepsake candle gift",
+        "unique couple candle",
+        "custom text candle",
+        "beautiful allows add",
+        "mini height diameter"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 227
+      }
+    },
+    {
+      "id": "8",
+      "category": "candles",
+      "mode": "title",
+      "title": "Custom Photo Candle Add Your Picture And Personalized Text Dating Anniversary Photo Gift Personalized Candle for Couple SL-0319",
+      "description": "",
+      "targetTags": [
+        "custom photo candle",
+        "personalized candle",
+        "anniversary gift",
+        "couple gift",
+        "photo candle gift",
+        "custom candle",
+        "picture candle",
+        "romantic candle"
+      ],
+      "discoveryTags": [
+        "unique dating gift",
+        "couple picture frame",
+        "custom text candle",
+        "custom love candle",
+        "couple gift idea"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 214
+      }
+    },
+    {
+      "id": "9",
+      "category": "candles",
+      "mode": "full",
+      "title": "Spa Candles | Sea Salt & Orchid, Peppermint, White Sage, Lavender Candles",
+      "description": "Available individually or as a set of 3 — perfect for gifting or creating cozy vibes at home.\n\nIndulge in everyday calm with our Spa Candle Set – a soothing trio of handcrafted soy candles in your choice of 4oz or 8oz amber jars. Each candle is made with clean-burning soy wax and premium fragrance oils, perfect for creating a peaceful retreat at home or gifting moments of serenity.\n\n🕯️ Scents Included (choose individually or as a full set of 3):\n• Sea Salt & Orchid – A fresh, floral blend of sea mist, ozone, and delicate orchid petals.\n• Peppermint & Eucalyptus – A revitalizing spa scent with crisp peppermint and earthy eucalyptus.\n• White Sage & Lavender – Calming herbal notes of white sage blended with soothing lavender.\n\nVariants:\n• Available sizes:\n▸ 4 oz (burn time: 25+ hours)\n▸ 8 oz (burn time: 50+ hours)\n• Scent: Sea Salt & Orchid / Peppermint & Eucalyptus / White Sage & Lavender / Set of 3\n\n🎁 Perfect For:\n• Spa lovers & self-care rituals\n• Birthday gifts, thank-you gifts, teacher appreciation\n• Bridesmaid boxes, relaxation gifts, get-well presents\n\n🌿 Product Details:\n• Choose single scents or a gift set of all 3\n• Amber glass jar with black lid (4 oz or 8 oz size)\n• Hand-poured in small batches in the USA\n• 100% soy wax + cotton wick for clean burn\n• No phthalates, dyes, or harsh chemicals\n\n✨ Whether you're gifting or keeping for yourself, this minimalist candle set brings cozy vibes and spa-like calm to any space.\n\nPersonalization Box (optional):\n• Leave a note if this is a gift – we’re happy to include a gift message!",
+      "targetTags": [
+        "spa candles",
+        "soy candles",
+        "lavender candle",
+        "peppermint candle",
+        "sea salt candle",
+        "white sage candle",
+        "cozy home gift",
+        "relaxation candle"
+      ],
+      "discoveryTags": [
+        "soothing candle set",
+        "calm spa vibes",
+        "handcrafted candles",
+        "cozy home candles",
+        "sea salt candles"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 202
+      }
+    },
+    {
+      "id": "9",
+      "category": "candles",
+      "mode": "title",
+      "title": "Spa Candles | Sea Salt & Orchid, Peppermint, White Sage, Lavender Candles",
+      "description": "",
+      "targetTags": [
+        "spa candles",
+        "sea salt candle",
+        "orchid candle",
+        "peppermint candle",
+        "white sage candle",
+        "lavender candle",
+        "aromatherapy candle",
+        "relaxation gift"
+      ],
+      "discoveryTags": [
+        "home spa essentials",
+        "soothing candle set",
+        "wellness gift box",
+        "sage scented candle",
+        "natural candle gift"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 215
+      }
+    },
+    {
+      "id": "10",
+      "category": "clothing",
+      "mode": "full",
+      "title": "Custom Personalized T-Shirt with Name or Message - Perfect Gift for Birthdays, Anniversaries, Weddings, and Special Occasions",
+      "description": "Discover the joy of gifting with our custom shirt, designed to celebrate life's special moments. Whether you're looking for a personalized gift to mark a birthday, anniversary, or wedding, this versatile cotton t-shirt lets you add your own text or name for a truly unique keepsake. Crafted with care, each shirt is made to be both comfortable and meaningful, making it a cherished addition to any wardrobe.\n\n- ✅ 100% cotton for simple colors like white and black; heathered colors feature a soft cotton/polyester blend\n- ✅ Short sleeve crew-neck unisex design with sueded jersey fabric for a retail fit\n- ✅ Pre-shrunk, taped shoulder-to-shoulder construction with tear-away label and side seams\n\n🌸 Store Policies\nPlease Read Before Ordering\n\n📦 Shipping Notice\nWe are not responsible for packages that are lost, stolen, delayed, or damaged while in transit with USPS or any shipping carrier.\n\n⚠️ Order Issues\nIf there is a problem with your order, please contact us within 3 days of delivery so we can review and assist with the issue.\n\n📍 Incorrect Shipping Address\nPlease verify your shipping address carefully before placing your order.\nIf you notice an incorrect address, contact us immediately.\nOnce an order has shipped, we are unable to change the address.\nWe are not responsible for orders shipped to an address provided incorrectly by the buyer.\n\n🎨 Product & Design Disclaimer\nColors may appear slightly different in person due to screen settings, lighting, printing methods, and monitor/device variations.\nDesign placement and size may vary depending on garment size, style, and mockup proportions.\nThe product you receive may not exactly match the colors or scale shown in listing photos.\nWe highly recommend reviewing customer photos and reviews for real-life examples.\nFor custom-size print requests, please provide the exact print dimensions and placement details with your order.\n\n📝 Design Proofs\nIf you would like to review your design before production, please request a proof in the personalization section when placing your order.\nIf no response is received within 24 hours after a proof is sent, production may proceed using the submitted information.\n\n🧺 Care Instructions\nTurn garment inside out.\nMachine wash cold on gentle cycle.\nTumble dry low or hang dry.\nDo not bleach.\nDo not iron directly on the design.\nDo not dry clean.\n\n🚚 Processing & Shipping Times\nProduction Time\n1–3 Business Days\n\nEstimated Shipping Times\nFirst Class Mail: 2–5 Business Days\nPriority Mail: 2–3 Business Days\nPlease note that shipping estimates are provided by the carrier and are not guaranteed.\n\n❌ Cancellation Policy\nOrders may be canceled within 3 hours of purchase.\nAfter this period, production may begin and cancellations may no longer be possible.\n\n🔄 Returns & Exchanges\nBecause each item is custom-made specifically for your order:\n\nALL SALES ARE FINAL\nWe do not accept returns, exchanges, or refunds for:\nSizing issues\nBuyer mistakes\nChange-of-mind purchases\n\nRefunds or replacements may be offered only if:\nThe wrong item was sent, or\nThe item arrives with a manufacturing error caused by us.\n\n📏 Sizing Information\nPlease review the size chart carefully before ordering.\nWe are unable to offer refunds or exchanges due to incorrect size selection.\n\n❤️ Thank You\nWe appreciate your support!",
+      "targetTags": [
+        "custom t shirt",
+        "personalized shirt",
+        "gift for birthday",
+        "anniversary gift",
+        "wedding gift",
+        "unique keepsake",
+        "cotton t shirt",
+        "soft jersey shirt"
+      ],
+      "discoveryTags": [
+        "special occasion tee",
+        "meaningful gift tee",
+        "versatile cotton t",
+        "custom message shirt",
+        "custom design shirt"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 219
+      }
+    },
+    {
+      "id": "10",
+      "category": "clothing",
+      "mode": "title",
+      "title": "Custom Personalized T-Shirt with Name or Message - Perfect Gift for Birthdays, Anniversaries, Weddings, and Special Occasions",
+      "description": "",
+      "targetTags": [
+        "personalized t shirt",
+        "custom name shirt",
+        "gift for birthday",
+        "anniversary t shirt",
+        "wedding gift shirt",
+        "custom message tee",
+        "unique t shirt gift",
+        "funny custom shirt"
+      ],
+      "discoveryTags": [
+        "funny birthday shirt",
+        "birthday gift shirt",
+        "wedding message tee",
+        "unique wedding gift",
+        "unique name shirt"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 240
+      }
+    },
+    {
+      "id": "11",
+      "category": "clothing",
+      "mode": "full",
+      "title": "Custom Pet Photo And Name Shirt,Personalized Comfort Colors Pet Shirt,Customized Picture Dog Shirt,Dog Lover Gift,Cat Mom Gift,Pet Loss Gift",
+      "description": "💜 Thank you for exploring our shop and considering our products.\n💜 Please keep in mind that our shipping times are estimated due to the nature of our business and may fluctuate slightly.\n💜 If you're unhappy with the quality of your clothes, please reach out to us immediately so we can make things right.\n\n💜 MATERIAL INFORMATION\nCOMFORT COLORS® T-SHIRT\n- C171 garment-dyed t-shirt for a vintage look and relaxed fit\n- 100% ring-spun cotton\n- Medium fabric (6.1 oz/yd² (206.8 g/m²))\n- Sizing down one size will give you a more fitted look*\n- Sticking with your normal size gives a nice relaxed look*\n- Sizing up 1-2 sizes gives an oversized look*\n\nUNISEX T-SHIRT - BELLA CANVAS SHIRT\n- 100% cotton (fiber content may vary for different colors)\n- Medium fabric (5.3 oz/yd² (180 g/m²))\n- Classic fit\n- Runs true to size\n- Unisex sizing\n\n💜ORDERING INFORMATION\n1. Choose the category\n2. Choose a hue.\n3. If you have modification, enter it. Cart it up. after that, exit.\n\n💜INSTRUCTIONS FOR WASHING\nWhen washing, use cold water, avoid bleach, dry clean, and avoid ironing directly on the pattern.\n\n💜PRODUCTION AND SHIPPING\n- Production time: We will produce and send out 1 day after the order is placed.\n- US Standard Shipping: 2–8 business days (after production time)\n- Worldwide Shipping: 10–12 business days\n- Please allow 2–5 business days so that tracking is active while your order is handcrafted, packaged, and shipped.\n- If you require expedited delivery or have any questions, please do not hesitate to contact us.\n\n💜 Please keep the following in mind before purchasing:\n- Our apparel runs true to size, so if you want an oversized look, please size up 1 to 2 sizes.\n- Because of the natural fabric, the color printed on the clothes may be a bit duller than shown in the picture.\n- Please double-check that your address is correct and that nothing is missing, especially address 2.\n\n💜RETURN POLICIES\n- We do not accept returns or exchanges for a different size if you order the incorrect size, so please check out the size chart carefully to make sure you get the best fit.\n- We do not accept returns or refunds if your address is incorrect or lacks information.\n- We only accept exchanges if the item(s) are severely damaged as a result of a manufacturing flaw.",
+      "targetTags": [
+        "pet photo shirt",
+        "custom dog shirt",
+        "cat mom shirt",
+        "dog lover gift",
+        "pet loss shirt",
+        "comfort colors shirt",
+        "custom name shirt"
+      ],
+      "discoveryTags": [
+        "unique dog shirt",
+        "comfort mom shirt",
+        "custom pet shirt",
+        "colors pet shirt",
+        "custom pet photo",
+        "photo cat lover"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 205
+      }
+    },
+    {
+      "id": "11",
+      "category": "clothing",
+      "mode": "title",
+      "title": "Custom Pet Photo And Name Shirt,Personalized Comfort Colors Pet Shirt,Customized Picture Dog Shirt,Dog Lover Gift,Cat Mom Gift,Pet Loss Gift",
+      "description": "",
+      "targetTags": [
+        "pet photo shirt",
+        "custom dog shirt",
+        "cat mom shirt",
+        "dog lover gift",
+        "pet loss shirt",
+        "comfort colors shirt",
+        "custom name shirt"
+      ],
+      "discoveryTags": [
+        "pet memorial gift",
+        "custom name picture",
+        "unique pet gift",
+        "comfort loss gift",
+        "cat lover comfort",
+        "photo cat shirt"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 209
+      }
+    },
+    {
+      "id": "12",
+      "category": "clothing",
+      "mode": "full",
+      "title": "Embroidered Scrub Life Goose Sweatshirt, Medical Student Nurse Hoodie, Doctor Vet Tech Crewneck, Healthcare Worker Gift, Hospital Humor Top",
+      "description": "SALE OFF\nEmbroidered Scrub Life Goose Sweatshirt, Medical Student Nurse Hoodie, Doctor Vet Tech Crewneck, Healthcare Worker Gift, Hospital Humor Top\n\n***Sweatshirts & Hoodies – Made from a high-quality 65% cotton and 35% polyester blend, offering a soft, comfortable, and long-lasting fit.\n\n***Care Instructions\nTo keep your embroidered garment looking its best:\nMachine wash inside-out in cold water on a gentle cycle.\nTumble dry on low heat or hang to air dry.\nUse mild detergent and wash with similar colors.\nDo not dry clean, bleach, or use fabric softeners.\n\n***Important Details\n1️⃣ Maximum embroidery frame size is 10 inches. On larger shirt sizes, designs may appear smaller.\n2️⃣ This is a personalized item; refunds are only available if there is an issue with the embroidery. Please verify all details before ordering.\nIf any issues arise, don’t hesitate to contact us—we’re dedicated to resolving them to ensure your satisfaction.\n\n***Shipping Information\n1. Processing Time: 3–7 business days for order preparation.\n2. Shipping Time: 9–12 business days, depending on location.\n\n***Additional Notes\nColor Disclaimer: Garment colors may vary slightly due to lighting and photography. Thank you for understanding.\nOrder Issues: Contact us if any problems arise, and we’ll assist promptly.\nUnresponsive Customers: If we need more information and do not receive a reply, we will proceed using default thread colors and styles based on your order.\n\n*** Custom Adjustments: Want changes to the design? Message us, and we’ll collaborate to make your custom piece perfect!",
+      "targetTags": [
+        "nurse hoodie",
+        "medical student gift",
+        "doctor crewneck",
+        "vet tech top",
+        "hospital humor shirt",
+        "scrub life apparel"
+      ],
+      "discoveryTags": [
+        "embroidered hoodie",
+        "medical sweatshirt",
+        "healthcare apparel",
+        "tech worker hoodie",
+        "funny nurse shirt",
+        "student scrub life",
+        "medical humor gift"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 222
+      }
+    },
+    {
+      "id": "12",
+      "category": "clothing",
+      "mode": "title",
+      "title": "Embroidered Scrub Life Goose Sweatshirt, Medical Student Nurse Hoodie, Doctor Vet Tech Crewneck, Healthcare Worker Gift, Hospital Humor Top",
+      "description": "",
+      "targetTags": [
+        "nurse hoodie",
+        "doctor crewneck",
+        "vet tech gift",
+        "hospital humor shirt"
+      ],
+      "discoveryTags": [
+        "crewneck medical top",
+        "tech worker hoodie",
+        "funny nurse gift",
+        "nurse life shirt",
+        "hospital humor gift",
+        "doctor humor shirt",
+        "medical crewneck",
+        "vet life hoodie",
+        "gift for doctor"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 213
+      }
+    },
+    {
+      "id": "13",
+      "category": "craft supplies",
+      "mode": "full",
+      "title": "10pcs Natural Miniature Small Stepping Stone Figure Fairy Garden Supplies Terrarium Accessories",
+      "description": "*-*-*-*-*-*-*-*-**********************************-*-*-*-*-*-*-*-*\n\n★ DETAILS:\n\n[1] Materials: natural stone (The stone steps are natural color,not everyone is the same)\n\n[2] Quantity:10pcs\n\n[3] Size: width 2cm thickness 0.3cm\n\n\n*-*-*-*-*-*-*-*-*Welcome To LoveFairyGarden*-*-*-*-*-*-*-*-*\n*-*-*-*-*-*-*-*-**********************************-*-*-*-*-*-*-*-*",
+      "targetTags": [
+        "miniature stones",
+        "fairy garden",
+        "terrarium supplies",
+        "natural stone",
+        "stepping stones",
+        "garden accessories",
+        "mini stones",
+        "decorative stones"
+      ],
+      "discoveryTags": [
+        "small garden figures",
+        "terrarium miniatures",
+        "natural stone decor",
+        "fairy garden decor",
+        "stone color quantity"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 217
+      }
+    },
+    {
+      "id": "13",
+      "category": "craft supplies",
+      "mode": "title",
+      "title": "10pcs Natural Miniature Small Stepping Stone Figure Fairy Garden Supplies Terrarium Accessories",
+      "description": "",
+      "targetTags": [
+        "miniature stones",
+        "fairy garden",
+        "terrarium decor",
+        "stepping stones",
+        "garden accessories",
+        "natural stones",
+        "mini garden",
+        "fairy supplies"
+      ],
+      "discoveryTags": [
+        "terrarium figure set",
+        "fairy garden figures",
+        "stepping stone decor",
+        "natural garden decor",
+        "small stepping stone"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 215
+      }
+    },
+    {
+      "id": "14",
+      "category": "craft supplies",
+      "mode": "full",
+      "title": "Colorful Stained Glass Scrap Pieces – Ideal for Mosaics, Resin Art, Crafts & DIY Projects *Please Read Description*",
+      "description": "***PLEASE FULLY READ DESCRIPTION***\n\nWE WILL FILL A THICK 5\"X5\"X5\" BOX AS FULL AS WE SAFELY CAN WITH GLASS SCRAPS (approx 2 lbs of glass).\n\n*Perfect for mosaics, mixed media art, resin and more!\n*MOST SCRAPS ARE NOT LARGE ENOUGH TO USE FOR STAINED GLASS.\n*Mix of COE, so not ideal for fusing a particular COE.\n*Will contain mixed glass: transparent and opaque\n\nPLEASE NOTE:\n~YOU GET, WHAT YOU GET. NO COLORS/KINDS OF GLASS ARE GUARANTEED.\n~Glass scrap packs are ALWAYS a mix of random colors, textures, sizes.\n~These scraps are studio scraps, thus the colors, sizes etc. are constantly changing depending on current projects.\n~Scraps may come with score lines, stickers, sand, and glue on them. Cleanable but come as is :)\n\nOur trash is your treasure!!\n\n*These boxes are very popular due to the unique glass/one of a kind glass that are in them from time to time.",
+      "targetTags": [
+        "stained glass scraps",
+        "mosaic glass pieces",
+        "colorful glass art",
+        "resin art supplies",
+        "diy glass crafts",
+        "mixed media glass",
+        "craft glass pieces"
+      ],
+      "discoveryTags": [
+        "diy mosaic projects",
+        "unique glass pieces",
+        "stained glass pieces",
+        "mosaic art supplies",
+        "stained glass art",
+        "glass art crafts"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 236
+      }
+    },
+    {
+      "id": "14",
+      "category": "craft supplies",
+      "mode": "title",
+      "title": "Colorful Stained Glass Scrap Pieces – Ideal for Mosaics, Resin Art, Crafts & DIY Projects *Please Read Description*",
+      "description": "",
+      "targetTags": [
+        "stained glass pieces",
+        "mosaic glass bits",
+        "resin art supplies",
+        "craft glass pieces",
+        "diy glass projects",
+        "glass art materials"
+      ],
+      "discoveryTags": [
+        "crafting glass bits",
+        "art project supplies",
+        "stained glass scraps",
+        "mosaic art supplies",
+        "mosaic resin pieces",
+        "stained glass art",
+        "diy stained glass"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 241
+      }
+    },
+    {
+      "id": "15",
+      "category": "craft supplies",
+      "mode": "full",
+      "title": "Random sample SMALL seed beads, Small bag of bead mix, beads for DIY projects, jewelry making, beads soup, mostly 2-6mm, 7-10g, 0000",
+      "description": "Random selected bag with this purchase.\nMaterials may contain glass, stone, gemstone, shells, wood, metal. Natural material are not perfect.\nPlease notice these are SMALL size beads, mostly measure from 2-5mm in diameter.\nYou can make about 4-9 regular length bracelets with 1 OZ(30 grams) of beads.\nFree gifts with every order.\nBeads are randomly selected, can’t guarantee a certain type included or number of a certain type.\nPlease note that the beads are made of glass, and there is a possibility of breakage during transit despite our best efforts to package them securely. As a gesture of goodwill, we have already included extra beads in your order to compensate for any potential damage.\nWe also would like to inform you that natural stones are unique and may exhibit irregular shapes and uneven surfaces due to their organic formation.\nThe color may appear slightly different due to screen settings.\nBeads size are different from 2mm-10mm.\nThe number of beads in 1 oz may vary depending on the size of the beads.\nPrices may vary due to the different types of beads contains in the assortment.\n\nEnhance your jewelry making, crafting, and DIY projects with this beautiful assortment of mixed glass and crystal beads. This set includes a variety of high-quality beads in different colors, shapes, and sizes, perfect for creating unique designs. Whether you're making necklaces, bracelets, earrings, or adding accents to other crafts, these beads will add a touch of elegance and sparkle to your creations.\n\n\nKey Features:\n\n\nVariety of Shapes & Sizes: Includes a wide range of bead shapes such as rounds, cubes, and faceted crystals to suit any project.\n\nHigh-Quality Materials: Crafted from premium glass and crystal for durability and an elegant finish.\n\nAssorted Colors: A vibrant mix of colors to complement any design, from bold and bright to subtle and pastel hues.\n\nVersatile Use: Ideal for jewelry making, beading, crafting, scrapbooking, and other DIY projects.\n\nPerfect for All Skill Levels: Suitable for beginners to advanced crafters.\n\nWhether you're a seasoned jewelry maker or just starting out, this mixed bead assortment is the perfect addition to your crafting supplies. Get creative and bring your projects to life with the stunning beauty of glass and crystal beads!",
+      "targetTags": [
+        "small seed beads",
+        "bead mix",
+        "diy jewelry beads",
+        "beads for crafts",
+        "glass beads",
+        "gemstone beads",
+        "wood beads",
+        "metal beads"
+      ],
+      "discoveryTags": [
+        "craft bead supplies",
+        "natural stone beads",
+        "bead making kit",
+        "colorful bead mix",
+        "glass bead bag"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 187
+      }
+    },
+    {
+      "id": "15",
+      "category": "craft supplies",
+      "mode": "title",
+      "title": "Random sample SMALL seed beads, Small bag of bead mix, beads for DIY projects, jewelry making, beads soup, mostly 2-6mm, 7-10g, 0000",
+      "description": "",
+      "targetTags": [
+        "small seed beads",
+        "bead mix",
+        "beads for jewelry",
+        "diy bead projects",
+        "bead soup",
+        "colorful beads",
+        "craft beads",
+        "beading supplies"
+      ],
+      "discoveryTags": [
+        "bead soup collection",
+        "jewelry making mix",
+        "mixed seed beads",
+        "craft supplies set",
+        "colorful bead bag"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 197
+      }
+    },
+    {
+      "id": "16",
+      "category": "digital downloads",
+      "mode": "full",
+      "title": "2026 ADHD Planner, ADHD Digital Planner, Goodnotes Planner, iPad Planner, Daily Weekly Monthly Planner, Productivity, Self Care Planner",
+      "description": "Does your mind feel like it’s always jumping from one thing to the next? Staying organized with ADHD isn’t just hard; it can feel impossible. But it’s not your fault. You just need a planner designed for the way your brain actually works. That’s exactly why we created this ADHD Digital Planner. Specifically crafted for neurodivergent brains, it makes planning feel doable, calming, and empowering. Instead of forcing you into a rigid system, this intuitive planner gently guides you back on track and supports your journey toward a life that feels aligned, productive, and fulfilling.\n\nWhy You’ll Love This ADHD Digital Planner:\n✓ Tailored for ADHD minds - designed to reduce overwhelm and support how your brain works best\n✓ Breaks your day into manageable chunks so you can take action without feeling paralyzed\n✓ Keeps your priorities crystal clear so you always know what to focus on next\n✓ Calming, minimalist layouts that soothe your mind and keep you engaged\n✓ Flexible enough to adapt to your daily energy and needs\n\nKey Features:\n✓ Designed for Neurodivergence: Specifically crafted with the ADHD brain in mind\n✓ Full year coverage: January 2026 to December 2026\n✓ Yearly, quarterly, monthly, weekly, and daily planning pages\n✓ 714 fully hyperlinked pages for seamless navigation\n✓ Four weekly layout options for flexible planning\n✓ Includes ADHD wellness, productivity, and finance templates\n✓ Bonus note-taking pages\n✓ Thoughtfully designed for easy and intuitive use\n✓ Hyperlinked tabs and pages for fast access\n✓ Monthly and year end self reflection prompts\n✓ Track and maintain your health goals each month\n✓ Set and track your goals monthly\n✓ Fully compatible with: GoodNotes, Notability, Noteshelf, Noteful, CollaNote, Zinnia, Freenotes, and more\n✓ Monday & Sunday start options\n✓ Instant digital download\n\nTake control of your life and manage your ADHD with confidence. Our ADHD Digital Planner is your partner in achieving your goals and living your best life. Don't just plan, thrive!\n\nShop the matching DIGITAL STICKERS here: https://www.etsy.com/listing/1595672578/digital-stickers-that-girl-aesthetic\nShop the matching FONT here: https://www.etsy.com/listing/1592763455/handwritten-font-manifestable-font\n\nIf you have any questions about the purchasing or downloading process, please contact us!\n\nWHAT’S YOU’LL RECEIVE:\n-1 PDF 2026 ADHD Portrait Planner - Monday Start.\n-1 PDF 2026 ADHD Portrait Planner - Sunday Start.\n-1 PDF guide on how to download and import digital planner into Goodnotes.\n\nPLEASE NOTE:\nThis is a digital product. You will not receive any physical elements with this purchase. Stickers and the font used in the preview are not included, but you can purchase them in our shop https://manifestable.etsy.com\n\nTERMS OF SERVICE:\nDue to the digital nature of this product, all sales are final. We cannot offer refunds, exchanges, or cancellations once the files have been downloaded. Please contact us with any questions before purchasing, we’re here to support you.\n\nTERMS OF USE:\nThis planner is for PERSONAL USE ONLY and may not be resold, shared, or redistributed in any form. You may not use any part of the design to create new products for resale. Usage is monitored regularly, and any copyright violations will be reported.\n\nDISCLAIMER:\nThis is our only official shop for our digital products. To ensure you are purchasing genuine items, only buy from this Etsy shop.\n\nCopyright © 2025, Manifestable. All rights reserved.",
+      "targetTags": [
+        "adhd planner",
+        "digital planner",
+        "goodnotes planner",
+        "ipad planner",
+        "weekly planner",
+        "monthly planner",
+        "self care planner",
+        "productivity planner"
+      ],
+      "discoveryTags": [
+        "empowering planner",
+        "intuitive planner",
+        "goodnotes template",
+        "calming planner",
+        "daily planner"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 203
+      }
+    },
+    {
+      "id": "16",
+      "category": "digital downloads",
+      "mode": "title",
+      "title": "2026 ADHD Planner, ADHD Digital Planner, Goodnotes Planner, iPad Planner, Daily Weekly Monthly Planner, Productivity, Self Care Planner",
+      "description": "",
+      "targetTags": [
+        "adhd planner",
+        "digital planner",
+        "goodnotes planner",
+        "ipad planner",
+        "daily planner",
+        "weekly planner",
+        "monthly planner",
+        "productivity planner"
+      ],
+      "discoveryTags": [
+        "time management tool",
+        "goal setting planner",
+        "self care planner",
+        "customizable planner",
+        "2026 digital planner"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 215
+      }
+    },
+    {
+      "id": "17",
+      "category": "digital downloads",
+      "mode": "full",
+      "title": "All-in-One Digital Planner 2026, 2027, 2028 Digital Planner, Digital Journal, Digital Goodnotes Template, Weekly, Daily Planner, Notability",
+      "description": "All-in-One Digital Planner 2025, 2026, 2027, Digital Planner, Digital Journal, Digital Goodnotes Template, Weekly, Daily Planner, Notability\n\n\nTESTED & USED ON:\n\n- GoodNotes on iPad\n- Notability on iPad\n- Noteshelf on iPad\n- Zinnia on iPad\n- ZoomNotes on iPad\n- Xodo ( PDF Reader & Annotator by Xodo ) on iPad with limited functions\n- Xodo on Android Tablets\n- Xodo on Surface/Windows Tablets\n\n\n\nTHIS PLANNER INCLUDES FILES:\n\n- Free Yearly Updates\n- Sunday Start Planner\n- Monday Start Planner\n- Four Weekly Layouts\n- One Daily Layouts\n- Stickers Folder\n- Covers Folder\n\n\n\nDOWNLOAD INFORMATION:\nThis is a digital product no physical product will be sent.\nOnce payment is complete, digital files will be available for download in your account and an email will be sent to your Etsy registered email. Downloaded products are non refundable.\n\n\n\nWe strongly recommend usage on an iPad Pro / iPad Air / iPad with an Apple Pencil (or a stylus) and the use of either Goodnotes or Notability. Please note that this planner is not suitable for use on mobile phones nor for printing.\n\n\n\nSUPPORT:\nIf you need help or have any enquiries, please do not hesitate in contacting us. We will respond as quickly as possible. (Our time zone is 5 hours 30 minutes ahead of Greenwich Mean Time (GMT+5.5)\n\n\n\nIMPORTANT INFO:\n© All Design Templates are Copyrights of PHENIXDIGITAL\n\n\n\nUSES:\n-For personal use only\n-Not for any commercial use\n-Can't be resold as is or altered on its own\n\nYOU MAY NOT share, resell or redistribute our products. Please read our policies carefully for more information on allowed uses.",
+      "targetTags": [
+        "digital planner",
+        "goodnotes template",
+        "weekly planner",
+        "daily planner",
+        "notability journal",
+        "2026 planner",
+        "2027 planner",
+        "2028 planner"
+      ],
+      "discoveryTags": [
+        "planner for students",
+        "digital planner 2026",
+        "2027 digital planner",
+        "2028 weekly planner",
+        "goodnotes journal"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 210
+      }
+    },
+    {
+      "id": "17",
+      "category": "digital downloads",
+      "mode": "title",
+      "title": "All-in-One Digital Planner 2026, 2027, 2028 Digital Planner, Digital Journal, Digital Goodnotes Template, Weekly, Daily Planner, Notability",
+      "description": "",
+      "targetTags": [
+        "digital planner",
+        "2026 planner",
+        "2027 planner",
+        "2028 planner",
+        "goodnotes template",
+        "daily planner",
+        "weekly planner",
+        "digital journal"
+      ],
+      "discoveryTags": [
+        "personal organizer",
+        "notability planner",
+        "planner for students",
+        "academic planner",
+        "daily journal"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 196
+      }
+    },
+    {
+      "id": "18",
+      "category": "digital downloads",
+      "mode": "full",
+      "title": "Berry First Birthday Invitation | Editable Canva Template | Strawberry Pink Gingham + Watercolor Strawberries (Digital Download)",
+      "description": "🤍 MATCHING BERRY FIRST WELCOME SIGN 🤍\nhttps://www.etsy.com/listing/4457880495/berry-first-birthday-welcome-sign\n\nBerry First Birthday Invitation — Editable Canva Templates\n\nCelebrate your little berry with sweetness! This Berry First Birthday invitation features a pastel pink checkered gingham background, watercolor strawberries, and fun, sweet modern typography — perfect for girly, whimsical, and strawberry-themed first birthday parties.\n\nFully editable in Canva (free account works!), so you can customize your child’s name, age, date, time, and party details in minutes — no design skills required.\n________________________________________\n🤍 WHAT’S INCLUDED 🤍\n𝗧𝗵𝗶𝘀 𝗶𝘀 𝗮 𝗗𝗜𝗚𝗜𝗧𝗔𝗟 𝗗𝗢𝗪𝗡𝗟𝗢𝗔𝗗 𝗹𝗶𝘀𝘁𝗶𝗻𝗴. 𝗡𝗼 𝗽𝗵𝘆𝘀𝗶𝗰𝗮𝗹 𝗽𝗿𝗼𝗱𝘂𝗰𝘁 𝘄𝗶𝗹𝗹 𝗯𝗲 𝘀𝗵𝗶𝗽𝗽𝗲𝗱.\nOnce your purchase is confirmed, you will receive an email from Etsy containing a link to download a PDF file. Please check your spam or junk folder if the email does not appear in your inbox within a few minutes. Colours may vary slightly due to monitor and printer settings.\n\nYou will receive:\n🌟 1 PDF file with the links to your Canva templates\n- 5x7 editable printable card template\n- 1080x1920 px editable phone invite template\n\n🤍 RETURNS/REFUNDS 🤍\nPlease note: All digital download purchases are final and non-refundable.\nIf you have any questions before making your purchase, feel free to reach out—we're happy to help! Should you encounter any issues downloading your files after purchase, contact us, and we’ll gladly assist you.\n\n🤍 PRINTING 🤍\nYou can print your files at home if you have a printer, at a trusted local store (e.g., Costco, Walmart, Staples), or through an online printing service like Vistaprint.\n\n🤍 COPYRIGHT NOTICE 🤍\nThis license is for personal use only.\nYou may print this invite for yourself or as a gift for someone else. However, reselling, sharing, or using this product for any commercial purposes is strictly prohibited.\n\n🤍 VISIT THE SHOP FOR MORE 🤍\nhttps://www.etsy.com/ca/shop/TheWordsBoutiqueCA",
+      "targetTags": [
+        "pink gingham invite"
+      ],
+      "discoveryTags": [
+        "fun birthday card",
+        "age date time design",
+        "free child name age",
+        "berry first birthday",
+        "returns refunds note",
+        "receive printer 5x7",
+        "1080x1920 px phone",
+        "fun sweet modern",
+        "features pastel pink",
+        "first welcome sign",
+        "5x7 printable card",
+        "strawberries digital"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 244
+      }
+    },
+    {
+      "id": "18",
+      "category": "digital downloads",
+      "mode": "title",
+      "title": "Berry First Birthday Invitation | Editable Canva Template | Strawberry Pink Gingham + Watercolor Strawberries (Digital Download)",
+      "description": "",
+      "targetTags": [
+        "pink gingham invite"
+      ],
+      "discoveryTags": [
+        "berry birthday card",
+        "watercolor invite",
+        "gingham party invite",
+        "berry first birthday",
+        "strawberries digital",
+        "invitation editable",
+        "template strawberry",
+        "gingham watercolor",
+        "digital download",
+        "editable canva",
+        "birthday invitation",
+        "strawberry pink"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 235
+      }
+    },
+    {
+      "id": "19",
+      "category": "home decor",
+      "mode": "full",
+      "title": "Beaded Crystal Plant Sun Catcher Hanging Decor, Succulent Window Hanging Ornament, Boho Home Decor, Green Beaded Plant Decor",
+      "description": "✨ Forever Crystal Plant – Beaded Sun Catcher – Hanging Succulent Decor 🪴\n\nA stunning beaded crystal plant sun catcher designed to bring sparkle, warmth, and botanical beauty into your home. Unlike real plants, this forever succulent never needs watering — just a little sunshine to create magical reflections throughout your space.\n\nEach handcrafted hanging plant features shimmering faceted crystal-style beads in multiple shades of green, carefully arranged to create a beautiful ombré cascading effect. Suspended from elegant gold chains, this unique decor piece blends perfectly with boho, modern, and minimalist interiors.\n\nAvailable in two beautiful styles:\n\n• Woven Basket – Natural handcrafted look\n• Ceramic Pot – Elegant modern finish\n\nBoth styles are designed with a secure hanging chain and lightweight structure, making them perfect for windows, cozy corners, bedrooms, plant shelves, or living room decor.\n\n🌿 Product Details\n• Faceted crystal-style beaded strands\n• Multiple green shades for ombré effect\n• Elegant gold hanging chain\n• Lightweight hanging decor\n• Handmade-inspired botanical design\n• Indoor use only\n• Approx. hanging length: 60cm\n• Perfect for sunny windows & cozy spaces\n\n🌞 Perfect For:\n• Plant lovers who want a forever plant\n• Window decor that catches sunlight beautifully\n• Boho & aesthetic room styling\n• Unique handmade-style gifts\n• Housewarming & birthday presents\n\n🎁 A forever plant that stays vibrant and beautiful all year long.\n\n🚚 Shipping:\n🇬🇧 UK – Tracked Shipping\n🇪🇺 Europe – International Tracked\n🌎 Worldwide Shipping Available",
+      "targetTags": [
+        "beaded sun catcher",
+        "crystal plant decor",
+        "hanging ornament",
+        "boho home decor",
+        "green plant decor",
+        "succulent decor",
+        "window hanging",
+        "botanical decor"
+      ],
+      "discoveryTags": [
+        "unique plant decor",
+        "bring sparkle warmth",
+        "never needs watering",
+        "style beads multiple",
+        "elegant gold chains"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 226
+      }
+    },
+    {
+      "id": "19",
+      "category": "home decor",
+      "mode": "title",
+      "title": "Beaded Crystal Plant Sun Catcher Hanging Decor, Succulent Window Hanging Ornament, Boho Home Decor, Green Beaded Plant Decor",
+      "description": "",
+      "targetTags": [
+        "plant sun catcher",
+        "beaded decor",
+        "hanging ornament",
+        "boho home decor",
+        "green plant decor",
+        "succulent decor",
+        "window hanging",
+        "crystal suncatcher"
+      ],
+      "discoveryTags": [
+        "bohemian plant decor",
+        "unique home ornament",
+        "green suncatcher art",
+        "crystal sun catcher",
+        "boho window decor"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 220
+      }
+    },
+    {
+      "id": "20",
+      "category": "home decor",
+      "mode": "full",
+      "title": "Home portrait, house painting, housewarming gift, our first home sign, home sweet home sign, watercolor home, house portrait, realtor gift",
+      "description": "(Home portrait, house painting, housewarming gift, our first home sign, home sweet home sign, watercolor home, house portrait, realtor gift)\n\n\n\nORDERING INSTRUCTIONS\n\nStep 1. Select the product/size you prefer. We offer a framed wood panel. It is vibrant, with accurate colors, and just the right amount of wood grain and texture. With this listing, you can also order a digital download of your artwork, which is sent via email.\n\nStep 2. Select a frame color. Our frame colors are \"light\", \"wood burn\", and \"dark\" These colors can be seen in our listing photos. Select \"None\" if ordering a digital download.\n\nStep 3. Place your order and upload your photo. Your photo can be uploaded before or after you complete your purchase. Simply select the \"Message Doug\" button (usually near the bottom of this listing!) then select the upload image icon. If you prefer to send your photo via email, you can reach us at\nphoto4etsy [!at] gmail.com\nPlease include your order number (or name/address) in your email if you choose this option, so we know which order is yours!\n\nStep 4. Add your personalized text. If you would like us to add text to your portrait, please provide the EXACT text you would like in the personalization field.\n\nADDITIONAL EDITS\nWe can add new elements to your portrait or remove unwanted elements, such as adding multiple pets to one portrait. We will try to accommodate your requests for free when we can, but some edits take significantly more time. This add-on listing allows us to continue offering this service. You may be asked to purchase this listing in addition to your portrait of choice if extensive edits are necessary to complete your artwork. We are happy to answer your questions and help guide you through the process.\nhttps://www.etsy.com/listing/1216543107/this-listing-is-for-adding-elements-or\n\nUNFRAMED PRINTS\nWe print on a high-quality canvas paper. This is available in two sizes, 8x10 and 11x14. These prints fit into any standard photo frame made for these sizes.\n\nDIGITAL DOWNLOADS\nFor orders of digital downloads, we will email you a print ready digital copy of the artwork. This email will go to the email address associated with your Esty account. If you'd like it sent to a different email address, please include the alternate email information along with your photo.\n\nPlease note: We do our artwork using a computer. The process is much like painting, but on a computer! Each piece is a time-consuming labor of love. We will make every effort to incorporate your special requests and ensure each home looks its best.\n\nFramed Wood prints are complete with a 1.75\" x .75\" frame and a sawtooth hanger.\n\nWAI Decor grants each client full permission to print, publish, and present the artwork made for them.\n\nPlease message us with any questions!",
+      "targetTags": [
+        "home portrait",
+        "house painting",
+        "housewarming gift",
+        "first home sign",
+        "watercolor home",
+        "house portrait",
+        "realtor gift",
+        "home sweet home"
+      ],
+      "discoveryTags": [
+        "vibrant wall art",
+        "home decor artwork",
+        "unique home portrait",
+        "custom house sign",
+        "watercolor painting"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 205
+      }
+    },
+    {
+      "id": "20",
+      "category": "home decor",
+      "mode": "title",
+      "title": "Home portrait, house painting, housewarming gift, our first home sign, home sweet home sign, watercolor home, house portrait, realtor gift",
+      "description": "",
+      "targetTags": [
+        "home portrait",
+        "house painting",
+        "housewarming gift",
+        "first home sign",
+        "home sweet home",
+        "watercolor home",
+        "house portrait",
+        "realtor gift"
+      ],
+      "discoveryTags": [
+        "custom home art",
+        "personalized sign",
+        "unique housewarming",
+        "first home decor",
+        "realtor gift idea"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 199
+      }
+    },
+    {
+      "id": "21",
+      "category": "home decor",
+      "mode": "full",
+      "title": "Housewarming Gift Home Decor, Personalized Door Mat with Family Name, Wedding Gift for Couples, Custom Welcome Doormat w Anti-Slip Backing",
+      "description": "Housewarming Gift Home Decor, Personalized Door Mat with Family Name, Wedding Gift for Couples, Custom Welcome Doormat w/ Anti-Slip Backing\n\nIntroducing our Custom Family Doormat - the perfect way to warmly welcome your loved ones and furry friends into your home! This unique doormat is designed to add a personal touch to your doorstep, making it an ideal gift for housewarmings, new homeowners, weddings, or even as a thoughtful closing gift for realtors.\n\nCrafted from natural fibers, this doormat combines durability with a stylish aesthetic, ensuring it stands up to daily use while adding charm to your doorstep. The anti-slip rubber backing ensures stability and safety for all who enter.\n\nSize Options:\nChoose from three convenient size options to suit your doorstep:\n\nSmall: A charming 16\" x 24\" mat, perfect for cozy entryways and apartment living.\nMedium: A versatile 18\" x 30\" size, ideal for standard doorways.\nLarge: A grand 24\" x 36\" mat, making a bold statement for spacious entrances.\n\nPersonalization:\nMake your doormat truly one-of-a-kind by customizing it with your family members' names and your beloved pets' names. Don't forget your furry companions – their names can also be featured alongside cute icons of pets, making them feel right at home too.\n\nOccasion Gift:\nWhether you're celebrating a housewarming, a new home purchase, a wedding, or want to express appreciation to your realtor for their hard work, our Custom Family Doormat is the perfect gift. It conveys the warmth, love, and personal touch that turn a house into a home.\n\nIncorporate your family's identity and create a lasting impression with a doormat that showcases your unique story. With its durability and charm, this doormat will greet your guests and family members with a warm smile every time they step through the door. Make every homecoming special with our Custom Family Doormat - a delightful way to say \"welcome\" like never before!",
+      "targetTags": [
+        "door mat",
+        "personalized mat",
+        "welcome mat",
+        "housewarming gift",
+        "custom doormat",
+        "family name mat",
+        "anti slip mat",
+        "home decor gift"
+      ],
+      "discoveryTags": [
+        "home entrance mat",
+        "stylish door decor",
+        "wedding gift mat",
+        "unique door mat",
+        "personalized doormat"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 195
+      }
+    },
+    {
+      "id": "21",
+      "category": "home decor",
+      "mode": "title",
+      "title": "Housewarming Gift Home Decor, Personalized Door Mat with Family Name, Wedding Gift for Couples, Custom Welcome Doormat w Anti-Slip Backing",
+      "description": "",
+      "targetTags": [
+        "door mat",
+        "personalized mat",
+        "welcome mat",
+        "custom doormat",
+        "family name mat",
+        "housewarming gift",
+        "wedding gift",
+        "home decor"
+      ],
+      "discoveryTags": [
+        "decorative entry mat",
+        "couples welcome sign",
+        "anti slip door mat",
+        "unique door mat",
+        "personalized doormat"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 196
+      }
+    },
+    {
+      "id": "22",
+      "category": "jewelry",
+      "mode": "full",
+      "title": "Personalized Birthflower Ring – Dainty Stacking Floral Ring, Meaningful Gift for Bridesmaids, Mother’s Day Gift, US 3–12",
+      "description": "Personalized Birth Flower Ring – Celebrate Her Story 🌸 | Pinky Ring | Mother’s Day Gift 💝\n\nCelebrate your unique story with a personalized birth flower ring, thoughtfully handcrafted to symbolize love, growth, and connection. This delicate piece is perfect as a meaningful gift for moms, bridesmaids, or your best friend — and a heartfelt choice for Mother’s Day 💐\n\n✨ Material Information ✨\n\n💍 Sizes 3–12: Stainless steel base with 14K gold or 14K white gold plating\nLightweight and durable, comfortable for daily wear\nEngraving appears in a natural gray tone, making the details crisp and clear\n\nEngraving appears in a reddish-brown tone, giving a softer detail against the gold plating\n\n🌿 Care & Wearing Tips 🌿\n\nRemove before swimming, bathing, or using lotions/perfumes to protect the plating\nAvoid contact with harsh chemicals or rough surfaces to maintain shine\nWipe gently with a soft, dry cloth to keep your ring looking like new\n\n🎁 Gift-Ready 🎁\n\nEach ring is lovingly handmade and comes in a reusable, recyclable jewelry box — ready to surprise her on Mother’s Day or any special moment 💕\n\n❓ Questions?\nFeel free to message us anytime for custom design advice or questions — we reply quickly 😊\n\n💡 Note on Engraving Color\nThe engraved design will appear in a soft greyish-white tone.\nColors in photos may vary slightly due to light reflections and surroundings.",
+      "targetTags": [
+        "birth flower ring",
+        "personalized ring",
+        "dainty stacking ring",
+        "floral ring",
+        "mothers day gift",
+        "bridesmaid gift",
+        "meaningful gift",
+        "stainless steel ring"
+      ],
+      "discoveryTags": [
+        "engraved dainty ring",
+        "custom birth flower",
+        "unique floral ring",
+        "floral birth flower",
+        "base 14k gold white"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 226
+      }
+    },
+    {
+      "id": "22",
+      "category": "jewelry",
+      "mode": "title",
+      "title": "Personalized Birthflower Ring – Dainty Stacking Floral Ring, Meaningful Gift for Bridesmaids, Mother’s Day Gift, US 3–12",
+      "description": "",
+      "targetTags": [
+        "birthflower ring",
+        "personalized ring",
+        "dainty stacking ring",
+        "floral ring",
+        "bridesmaid gift",
+        "mothers day gift",
+        "meaningful gift",
+        "custom ring"
+      ],
+      "discoveryTags": [
+        "birth flower jewelry",
+        "unique floral design",
+        "stacking rings set",
+        "meaningful gift idea",
+        "dainty gift for mom"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 218
+      }
+    },
+    {
+      "id": "23",
+      "category": "jewelry",
+      "mode": "full",
+      "title": "Personalized Disney Font Necklace, Disney Font Name Necklace,Customized Nameplate Plated,Children Name Necklace,Christmas Gift",
+      "description": "Meet our stunning Personalized Disney Font Necklace, a magical piece of jewelry inspired by beloved Disney fonts. This special necklace will allow you to personalize it with the name or a special word of your choice, creating a truly unique and interesting accessory. Designed by LuxuryDaintyJewelry with attention to detail, the pendant features the iconic Disney font, adding a nostalgic and charming touch. It is made of high quality materials and offers both durability and elegance. The adjustable chain ensures a comfortable fit, making it suitable for all ages. Whether you're a Disney fan or looking for a friendly gift, our Personalized Disney Font Necklace is a delightful choice. Wear it with pride and let your inner Disney magic shine. Order now and enjoy the joy of owning a personalized treasure that reflects the spirit of Disney.\n\n\nDETAIL:\n\nColor: Sterling Silver, Gold, Rose Gold\n• Finish: Polished\n\nDetail\n• All of our products are handmade.\n• We produce special jewelry for women and children.\n• Your products are sent ready to be stored and gifted in their special box.\n\nassurances\n• Nickel-free\n• Does not tarnish\n• High quality materials\n\n\nMaintenance Tips\n• Store in a clean and dry environment to preserve its original properties.\n• It is recommended to avoid contact with cosmetics, perfumes, aerosols and humidifiers as they may damage your accessories.\n\nHOW TO ORDER\n❥ Select the options you want from the drop down menu\n❥Add to cart and proceed to checkout\n❥ Don't forget to send your personalization\n❥ If you have any private messages, please leave a message in the `note to seller` section.\n\nPACKAGING\n❥All jewelry will be beautifully packaged in elegant jewelry boxes ready to be gifted.\n\nAbout Returns and Exchanges\n* Unfortunately, since all of our products are custom-made, returns and exchanges are not accepted.\n* My products are guaranteed against all kinds of production problems. I guarantee I will make a new one. Unfortunately, I cannot guarantee user errors.\n\n♡ Thank you for your visit, contact us freely if you have any questions. ♡",
+      "targetTags": [
+        "disney necklace",
+        "name necklace",
+        "custom nameplate",
+        "children necklace",
+        "christmas gift",
+        "dainty jewelry",
+        "luxury necklace",
+        "iconic font necklace"
+      ],
+      "discoveryTags": [
+        "high quality jewelry",
+        "childrens necklace",
+        "unique name necklace",
+        "dainty name necklace",
+        "disney jewelry gift"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 221
+      }
+    },
+    {
+      "id": "23",
+      "category": "jewelry",
+      "mode": "title",
+      "title": "Personalized Disney Font Necklace, Disney Font Name Necklace,Customized Nameplate Plated,Children Name Necklace,Christmas Gift",
+      "description": "",
+      "targetTags": [
+        "disney necklace",
+        "name necklace",
+        "custom nameplate",
+        "children necklace",
+        "christmas gift",
+        "disney gift",
+        "name jewelry"
+      ],
+      "discoveryTags": [
+        "personalized gift",
+        "customized jewelry",
+        "childrens gift",
+        "holiday jewelry gift",
+        "unique disney gift",
+        "plated nameplate"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 201
+      }
+    },
+    {
+      "id": "24",
+      "category": "jewelry",
+      "mode": "full",
+      "title": "Personalized Kids Names Bracelet for Mom, Custom Multi Name Birthstone Jewelry, Mothers Day Gift",
+      "description": "Multi Name Birthstone Bracelet for Mom\n\nThis multi name birthstone bracelet is made to order just for you. Designed with a modern paperclip chain, personalized name bars, and delicate birthstone charms, this bracelet is a beautiful way to keep your children’s names or the names of your loved ones close every day. Meaningful, elegant, and personal, it is a timeless keepsake for moms, grandmas, or anyone who loves family jewelry.\n\nThis personalized bracelet combines a modern style with sentimental details, making it perfect for both everyday wear and special occasions. Each engraved name bar and birthstone charm adds a unique touch that turns this bracelet into a one-of-a-kind piece.\n\nPersonalization\n\nYou can customize this bracelet with:\n• Multiple engraved names\n• Matching birthstone charms\n• A special combination that represents your family or loved ones\n\nPlease make sure all names, birth months, and personalization details are entered correctly before placing your order.\n\nMaterial\n\n• High Quality Brass\n• Nickel Free\n• High Quality Finish\n• Lightweight and comfortable for daily wear\n\n\nBracelet Length\n\nThe bracelet measures 7\" (18–19 cm) and features a paperclip chain with a 1\" (3 cm) extender.\n\nGift Box & Message\n\nYour bracelet will arrive in a beautiful gift box, ready for gifting.\nIf you would like to include a gift message, please leave your note in the personalization box or order notes, and we will be happy to include it with your order.\n\nHow to Order\n\n1. Select your bracelet options.\n2. Add the names and birthstones you would like.\n3. Place your order and we will make it just for you.\n\nProduction & Shipping\n\nProduction time: 4–6 days\nShipping time: 2–5 days\n\nOccasions\n\nThis personalized bracelet makes a lovely gift for:\n• Mother’s Day\n• Birthdays\n• Anniversaries\n• Christmas\n• New mom gifts\n• Grandma gifts\n• Everyday meaningful wear\n\nPerfect Gift For\n\nMom, grandma, wife, girlfriend, sister, daughter, or anyone who loves personalized family jewelry with a sentimental touch.\n\nNeed Help?\n\nPlease feel free to message us if you have any questions before ordering. We’ll be happy to help.",
+      "targetTags": [
+        "kids name bracelet",
+        "birthstone jewelry",
+        "mothers day gift",
+        "custom name jewelry",
+        "family keepsake",
+        "engraved bar charm",
+        "sentimental gift"
+      ],
+      "discoveryTags": [
+        "multi name keepsake",
+        "sentimental mom gift",
+        "kids name jewelry",
+        "adds unique one kind",
+        "ones close every day",
+        "bars delicate charms"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 236
+      }
+    },
+    {
+      "id": "24",
+      "category": "jewelry",
+      "mode": "title",
+      "title": "Personalized Kids Names Bracelet for Mom, Custom Multi Name Birthstone Jewelry, Mothers Day Gift",
+      "description": "",
+      "targetTags": [
+        "kids name bracelet",
+        "birthstone jewelry",
+        "mothers day gift",
+        "custom name jewelry",
+        "multi name bracelet",
+        "gift for mom",
+        "kids jewelry gift"
+      ],
+      "discoveryTags": [
+        "personalized jewelry",
+        "unique mom gift",
+        "mothers day jewelry",
+        "birthstone mom gift",
+        "custom kids jewelry",
+        "kids names bracelet"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 230
+      }
+    },
+    {
+      "id": "25",
+      "category": "stickers",
+      "mode": "full",
+      "title": "Brown Bear Wildlife Sticker, Adorable Woodland Animal, Waterproof Vinyl Sticker, Grizzly Bear, Cute Animal Sticker, Water Bottle Sticker",
+      "description": "Brown Bear Wildlife Sticker, Adorable Woodland Animal, Waterproof Vinyl Sticker, Grizzly Bear, Cute Animal Sticker, Water Bottle Sticker\n\nThis beautiful sticker is printed on vinyl paper and covered with a laminating layer made to preserve. Ideal for water-bottles, laptops, journals and notebooks.\n\nDimensions: 3 inches (7.6 cm) at its widest point.\n\nTotally waterproof and weatherproof.\n\nPrinted and manufacture in The United States!",
+      "targetTags": [
+        "brown bear sticker",
+        "cute animal sticker",
+        "grizzly bear sticker",
+        "water bottle sticker",
+        "laptop sticker",
+        "journal sticker"
+      ],
+      "discoveryTags": [
+        "waterproof decal",
+        "nature vinyl sticker",
+        "cute woodland art",
+        "bear lover gift",
+        "laptop decoration",
+        "wildlife sticker",
+        "adorable bear"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 220
+      }
+    },
+    {
+      "id": "25",
+      "category": "stickers",
+      "mode": "title",
+      "title": "Brown Bear Wildlife Sticker, Adorable Woodland Animal, Waterproof Vinyl Sticker, Grizzly Bear, Cute Animal Sticker, Water Bottle Sticker",
+      "description": "",
+      "targetTags": [
+        "bear sticker",
+        "woodland animal",
+        "cute animal sticker",
+        "waterproof sticker",
+        "grizzly bear",
+        "water bottle sticker",
+        "wildlife sticker"
+      ],
+      "discoveryTags": [
+        "kids room wall art",
+        "nature themed decor",
+        "animal lover gift",
+        "brown bear sticker",
+        "grizzly bear vinyl",
+        "funny bear sticker"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 220
+      }
+    },
+    {
+      "id": "26",
+      "category": "stickers",
+      "mode": "full",
+      "title": "Custom Logo Vinyl Stickers: Die Cut, Waterproof, Bulk Options",
+      "description": "🎨 Personalized Vinyl Stickers – Custom Printed Labels by StickerTX\n••••• PROFESSIONAL DESIGN & PRINTING AVAILABLE •••••\n\n✨ Product Highlights\n• Printed on premium glossy white vinyl for a bright and polished finish.\n• Laminated for protection — waterproof, UV-resistant, and scratchproof.\n• Sticks perfectly to any smooth indoor or outdoor surface.\n• Choose from circle, square, rectangle, or custom-cut shapes to match your brand or design.\n\n🎁 Perfect For:\n• Small business branding and product packaging.\n• Personalized stickers for birthdays, weddings, holidays, and special events.\n• Party favors, event giveaways, or vendor market displays.\n• Wholesale sticker bundles for resellers or creatives.\n• Fun decoration for laptops, bottles, notebooks, helmets, planners, and more!\n\n🛒 How to Order:\nSelect your preferred size (measured by the longest side in inches).\nChoose your quantity and note your shape or custom request in the Personalization Box.\nSend us your print-ready file via Message Seller.\nPreferred file types: AI, EPS, PDF, PSD.\nAlso accepted: PNG, JPEG, SVG, TIFF (minimum 300 DPI).\n\n⚠️ Before You Order:\n• One design per listing (no split orders).\n• We print exactly as submitted — please double-check before sending.\n• Printed in CMYK, so minor color differences may occur.\n\n🚚 Shipping Information:\n• Letter-tracked shipping for these sizes: 2” (25/50), 3” (25), 4” (25), 5” (25). Larger sizes ship via USPS First-Class with tracking.\n• Free standard shipping on all orders (upgrades available).\n• Estimated delivery: 2–5 business days after dispatch (subject to postal delays).\n• Please confirm your shipping address before checkout — changes can’t be made once shipped.\n\n💡 From business branding to personal creativity — turn your design into durable, custom vinyl stickers with StickerTX!",
+      "targetTags": [
+        "waterproof labels",
+        "bulk vinyl stickers",
+        "die cut stickers",
+        "glossy stickers",
+        "event giveaways",
+        "business branding",
+        "wedding favors",
+        "birthday stickers"
+      ],
+      "discoveryTags": [
+        "bulk logo stickers",
+        "glossy vinyl labels",
+        "shapes match perfect",
+        "premium glossy white",
+        "custom logo vinyl"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 224
+      }
+    },
+    {
+      "id": "26",
+      "category": "stickers",
+      "mode": "title",
+      "title": "Custom Logo Vinyl Stickers: Die Cut, Waterproof, Bulk Options",
+      "description": "",
+      "targetTags": [
+        "custom stickers",
+        "vinyl decals",
+        "waterproof stickers",
+        "die cut stickers",
+        "bulk stickers",
+        "logo stickers",
+        "personalized decals",
+        "business stickers"
+      ],
+      "discoveryTags": [
+        "custom logo stickers",
+        "vinyl die cut decals",
+        "bulk custom stickers",
+        "bulk vinyl stickers",
+        "logo vinyl decals"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 220
+      }
+    },
+    {
+      "id": "27",
+      "category": "stickers",
+      "mode": "full",
+      "title": "CUSTOM Stickers Roll, Custom Logo Stickers, Custom Label Roll, Personalized Label Roll, Business Label Roll, Custom Product Label Roll",
+      "description": "Custom Sticker Roll\n\nCustom stickers are a fast and easy way to brand your products or decorate your event. Whether you're looking to create an on-brand unboxing experience for your customers or decorating for a special occasion, our custom stickers are the perfect addition! Our stickers are available in many shapes and sizes. With our low minimums and affordable prices, start printing today!\n\n•LEVEL UP YOUR BRAND with your own customized stickers for business logos, labels, gifts, and packaging seals. Increase brand recognition and curate an unboxing experience as unique as your brand.\n•HIGH QUALITY LABELS ARE PERFECT to use for your small business packaging or product labels. The custom labels are printed on high quality BOPP and laminated for extra protection. They stick great on plastic and bottles. Simply peel, stick and apply.\n•EASY TO ORDER simply message us your custom logo, design, or text in a PNG or JPG file. We recommend that your files are at least 300 dpi resolution to ensure a high quality image.\n•OUR PERSONALIZED stickers are designed to enhance your products packaging, well suited for unique brands with big personality. Ideal for packaging, canning supplies, candle making supplies, fashion, jewelry, artist, and much more.\n\nCustom stickers available with your logo or text.\n30, 50, 100, 200, 300, 500, 1000 stickers.\n\nDetails:\nStickers are available in matte and glossy finishes.\nStickers are printed on high-quality BOPP and laminated for extra protection.\n\nShapes and Sizes:\n\nCircle:\n1.5\"\n2\"\n2.5\"\n3\"\n\nSquare:\n1.5\"\n2\"\n2.5\"\n3\"\n\nRectangle:\n2x1\"\n2x1.5\"\n2x3\"\n2x4\"\n4x2.5\"\n3x4\"\n3.5x4\"\n2x4.5\"\n4.5x3\"\n2.5x1.25\"\n\nIf you would like a custom size, please feel free to message us!\n\nCustom Text Stickers:\nPlease leave the text, font number, and text color in the personalization section below.\n\nCustom Logo Stickers:\nPlease send us a message with your logo/image.\n\nOnce your order has been submitted, we will send a mockup. Once the mockup has been approved, we will proceed with your order. Mockups with no replies will be sent as shown in the mockup.\n\n*Orders of 30 stickers will be sent in sheets.\n*Colors may vary slightly from colors seen on screen.\n*Due to the handmade nature of our product, slight variations may exist between stickers.\n*All sales are final for custom stickers.\n\n𝐈𝐧𝐭𝐞𝐫𝐞𝐬𝐭𝐞𝐝 𝐢𝐧 𝐨𝐭𝐡𝐞𝐫 𝐜𝐮𝐬𝐭𝐨𝐦 𝐩𝐚𝐜𝐤𝐚𝐠𝐢𝐧𝐠 𝐩𝐫𝐨𝐝𝐮𝐜𝐭𝐬?\nCheck our custom packaging gummed tape, tissue paper, and die cut stickers!\n\nCUSTOM PACKAGING GUMMED TAPE:\nhttps://www.etsy.com/listing/1065927294/custom-packaging-tape-100ft-printed?ref=shop_home_active_1\n\nCUSTOM TISSUE PAPER:\nhttps://www.etsy.com/listing/1041388929/personalized-tissue-paper-custom-logo?ref=shop_home_active_1",
+      "targetTags": [
+        "custom stickers",
+        "logo stickers",
+        "label roll",
+        "personalized labels",
+        "business labels",
+        "product labels",
+        "custom labels",
+        "sticker roll"
+      ],
+      "discoveryTags": [
+        "unique logo labels",
+        "custom logo stickers",
+        "today level up own",
+        "looking create brand",
+        "bopp laminated extra"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 207
+      }
+    },
+    {
+      "id": "27",
+      "category": "stickers",
+      "mode": "title",
+      "title": "CUSTOM Stickers Roll, Custom Logo Stickers, Custom Label Roll, Personalized Label Roll, Business Label Roll, Custom Product Label Roll",
+      "description": "",
+      "targetTags": [
+        "custom stickers",
+        "logo stickers",
+        "label roll",
+        "personalized labels",
+        "business labels",
+        "product labels"
+      ],
+      "discoveryTags": [
+        "label for packaging",
+        "logo design stickers",
+        "custom name stickers",
+        "custom logo labels",
+        "custom labels roll",
+        "roll of stickers",
+        "custom stickers roll"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 217
+      }
+    },
+    {
+      "id": "28",
+      "category": "wedding",
+      "mode": "full",
+      "title": "Fabric Wedding Welcome Sign Modern Wedding Welcome Sign Fabric Linen Custom Wedding ceremony Boho Wedding Welcome Sign Ceremony Sign S3",
+      "description": "Custom wedding ceremony sign! Wedding Welcome Signs! Custom Fabric Linen Wedding Signs!\n\nElevate the beauty of your wedding décor with these custom-crafted linen look-alike fabric signs, meticulously designed to infuse your celebration with a touch of timeless elegance and heartfelt personalization.\n\nI can make any fabric sign for any event! Including..\nFabric Baby Shower Sign\nFabric Bridal Shower Sign\nFabric Seating Chart Sign\nFabric Memorial Sign\nFabric Valentines Day Sign\nFabric Engagement Party Sign\n\n\n-Wedding sign in the first picture is 36\" wide and 90\" tall with white stand + #12 ribbon & text color\n-STAND can be included with the sign by selecting a stand color in the second dropdown menu :)\n\nEXPEDITED SHIPPING?\n\nIf you need your order within 2 weeks, please message us to discuss rush shipping options!\n\n:: HOW TO ORDER ::\n\n1. Select the correct sign size and stand option.\n2. Enter the following in the Personalization Box:\n- Names and event date\n- Ribbon color (if purchased)\n- Design option\n- Need-by date\n3. Place your order.\n\nI WILL SEND YOU PROOF BEFORE MAKING THE ORDER :)\n\n(ANY of the wording on the sign can be customized to your liking! If no changes are requested, the sign will come with the same wording as shown in the first listing photo!)\n\nIf a ribbon color is specified, we will send a proof with the text color matched to the selected ribbon color unless otherwise specified.\n\n-Grommets will be added to the bottom as pictured UNLESS SPECIFIED OTHERWISE\n\n-Stand will arrive disassembled\n\nRIBBON: For signs sized 36\"x80\" or larger purchased with the \"+Ribbon\" option, a 220\" ribbon will be included on each side. For all other sizes, a 110\" ribbon per side will be provided.\n\nIT IS OK TO STEAM!\n\nMaterial: Premium Linen Blend Fabric\nDISCLAIMER: WHITE AND GOLD STANDS MAY COME SCRATCHED DINGED DUE TO SHIPPING AND HANDLING. Copper stands may arrive with natural spotting due to the oxidation process of real copper.\n\nIF YOU HAVE A CUSTOM DESIGN OF YOUR OWN THAT YOU WOULD LIKE MADE, I AM MORE THAN HAPPY TO DO SO! MESSAGE ME :)\nCUSTOM DESIGNS FROM CANVA ARE WELCOMED :)\nWE CAN CREATE A CUSTOM CREST FOR YOU AT A COST!\n\nGender reveal, bridal shower, baby shower, and anything else!\n\nTo add custom crests it is an additional fee!\n\nTHANK YOU!\n\nIf your need-by date is within 2 weeks of the order date, an expedited fee may apply.\nIf you're ordering to an address in Hawaii (HI), Alaska (AK), Puerto Rico, APO/FPO, or a PO Box, please contact us to confirm shipping costs before placing your order.",
+      "targetTags": [
+        "wedding welcome sign",
+        "fabric wedding sign",
+        "custom wedding sign",
+        "boho wedding sign",
+        "ceremony sign",
+        "linen welcome sign",
+        "personalized sign",
+        "event welcome sign"
+      ],
+      "discoveryTags": [
+        "timeless decor",
+        "baby shower sign",
+        "elegant sign",
+        "modern wedding",
+        "welcome banner"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 211
+      }
+    },
+    {
+      "id": "28",
+      "category": "wedding",
+      "mode": "title",
+      "title": "Fabric Wedding Welcome Sign Modern Wedding Welcome Sign Fabric Linen Custom Wedding ceremony Boho Wedding Welcome Sign Ceremony Sign S3",
+      "description": "",
+      "targetTags": [
+        "wedding sign",
+        "welcome sign",
+        "fabric sign",
+        "boho wedding",
+        "custom sign",
+        "linen sign",
+        "ceremony sign",
+        "modern wedding"
+      ],
+      "discoveryTags": [
+        "ceremony decoration",
+        "linen welcome banner",
+        "boho wedding decor",
+        "modern ceremony sign",
+        "modern fabric banner"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 192
+      }
+    },
+    {
+      "id": "29",
+      "category": "wedding",
+      "mode": "full",
+      "title": "Hand-Stitched Embroidered Wedding Guest Book Canvas Banner, Personalized Last Name Sign",
+      "description": "Designed not only as decor, but also as a meaningful wedding guest signing piece 🤍\n\nThis hand-embroidered canvas banner is perfect for placing on your wedding signing table, allowing guests to sign around the embroidery with fabric pens or markers.\n\n✨ Perfect for:\n• Wedding guest signing table\n• Guest book alternative\n• Wedding reception & welcome table\n• Bridal shower & engagement gifts\n\n✨ Why couples love it\nHand-stitched embroidery (not machine-made)\nSmooth canvas surface ideal for guest signatures\nPersonalized with last name & wedding date\nBecomes framed wall art after the wedding\nAfter the celebration, frame it and display it in your home — a one-of-a-kind keepsake filled with heartfelt messages from loved ones.\n\nPolicy:\n📌 Processing Time: All signs are handmade to order. Please allow 5–7 business days for production.\n📦 Shipping: We ship worldwide. Delivery times vary by location (usually 7–10 business days).\n🔁 Returns & Exchanges: Due to the custom nature of this item, we do not accept returns or exchanges unless the item arrives damaged.\n📸 Mock-up: Design mock-up will be sent before production so pls keep an eye on your messages after placing order.\n\n\n\nwedding guest sign, wedding signing banner, guest book alternative wedding, custom wedding banner, embroidered wedding banner, hand embroidered sign, wedding table decor, wedding signing table decor, personalized wedding sign, last name wedding decor, wedding keepsake gift, bridal shower gift idea, engagement gift couple, wedding reception decor, welcome table decor wedding, wedding fabric banner, canvas wedding sign, custom last name sign, hand stitched embroidery, heirloom wedding decor, framed wedding banner, rustic wedding decor, minimalist wedding decor, modern wedding sign, personalized home decor, wedding date sign, custom embroidered gift, wedding wall art, farmhouse wedding decor, elegant wedding decor, custom fabric sign, embroidered canvas art, wedding memory keepsake, newlywed gift idea, anniversary gift couple, personalized anniversary gift, neutral home decor, wedding photography prop, guest signing decor, wedding sign alternative, fabric guest book, personalized canvas banner, wedding surname sign, bridal gift personalized, wedding decor idea, timeless wedding decor, custom couple gift",
+      "targetTags": [
+        "wedding guest book",
+        "canvas banner",
+        "personalized sign",
+        "hand stitched decor",
+        "bridal shower gift",
+        "engagement gift",
+        "last name sign",
+        "wedding reception"
+      ],
+      "discoveryTags": [
+        "guest signing canvas",
+        "custom wedding sign",
+        "canvas wedding art",
+        "wedding canvas decor",
+        "hand stitched sign"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 226
+      }
+    },
+    {
+      "id": "29",
+      "category": "wedding",
+      "mode": "title",
+      "title": "Hand-Stitched Embroidered Wedding Guest Book Canvas Banner, Personalized Last Name Sign",
+      "description": "",
+      "targetTags": [
+        "wedding guest book",
+        "embroidered banner",
+        "personalized sign",
+        "canvas wedding decor",
+        "last name sign",
+        "hand stitched decor"
+      ],
+      "discoveryTags": [
+        "custom name banner",
+        "unique guest book",
+        "wedding decor gift",
+        "hand stitched banner",
+        "wedding sign decor",
+        "last name canvas",
+        "book canvas banner"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 231
+      }
+    },
+    {
+      "id": "30",
+      "category": "wedding",
+      "mode": "full",
+      "title": "Set of 2 Personalized Wedding Vow Books His and Her Paper Vow Books Customized Wedding Vow Book with Silk Ribbon gift for Bride and Groom",
+      "description": "Handmade paper vow books, a precious keepsake for your wedding day. Preserve your vows and promises to each other forever.\n\nABOUT OUR PAPER WEDDING VOW BOOKS\n- The size of each book is 6 inches long and 4 inches wide or 7 inches long and 5 inches wide (your choice).\n- Cover is made of premium heavyweight 140 pounds textured cardstock\n- Inside the booklets are 6 sewn in pages (12 sides). Pages are 65 pounds and smooth, perfect for writing in.\n- Each book will come with ribbon in the color of your choice\n- Attention: These are printed with ink. It is not metallic. The color might appear slightly different due to different displays and different lighting. IF YOU FORGET TO LEAVE AN INK COLOR IN THE PERSONALIZATION BOX, WE WILL DEFAULT TO BLACK. The wording will appear exactly as shown in the photos (all lowercased and dated the same), unless otherwise specifically requested and noted in the personalization box by you.\n\nPRODUCTION\n- In the personalization box, please leave the essential information we requested to create your card. If you request a digital mock-up, have missing customization details, or have any changes to your order/customization, please take note that it will cause delays in production & shipping. We will reach out to you if we need additional information.\n- Our orders are fulfilled within the next 2 business days (monday-friday). WE DO NOT SEND DIGITAL MOCK-UPS, unless requested, so we can produce and ship orders quickly.\n- We ship using USPS ground advantage, which takes anywhere from 5-10 business days for delivery. Please note, any delays with the USPS are out of our hands. Once the package has been dropped off, we cannot control how fast it gets to you. If you need your vow books/cards sooner, please upgrade the shipping to priority. If you want to express with UPS 2 days, please contact us before purchasing.\n\nNOTE FOR BUYERS: Contact us for any questions! Please allow up to 24hrs Mondays - Fridays for us to respond to messages. We are closed on weekends & holidays and we ship all products from our office in Los Angeles, California. Unfortunately, since most of our products are custom made, we don't accept returns or exchanges. Thank you for understanding!",
+      "targetTags": [
+        "wedding vow books",
+        "bride and groom gift",
+        "silk ribbon book",
+        "handmade paper book",
+        "custom wedding gift",
+        "keepsake vow book",
+        "metallic ink print",
+        "wedding day keepsake"
+      ],
+      "discoveryTags": [
+        "unique wedding gift",
+        "wedding vow keepsake",
+        "silk ribbon keepsake",
+        "custom wedding book",
+        "silk ribbon wedding"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 243
+      }
+    },
+    {
+      "id": "30",
+      "category": "wedding",
+      "mode": "title",
+      "title": "Set of 2 Personalized Wedding Vow Books His and Her Paper Vow Books Customized Wedding Vow Book with Silk Ribbon gift for Bride and Groom",
+      "description": "",
+      "targetTags": [
+        "wedding vow books",
+        "bride and groom gift",
+        "silk ribbon vow book",
+        "custom vow books",
+        "set of vow books",
+        "his and her vows",
+        "wedding gift ideas"
+      ],
+      "discoveryTags": [
+        "customized vow set",
+        "unique wedding gift",
+        "bride and groom vows",
+        "custom wedding book",
+        "silk wedding ribbon",
+        "wedding vow ideas"
+      ],
+      "metrics": {
+        "tagCount": 13,
+        "oversized": 0,
+        "duplicates": 0,
+        "oneWord": 0,
+        "totalChars": 235
+      }
+    }
+  ]
+}
