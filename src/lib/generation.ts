@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 
-export const GENERATION_LOGIC_VERSION = "1.5";
+export const GENERATION_LOGIC_VERSION = "1.6";
 export const MAX_GENERATION_DESCRIPTION_LENGTH = 1200;
 const MAX_COMPACT_DESCRIPTION_LENGTH = 500;
 
@@ -199,6 +199,7 @@ const compactDescriptionProcessTokens = new Set([
   "links",
   "file",
   "files",
+  "support",
   "pdf",
   "message",
   "reach",
@@ -209,6 +210,9 @@ const compactDescriptionProcessTokens = new Set([
   "within",
   "quantity",
   "width",
+  "thickness",
+  "point",
+  "widest",
   "step",
   "steps",
   "vary",
@@ -250,6 +254,53 @@ const compactDescriptionProcessTokens = new Set([
   "app",
   "apps",
   "software",
+]);
+
+const compactDescriptionProductHintTokens = new Set([
+  "wedding",
+  "bridal",
+  "birthflower",
+  "personalized",
+  "custom",
+  "name",
+  "gift",
+  "ring",
+  "bracelet",
+  "necklace",
+  "sticker",
+  "label",
+  "planner",
+  "template",
+  "invite",
+  "birthday",
+  "floral",
+  "digital",
+  "download",
+  "candle",
+  "soy",
+  "wax",
+  "art",
+  "print",
+  "canvas",
+  "portrait",
+  "nails",
+  "press",
+  "terrarium",
+  "fairy",
+  "garden",
+  "home",
+  "decor",
+  "shirt",
+  "hoodie",
+  "sweatshirt",
+  "scrub",
+  "beads",
+  "crystal",
+  "sun",
+  "catcher",
+  "crochet",
+  "pacifier",
+  "baby",
 ]);
 
 const lowQualityTagLeadingTokens = new Set([
@@ -511,35 +562,95 @@ function isCompatibilityContextToken(tokens: string[], index: number): boolean {
   return false;
 }
 
-export function compactGenerationDescription(description: string): string {
-  const cleaned = cleanGenerationDescription(description);
-  if (!cleaned) return "";
-
-  const cleanedTokens = cleaned
-    .split(/\s+/)
-    .map((token) => normalizeDescriptionCheckToken(token))
+function splitDescriptionSegments(description: string): string[] {
+  return String(description ?? "")
+    .replace(generationSeparatorsPattern, ". ")
+    .replace(/\r?\n+/g, ". ")
+    .split(/[.!?;:]+/)
+    .map((segment) => segment.trim())
     .filter(Boolean);
+}
 
-  const seen = new Set<string>();
-  const kept: string[] = [];
+function scoreCompactDescriptionSegment(tokens: string[]): number {
+  const processHits = tokens.filter((token) =>
+    compactDescriptionProcessTokens.has(token),
+  ).length;
+  const measurementHits = tokens.filter((token) =>
+    isCompactableMeasurementToken(token),
+  ).length;
+  const compatibilityHits = tokens.filter((token) =>
+    ["ipad", "apple", "pencil", "goodnotes", "notability", "compatible", "compatibility"].includes(token),
+  ).length;
+  const fillerHits = tokens.filter((token) => isDescriptionFillerToken(token)).length;
+  const productHits = tokens.filter((token) =>
+    compactDescriptionProductHintTokens.has(token),
+  ).length;
+  const uniqueCount = new Set(tokens).size;
 
-  for (let index = 0; index < cleanedTokens.length; index += 1) {
-    const normalizedToken = cleanedTokens[index];
-    if (!normalizedToken) continue;
-    if (isDescriptionFillerToken(normalizedToken)) continue;
-    if (isDescriptionBoilerplateToken(normalizedToken)) continue;
-    if (isCompactableMeasurementToken(normalizedToken)) continue;
-    if (/^\d+(?:\.\d+)?$/.test(normalizedToken)) continue;
-    if (compactDescriptionProcessTokens.has(normalizedToken)) continue;
-    if (isCompatibilityContextToken(cleanedTokens, index)) continue;
-    if (seen.has(normalizedToken)) continue;
+  return (
+    productHits * 6 +
+    uniqueCount * 2 -
+    processHits * 4 -
+    measurementHits * 3 -
+    compatibilityHits * 4 -
+    fillerHits * 2
+  );
+}
 
-    seen.add(normalizedToken);
-    kept.push(normalizedToken);
+export function compactGenerationDescription(description: string): string {
+  const segments = splitDescriptionSegments(description);
+  if (!segments.length) return "";
+
+  const candidateSegments: Array<{ compact: string; score: number; tokens: string[] }> = [];
+
+  for (const segment of segments) {
+    const cleaned = cleanGenerationDescription(segment);
+    if (!cleaned) continue;
+
+    const tokens = cleaned
+      .split(/\s+/)
+      .map((token) => normalizeDescriptionCheckToken(token))
+      .filter(Boolean);
+    if (!tokens.length) continue;
+
+    const keptTokens: string[] = [];
+    for (let index = 0; index < tokens.length; index += 1) {
+      const token = tokens[index];
+      if (isDescriptionFillerToken(token)) continue;
+      if (isDescriptionBoilerplateToken(token)) continue;
+      if (isCompactableMeasurementToken(token)) continue;
+      if (/^\d+(?:\.\d+)?$/.test(token)) continue;
+      if (compactDescriptionProcessTokens.has(token)) continue;
+      if (isCompatibilityContextToken(tokens, index)) continue;
+      keptTokens.push(token);
+    }
+
+    if (!keptTokens.length) continue;
+    const score = scoreCompactDescriptionSegment(keptTokens);
+    if (score <= 0) continue;
+
+    candidateSegments.push({
+      compact: keptTokens.join(" "),
+      score,
+      tokens: keptTokens,
+    });
   }
 
-  const compact = kept.join(" ").trim();
-  return trimToCompactDescriptionLimit(compact);
+  if (!candidateSegments.length) return "";
+
+  candidateSegments.sort((a, b) => b.score - a.score);
+
+  const chosenSegments: string[] = [];
+  const seenSegments = new Set<string>();
+  for (const candidate of candidateSegments) {
+    const normalizedSegment = candidate.compact.trim();
+    if (!normalizedSegment || seenSegments.has(normalizedSegment)) continue;
+    seenSegments.add(normalizedSegment);
+    chosenSegments.push(normalizedSegment);
+    if (chosenSegments.length >= 8) break;
+  }
+
+  return trimToCompactDescriptionLimit(chosenSegments.join("; "));
 }
 
 function normalizeResponse(input: string[]): string[] {

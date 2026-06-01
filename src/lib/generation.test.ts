@@ -54,8 +54,8 @@ describe("generation fallback filler quality", () => {
     expect(new Set(normalized).size).toBe(normalized.length);
   });
 
-  it("uses generation logic version 1.5", () => {
-    expect(GENERATION_LOGIC_VERSION).toBe("1.5");
+  it("uses generation logic version 1.6", () => {
+    expect(GENERATION_LOGIC_VERSION).toBe("1.6");
   });
 
   it("normalizes possessives without standalone leftovers", () => {
@@ -224,6 +224,42 @@ describe("generation fallback filler quality", () => {
       "gift",
     ]) {
       expect(tokens).toContain(token);
+    }
+  });
+
+  it("prefers product phrase chunks over policy chunks", () => {
+    const description = [
+      "Natural miniature stepping stones for fairy garden decor and terrarium accessories.",
+      "Please check spam folder for updates and contact support for shipping issues.",
+      "Size details: 2cm width 0.3cm thickness and quantity notes.",
+    ].join(" ");
+    const compacted = compactGenerationDescription(description);
+    const tokens = normalizeTokens(compacted);
+
+    for (const productToken of [
+      "natural",
+      "miniature",
+      "stepping",
+      "stones",
+      "fairy",
+      "garden",
+      "terrarium",
+      "accessories",
+    ]) {
+      expect(tokens).toContain(productToken);
+    }
+
+    for (const noisyToken of [
+      "spam",
+      "folder",
+      "shipping",
+      "contact",
+      "support",
+      "width",
+      "thickness",
+      "quantity",
+    ]) {
+      expect(tokens).not.toContain(noisyToken);
     }
   });
 
