@@ -23,7 +23,8 @@ export function GeneratorResults({
   onCopyAll,
   onFeedbackUp,
   onFeedbackDown,
-  onGoToLogin,
+  onStartAuthUnlock,
+  onUnlockGeneratedTags,
   onGoToPricing,
 }: GeneratorResultsProps) {
   if (!showResults) return null;
@@ -73,7 +74,7 @@ export function GeneratorResults({
           </div>
           <button
             type="button"
-            onClick={onGoToLogin}
+            onClick={onUnlockGeneratedTags}
             className="rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700"
           >
             Unlock generated tags
@@ -129,7 +130,7 @@ export function GeneratorResults({
                   </p>
                   <button
                     type="button"
-                    onClick={onGoToLogin}
+                    onClick={onStartAuthUnlock}
                     className="rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700"
                   >
                     Create account / log in
@@ -174,6 +175,7 @@ type GeneratorResultsProps = {
   onCopyAll: () => void;
   onFeedbackUp: () => void;
   onFeedbackDown: () => void;
-  onGoToLogin: () => void;
+  onStartAuthUnlock: () => void;
+  onUnlockGeneratedTags: () => void;
   onGoToPricing: () => void;
 };

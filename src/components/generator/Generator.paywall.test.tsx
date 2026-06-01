@@ -217,4 +217,110 @@ describe("Generator auth unlock flow", () => {
 
     expect(countGenerateCalls(fetchMock)).toBe(1);
   });
+
+  it("uses unlock-ready primary action and unlocks without re-opening auth", async () => {
+    const placeholders = [
+      "hidden keyword",
+      "trend phrase",
+      "buyer intent",
+      "long tail tag",
+      "seo booster",
+      "shop discover",
+      "niche phrase",
+      "smart tag",
+      "market match",
+      "ranking term",
+      "search phrase",
+      "listing boost",
+      "etsy target",
+    ];
+    const realTags = [
+      "boho wedding jewelry",
+      "bridal gold necklace",
+      "dainty pearl necklace",
+      "minimalist bridal gift",
+      "bridesmaid jewelry set",
+      "wedding day necklace",
+      "layering gold chain",
+      "gift for bride",
+      "delicate pearl charm",
+      "handmade wedding gift",
+      "bride shower gift",
+      "elegant bridal style",
+      "timeless wedding look",
+    ];
+
+    const fetchMock = vi.fn().mockImplementation((input: unknown) => {
+      const url = typeof input === "string" ? input : String(input);
+
+      if (url.includes("/api/account/usage")) {
+        return mockGenerateResponse({ usageLabel: "2 generations left" });
+      }
+
+      if (url.includes("/api/generations/history")) {
+        return mockGenerateResponse({
+          items: [],
+          page: 0,
+          hasPrev: false,
+          hasNext: false,
+        });
+      }
+
+      const generateCalls = fetchMock.mock.calls.filter(([callInput]) =>
+        String(callInput).includes("/api/generate"),
+      ).length;
+
+      if (generateCalls === 1) {
+        return mockGenerateResponse({
+          status: "paywall",
+          reason: "auth_required",
+          requestId: "ctx-auth-manual",
+          message: "Create account or login.",
+          placeholders: { target: placeholders, discovery: [] },
+        });
+      }
+
+      return mockGenerateResponse({
+        status: "ok",
+        requestId: "ctx-auth-manual",
+        generationId: "gen-unlocked-1",
+        tags: { target: realTags, discovery: [] },
+        source: "model",
+        entitlementUsed: "free_credit",
+      });
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
+
+    fireEvent.change(
+      screen.getByPlaceholderText("e.g. Handmade ceramic coffee mug with minimalist design"),
+      {
+        target: {
+          value: "Bridal pearl necklace, dainty gold chain, gift for bride wedding day",
+        },
+      },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Generate 13 tags" }));
+
+    await screen.findByText("Create an account or log in to unlock this generation for FREE");
+    act(() => {
+      window.dispatchEvent(new CustomEvent("tagloom:auth-success"));
+    });
+
+    const unlockButton = await screen.findByRole("button", {
+      name: "Unlock generated tags",
+    });
+    expect(
+      screen.queryByRole("button", { name: "Create account / log in" }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(unlockButton);
+    await screen.findByText("Would you like to use a generation to unlock the tags?");
+    fireEvent.click(screen.getByRole("button", { name: "Yes" }));
+
+    await waitFor(() => expect(screen.getByText(realTags[0])).toBeInTheDocument());
+    expect(countGenerateCalls(fetchMock)).toBe(2);
+  });
 });

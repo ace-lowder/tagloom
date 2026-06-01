@@ -495,13 +495,13 @@ export default function Generator({ onFocus, glowRef, demoConfig }: GeneratorPro
     }
   }, [descriptionRevealMode]);
 
-  const handleResultsAuthAction = useCallback(() => {
-    if (unlockReadyContext) {
-      onUnlockTags();
-      return;
-    }
+  const handleStartAuthUnlock = useCallback(() => {
     goToLogin();
-  }, [goToLogin, onUnlockTags, unlockReadyContext]);
+  }, [goToLogin]);
+
+  const handleUnlockGeneratedTags = useCallback(() => {
+    onUnlockTags();
+  }, [onUnlockTags]);
 
   return (
     <>
@@ -608,7 +608,8 @@ export default function Generator({ onFocus, glowRef, demoConfig }: GeneratorPro
                       onFeedbackDown={() => {
                         void onGenerationFeedbackDown();
                       }}
-                      onGoToLogin={handleResultsAuthAction}
+                      onStartAuthUnlock={handleStartAuthUnlock}
+                      onUnlockGeneratedTags={handleUnlockGeneratedTags}
                       onGoToPricing={goToPricing}
                     />
                   </motion.div>
