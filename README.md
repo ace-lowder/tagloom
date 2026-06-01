@@ -127,3 +127,9 @@ order by source, rating;
 Tag generation has a manual paid benchmark that is not part of tests/build/CI.
 
 See `benchmarks/README.md` for setup, when to run it, and how to compare results.
+
+## Deploy Readiness
+
+Launch checklist and production verification steps are in:
+
+- `docs/deploy-readiness.md`
