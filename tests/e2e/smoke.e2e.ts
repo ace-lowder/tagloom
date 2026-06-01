@@ -11,7 +11,7 @@ test("authenticated user reaches the protected home area", async ({ page }) => {
   await expect(page).toHaveURL(/\/$/);
   await page.getByRole("button", { name: "Open profile menu" }).click();
   await expect(page.getByRole("button", { name: /Manage Plan|View Plans/ })).toBeVisible();
-  await expect(page.getByRole("heading", { name: /Etsy tags buyers actually search/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Generate better Etsy tags/i })).toBeVisible();
 });
 
 test("billing page loads for an authenticated user", async ({ page }) => {
@@ -128,4 +128,33 @@ test("billing actions use the real billing UI with mocked endpoints", async ({ p
     expect(errorSwitchPlan.method()).toBe("POST");
     await expect(page.getByText("Could not switch plan.")).toBeVisible();
   }
+});
+
+test("generation flow exposes core generator actions", async ({ page }) => {
+  await page.goto("/");
+  const titleInput = page.getByPlaceholder(
+    "e.g. Handmade ceramic coffee mug with minimalist design",
+  );
+  await titleInput.fill("Minimalist ceramic coffee mug handmade");
+  await expect(titleInput).toHaveValue(/Minimalist ceramic coffee mug handmade/);
+  await page.getByRole("button", { name: "Generate 13 tags" }).click();
+  await expect(page.getByRole("button", { name: "Generate 13 tags" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Show generation history" })).toBeVisible();
+});
+
+test("homepage pricing card starts checkout for logged-in users", async ({ page }) => {
+  await page.route("**/api/checkout/session", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ url: `${baseURL}/billing?checkout=success` }),
+    });
+  });
+
+  await page.goto("/#pricing");
+  const startNowButton = page.getByRole("button", { name: "Start now" }).first();
+  const checkoutRequest = page.waitForRequest("**/api/checkout/session");
+  await startNowButton.click();
+  await checkoutRequest;
+  await expect(page).toHaveURL(/\/billing\?checkout=success/);
 });
