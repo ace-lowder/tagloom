@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 
-export const GENERATION_LOGIC_VERSION = "1.7";
+export const GENERATION_LOGIC_VERSION = "1.8";
 export const MAX_GENERATION_DESCRIPTION_LENGTH = 1200;
 const MAX_COMPACT_DESCRIPTION_LENGTH = 500;
 
@@ -864,6 +864,7 @@ function buildFillerCandidates(
         const normalized = normalizeResponse([raw])[0];
         if (!normalized) continue;
         if (normalized.length > 20) continue;
+        if (isLowQualityGeneratedTag(normalized)) continue;
         if (seen.has(normalized)) continue;
 
         seen.add(normalized);

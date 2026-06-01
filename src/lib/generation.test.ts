@@ -54,8 +54,8 @@ describe("generation fallback filler quality", () => {
     expect(new Set(normalized).size).toBe(normalized.length);
   });
 
-  it("uses generation logic version 1.7", () => {
-    expect(GENERATION_LOGIC_VERSION).toBe("1.7");
+  it("uses generation logic version 1.8", () => {
+    expect(GENERATION_LOGIC_VERSION).toBe("1.8");
   });
 
   it("normalizes possessives without standalone leftovers", () => {
