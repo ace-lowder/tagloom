@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { toastMessages } from "@/components/toasts/toastMessages";
 import { useToast } from "@/components/toasts/toasts";
 import { Button } from "@/components/ui/button";
-import PricingCards, { PRICING_PLANS, type PricingPlanId } from "@/components/pricing/PricingCards";
+import PricingCards, { PRICING_PLANS } from "@/components/pricing/PricingCards";
+import { usePricingActions } from "@/components/pricing/usePricingActions";
 
 type BillingPageClientProps = {
   subscriptionActive: boolean;
@@ -45,8 +46,6 @@ export default function BillingPageClient({
 }: BillingPageClientProps) {
   const router = useRouter();
   const { showToast } = useToast();
-  const [isCreatingPortalSession, setIsCreatingPortalSession] = useState(false);
-  const [redirectingPlanId, setRedirectingPlanId] = useState<PricingPlanId | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -88,8 +87,22 @@ export default function BillingPageClient({
     return PRICING_PLANS.find((plan) => plan.id === pendingRenewalTier) ?? null;
   }, [pendingRenewalTier]);
 
+  const { isCreatingPortalSession, redirectingPlanId, isAnyRedirecting, onManagePortal, onSelectPlan } =
+    usePricingActions({
+      isLoggedIn: true,
+      subscriptionActive,
+      currentTier: subscriptionTier,
+      canManageSubscription,
+      onRequireAuth: () => {},
+      onRefresh: () => router.refresh(),
+      onError: (message) =>
+        showToast({
+          ...toastMessages.checkoutFailed,
+          body: message,
+        }),
+    });
   const displayedPricePlan = renewingPlan ?? currentPlan;
-  const currentPrice = displayedPricePlan ? `$${displayedPricePlan.price}${displayedPricePlan.period}` : "$0";
+  const currentPrice = displayedPricePlan ? `$${displayedPricePlan.price}${displayedPricePlan.period}` : null;
   const billingDate = currentPlan ? formatDate(billingDateAt) : "None";
   const planName = currentPlan
     ? `${currentPlan.name}${isExpiring ? " (Expiring)" : ""}`
@@ -104,130 +117,12 @@ export default function BillingPageClient({
   const portalButtonClass = isExpiring
     ? `${renewBaseButtonClass}${renewLoadingClass}`
     : "self-start inline-flex items-center rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-600 transition-colors hover:border-rose-500 hover:text-rose-700 disabled:opacity-60 md:self-auto";
-  const isAnyRedirecting = isCreatingPortalSession || Boolean(redirectingPlanId);
   const pendingRenewalLabel = pendingRenewalAt
     ? `Renewing on ${formatDate(pendingRenewalAt)}`
     : "Renewing soon";
   const hasPendingTierRenewal = Boolean(pendingRenewalTier && pendingRenewalTier !== subscriptionTier);
   const currentTierRenewLabel = currentPlan ? `Renew ${currentPlan.name}` : "Renew plan";
-
-  const createPortalSessionAndRedirect = async () => {
-    const response = await fetch("/api/billing/portal", {
-      method: "POST",
-    });
-    const data = (await response.json().catch(() => ({}))) as {
-      error?: string;
-      url?: string;
-    };
-
-    if (!response.ok || !data.url) {
-      throw new Error(data.error || "Could not open billing portal.");
-    }
-
-    window.sessionStorage.setItem("billing_portal_pending", "1");
-    window.location.href = data.url;
-  };
-
-  const onManageStripePortal = async () => {
-    if (!canManageSubscription) return;
-
-    setIsCreatingPortalSession(true);
-    try {
-      await createPortalSessionAndRedirect();
-    } catch (portalError) {
-      showToast({
-        ...toastMessages.billingPortalFailed,
-        body:
-          portalError instanceof Error
-            ? portalError.message
-            : toastMessages.billingPortalFailed.body,
-      });
-      setIsCreatingPortalSession(false);
-    }
-  };
-
-  const onCurrentPlanCardAction = async () => {
-    if (!currentPlan || !canManageSubscription) return;
-
-    setRedirectingPlanId(currentPlan.id);
-    try {
-      await createPortalSessionAndRedirect();
-    } catch (portalError) {
-      showToast({
-        ...toastMessages.billingPortalFailed,
-        body:
-          portalError instanceof Error
-            ? portalError.message
-            : toastMessages.billingPortalFailed.body,
-      });
-      setRedirectingPlanId(null);
-    }
-  };
-
-  const onSelectPlan = async (planId: PricingPlanId) => {
-    setRedirectingPlanId(planId);
-
-    try {
-      const isTierSwitchRequest =
-        subscriptionActive &&
-        Boolean(subscriptionTier) &&
-        (planId === "monthly" || planId === "yearly") &&
-        subscriptionTier !== planId;
-
-      if (isTierSwitchRequest) {
-        const switchResponse = await fetch("/api/billing/switch-plan", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ targetTier: planId }),
-        });
-        const switchData = (await switchResponse.json().catch(() => ({}))) as {
-          ok?: boolean;
-          error?: string;
-          code?: string;
-        };
-
-        if (!switchResponse.ok || !switchData.ok) {
-          throw new Error(switchData.error || "Open Billing Portal to switch plans.");
-        }
-
-        setRedirectingPlanId(null);
-        router.refresh();
-        return;
-      }
-
-      const response = await fetch("/api/checkout/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ purchaseType: planId }),
-      });
-      const data = (await response.json().catch(() => ({}))) as { url?: string; error?: string };
-      if (!response.ok || !data.url) {
-        if ((data as { requiresPortal?: boolean }).requiresPortal) {
-          if (!canManageSubscription) {
-            throw new Error("Open Billing Portal to switch plans.");
-          }
-          try {
-            await createPortalSessionAndRedirect();
-          } catch {
-            throw new Error("Open Billing Portal to switch plans.");
-          }
-          return;
-        }
-        throw new Error(data.error || "Could not create checkout session.");
-      }
-
-      window.location.href = data.url;
-    } catch (checkoutError) {
-      showToast({
-        ...toastMessages.checkoutFailed,
-        body:
-          checkoutError instanceof Error
-            ? checkoutError.message
-            : toastMessages.checkoutFailed.body,
-      });
-      setRedirectingPlanId(null);
-    }
-  };
+  const onCurrentPlanCardAction = onManagePortal;
 
   return (
     <div className="min-h-screen bg-stone-50 px-5 pb-16 pt-28">
@@ -245,14 +140,16 @@ export default function BillingPageClient({
               {renewingPlan ? (
                 <p className="text-sm text-stone-600">Renewing: {renewingPlan.name}</p>
               ) : null}
-              <p className="text-sm text-stone-600">Price: {currentPrice}</p>
-              <p className="text-sm text-stone-600">{billingDateLabel}: {billingDate}</p>
+              {currentPrice ? <p className="text-sm text-stone-600">Price: {currentPrice}</p> : null}
+              {currentPlan ? (
+                <p className="text-sm text-stone-600">{billingDateLabel}: {billingDate}</p>
+              ) : null}
             </div>
 
             {currentPlan && canManageSubscription ? (
               <Button
                 type="button"
-                onClick={onManageStripePortal}
+                onClick={onManagePortal}
                 disabled={isAnyRedirecting}
                 variant={isExpiring ? "secondary" : "danger"}
                 size="sm"

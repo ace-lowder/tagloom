@@ -44,6 +44,7 @@ async function loadHomePricingState(): Promise<HomePricingState> {
     pendingRenewalTier: null,
     pendingRenewalAt: null,
     allowStarterPurchaseWithSubscription: true,
+    canManageSubscription: false,
   };
 
   const supabase = createSupabaseServerClient();
@@ -133,6 +134,7 @@ async function loadHomePricingState(): Promise<HomePricingState> {
     pendingRenewalTier,
     pendingRenewalAt,
     allowStarterPurchaseWithSubscription,
+    canManageSubscription: Boolean(profile?.stripe_customer_id),
   };
 }
 

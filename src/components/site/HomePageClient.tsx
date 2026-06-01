@@ -2,11 +2,16 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowRight, ChevronDown, Tag } from "lucide-react";
 
-import PricingCards, { type PricingPlanId } from "@/components/pricing/PricingCards";
+import PricingCards from "@/components/pricing/PricingCards";
+import { usePricingActions } from "@/components/pricing/usePricingActions";
 import Generator from "@/components/generator/Generator";
+import { useAuthController } from "@/components/auth/AuthController";
+import { useToast } from "@/components/toasts/toasts";
+import { toastMessages } from "@/components/toasts/toastMessages";
 import { Card } from "@/components/ui/card";
 import { buttonClassNames } from "@/components/ui/button";
 import SiteFooter from "@/components/shared/SiteFooter";
@@ -26,6 +31,7 @@ export type HomePricingState = {
   pendingRenewalTier: "monthly" | "yearly" | null;
   pendingRenewalAt: string | null;
   allowStarterPurchaseWithSubscription: boolean;
+  canManageSubscription: boolean;
 };
 
 const fadeInUp = {
@@ -65,7 +71,7 @@ export default function HomePageClient({ pricingState }: HomePageClientProps) {
       <HeroSection onGenerate={triggerGeneratorFlow} />
       <AboutSection />
       <FeaturesSection />
-      <PricingSection onGenerate={triggerGeneratorFlow} pricingState={pricingState} />
+      <PricingSection pricingState={pricingState} />
       <BlogSection />
       <FaqSection faqs={faqs} />
       <BottomCtaSection onGenerate={triggerGeneratorFlow} />
@@ -215,18 +221,21 @@ function FeaturesSection() {
 }
 
 type PricingSectionProps = {
-  onGenerate: () => void;
   pricingState: HomePricingState;
 };
 
-function PricingSection({ onGenerate, pricingState }: PricingSectionProps) {
+function PricingSection({ pricingState }: PricingSectionProps) {
   const {
     isLoggedIn,
     currentTier,
     pendingRenewalTier,
     pendingRenewalAt,
     allowStarterPurchaseWithSubscription,
+    canManageSubscription,
   } = pricingState;
+  const router = useRouter();
+  const { openAuthModal } = useAuthController();
+  const { showToast } = useToast();
   const renewingLabel = pendingRenewalAt
     ? `Renewing on ${new Intl.DateTimeFormat("en-US", {
         month: "short",
@@ -235,13 +244,25 @@ function PricingSection({ onGenerate, pricingState }: PricingSectionProps) {
       }).format(new Date(pendingRenewalAt))}`
     : "Renewing soon";
 
-  const onSelectPricingPlan = (_planId: PricingPlanId) => {
-    if (isLoggedIn) {
-      window.location.href = "/billing";
-      return;
-    }
-    onGenerate();
-  };
+  const { isAnyRedirecting, redirectingPlanId, onSelectPlan, onManagePortal } =
+    usePricingActions({
+      isLoggedIn,
+      subscriptionActive: Boolean(currentTier),
+      currentTier,
+      canManageSubscription,
+      onRequireAuth: () =>
+        openAuthModal({
+          mode: "signup",
+          source: "homepage_pricing",
+          next: "/billing",
+        }),
+      onRefresh: () => router.refresh(),
+      onError: (message) =>
+        showToast({
+          ...toastMessages.checkoutFailed,
+          body: message,
+        }),
+    });
 
   return (
     <section id="pricing" className="bg-stone-50 px-5 py-24">
@@ -260,10 +281,18 @@ function PricingSection({ onGenerate, pricingState }: PricingSectionProps) {
 
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={stagger} className="grid">
           <PricingCards
-            onSelectPlan={onSelectPricingPlan}
+            onSelectPlan={onSelectPlan}
             currentTier={isLoggedIn ? currentTier : null}
             showCurrentPlanBadge={isLoggedIn}
-            disableCurrentPlanAction={isLoggedIn}
+            disableCurrentPlanAction={false}
+            disableAllActions={isAnyRedirecting}
+            allowCurrentPlanAction={isLoggedIn && Boolean(currentTier)}
+            currentPlanActionLabel="Manage plan"
+            onCurrentPlanAction={onManagePortal}
+            isCurrentPlanActionLoading={Boolean(
+              currentTier && redirectingPlanId === currentTier,
+            )}
+            loadingPlanId={redirectingPlanId}
             renewingTier={isLoggedIn ? pendingRenewalTier : null}
             renewingLabel={renewingLabel}
             allowStarterPurchaseWithSubscription={allowStarterPurchaseWithSubscription}
