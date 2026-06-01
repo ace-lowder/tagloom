@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 
-export const GENERATION_LOGIC_VERSION = "1.8";
+export const GENERATION_LOGIC_VERSION = "1.9";
 export const MAX_GENERATION_DESCRIPTION_LENGTH = 1200;
 const MAX_COMPACT_DESCRIPTION_LENGTH = 500;
 
@@ -769,6 +769,7 @@ function isLowQualityGeneratedTag(tag: string): boolean {
   const tokens = tokenize(normalizedTag);
   if (tokens.length === 0) return true;
   if (tokens[tokens.length - 1] === "s") return true;
+  if (["note", "kind", "own"].includes(tokens[tokens.length - 1] ?? "")) return true;
   if (lowQualityTagLeadingTokens.has(tokens[0])) return true;
 
   const processTokenCount = tokens.filter((token) =>
@@ -811,6 +812,8 @@ function hasBadProcessPair(tokens: string[]): boolean {
   if (has("looking", "create")) return true;
   if (has("create", "brand")) return true;
   if (has("beautiful", "bead")) return true;
+  if (has("ones", "close")) return true;
+  if (has("every", "day")) return true;
 
   return false;
 }

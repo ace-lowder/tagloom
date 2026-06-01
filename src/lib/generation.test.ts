@@ -54,8 +54,8 @@ describe("generation fallback filler quality", () => {
     expect(new Set(normalized).size).toBe(normalized.length);
   });
 
-  it("uses generation logic version 1.8", () => {
-    expect(GENERATION_LOGIC_VERSION).toBe("1.8");
+  it("uses generation logic version 1.9", () => {
+    expect(GENERATION_LOGIC_VERSION).toBe("1.9");
   });
 
   it("normalizes possessives without standalone leftovers", () => {
@@ -276,6 +276,8 @@ describe("generation fallback filler quality", () => {
       "fast easy way brand",
       "looking create brand",
       "beautiful bead set",
+      "printed labels note",
+      "ones close every day",
       "birthday party",
       "party decor",
       "party invite",
@@ -299,6 +301,8 @@ describe("generation fallback filler quality", () => {
       "fast easy way brand",
       "looking create brand",
       "beautiful bead set",
+      "printed labels note",
+      "ones close every day",
     ]) {
       expect(filtered).not.toContain(bad);
     }
