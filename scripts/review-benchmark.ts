@@ -126,6 +126,21 @@ const compatibilityTokens = new Set([
   "printer",
 ]);
 
+const compatibilityContextTokens = new Set([
+  "compatible",
+  "compatibility",
+  "works",
+  "work",
+  "requires",
+  "require",
+  "support",
+  "device",
+  "devices",
+  "app",
+  "apps",
+  "software",
+]);
+
 const fillerTokens = new Set([
   "adds",
   "add",
@@ -262,7 +277,11 @@ function flagTag(row: RunResult, tag: string): TagFlag[] {
     });
   }
 
-  if (compatibilityHits >= 2 || /pro\s+air\s+apple\s+pencil/.test(lowered)) {
+  const compatibilityContextHits = countTokenHits(tokens, compatibilityContextTokens);
+  if (
+    (compatibilityHits >= 2 && compatibilityContextHits >= 1) ||
+    /pro\s+air\s+apple\s+pencil/.test(lowered)
+  ) {
     flags.push({
       reason: "compatibility_fragment",
       id: row.id,
@@ -274,7 +293,7 @@ function flagTag(row: RunResult, tag: string): TagFlag[] {
   }
 
   const startsWithWeak = /^(adds|allow|allows|looking|today|ones|beautiful)\b/.test(normalizedTag);
-  const endsWithWeak = /\b(one|kind|own|note|extra|day)$/.test(normalizedTag);
+  const endsWithWeak = /\b(one|kind|own|note|extra)$/.test(normalizedTag);
   if (startsWithWeak || endsWithWeak) {
     flags.push({
       reason: "grammar_fragment",
