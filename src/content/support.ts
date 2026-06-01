@@ -28,6 +28,28 @@ export type SupportArticle = {
 
 export const SUPPORT_TOPICS: SupportTopic[] = [
   {
+    slug: "getting-started",
+    icon: "rotate-ccw",
+    name: "Getting Started",
+    description: "Setup, first generation, and launch-day basics.",
+    color: "bg-purple-100 text-purple-600",
+  },
+  {
+    slug: "tag-generation",
+    icon: "sparkles",
+    name: "Tag Generation",
+    description:
+      "How generation works, output usage, and tag quality improvements.",
+    color: "bg-orange-100 text-stone-900",
+  },
+  {
+    slug: "etsy-workflow",
+    icon: "shopping-cart",
+    name: "Etsy Workflow",
+    description: "How to apply tags in listings and track results.",
+    color: "bg-amber-100 text-amber-600",
+  },
+  {
     slug: "account",
     icon: "user",
     name: "Account & Profile",
@@ -40,28 +62,6 @@ export const SUPPORT_TOPICS: SupportTopic[] = [
     name: "Billing & Payments",
     description: "Plans, checkout issues, invoices, renewals, and refunds.",
     color: "bg-green-100 text-green-600",
-  },
-  {
-    slug: "tag-generation",
-    icon: "sparkles",
-    name: "Tag Generation",
-    description:
-      "How generation works, output usage, and tag quality improvements.",
-    color: "bg-orange-100 text-stone-900",
-  },
-  {
-    slug: "getting-started",
-    icon: "rotate-ccw",
-    name: "Getting Started",
-    description: "Setup, first generation, and launch-day basics.",
-    color: "bg-purple-100 text-purple-600",
-  },
-  {
-    slug: "etsy-workflow",
-    icon: "shopping-cart",
-    name: "Etsy Workflow",
-    description: "How to apply tags in listings and track results.",
-    color: "bg-amber-100 text-amber-600",
   },
   {
     slug: "troubleshooting",

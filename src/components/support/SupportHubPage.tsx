@@ -86,8 +86,11 @@ export default function SupportHubPage({ topics, articles }: SupportHubPageProps
               variants={fadeInUp}
               className="mb-4 text-4xl font-bold text-stone-900 sm:text-5xl"
             >
-              How can we help?
+              Tagloom Support Center
             </motion.h1>
+            <motion.p variants={fadeInUp} className="mb-6 text-stone-600">
+              Learn the same core workflow here: paste an existing listing, generate better-fit tags, copy into Etsy, and keep improving over time.
+            </motion.p>
             <motion.div variants={fadeInUp} className="relative">
               <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
               <input

@@ -5,22 +5,17 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, ChevronDown, Tag } from "lucide-react";
 
-import PricingCards, {
-  type PricingPlanId,
-} from "@/components/pricing/PricingCards";
+import PricingCards, { type PricingPlanId } from "@/components/pricing/PricingCards";
 import Generator from "@/components/generator/Generator";
 import { Card } from "@/components/ui/card";
 import { buttonClassNames } from "@/components/ui/button";
 import SiteFooter from "@/components/shared/SiteFooter";
+import { consumePendingGeneratorCta, dispatchGeneratorCta } from "@/lib/generatorCta";
 import {
-  consumePendingGeneratorCta,
-  dispatchGeneratorCta,
-} from "@/lib/generatorCta";
-import {
-  benefits,
   faqs,
+  featurePreviews,
+  homeBlogCards,
   type FAQAnswerPart,
-  type BenefitItem,
   type FAQEntry,
 } from "@/content/home";
 
@@ -40,7 +35,7 @@ const fadeInUp = {
 
 const stagger = { visible: { transition: { staggerChildren: 0.1 } } };
 
-export { benefits } from "@/content/home";
+export const benefits = featurePreviews;
 
 type HomePageClientProps = {
   pricingState: HomePricingState;
@@ -66,13 +61,12 @@ export default function HomePageClient({ pricingState }: HomePageClientProps) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-stone-50 font-sans">
+    <div id="home" className="min-h-screen bg-stone-50 font-sans">
       <HeroSection onGenerate={triggerGeneratorFlow} />
-      <FeaturesSection benefits={benefits} />
-      <PricingSection
-        onGenerate={triggerGeneratorFlow}
-        pricingState={pricingState}
-      />
+      <AboutSection />
+      <FeaturesSection />
+      <PricingSection onGenerate={triggerGeneratorFlow} pricingState={pricingState} />
+      <BlogSection />
       <FaqSection faqs={faqs} />
       <BottomCtaSection onGenerate={triggerGeneratorFlow} />
       <SiteFooter />
@@ -99,36 +93,25 @@ function HeroSection({ onGenerate }: HeroSectionProps) {
       </div>
 
       <div className="relative mx-auto max-w-4xl">
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={stagger}
-          className="text-center"
-        >
+        <motion.div initial="hidden" animate="visible" variants={stagger} className="text-center">
           <motion.div
             variants={fadeInUp}
             className="mb-6 inline-flex items-center gap-2 rounded-full bg-orange-100 px-4 py-1.5 text-sm font-medium text-orange-700"
           >
             <Tag className="h-3.5 w-3.5" />
-            Etsy Tag Generator for Sellers
+            Tagloom for Etsy sellers with existing listings
           </motion.div>
           <motion.h1
             variants={fadeInUp}
             className="mb-3 text-4xl font-bold leading-[1.06] text-stone-900 sm:text-5xl"
           >
-            <span className="md:whitespace-nowrap">
-              Get the Etsy sales you deserve
-            </span>
+            Generate better Etsy tags
             <span className="mt-2 block pb-1 leading-[1.12] bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
-              Better Tags. More sales.
+              so better-fit buyers can find your listings
             </span>
           </motion.h1>
-          <motion.p
-            variants={fadeInUp}
-            className="mx-auto mb-8 max-w-xl text-lg leading-relaxed text-stone-600"
-          >
-            Enter your listing info and generate tags that will get you Etsy
-            sales
+          <motion.p variants={fadeInUp} className="mx-auto mb-8 max-w-2xl text-lg leading-relaxed text-stone-600">
+            Etsy tags are buyer search keywords. Better tags can improve visibility and contribute to more sales over time. Paste a listing, generate tags, copy into Etsy, and keep testing.
           </motion.p>
           <motion.div variants={fadeInUp} className="inline-flex">
             <button
@@ -136,9 +119,7 @@ function HeroSection({ onGenerate }: HeroSectionProps) {
               className={buttonClassNames({
                 className: "gap-2 px-6 shadow-[0_4px_20px_rgba(249,115,22,0.35)]",
               })}
-              style={{
-                boxShadow: "0 4px 20px rgba(249,115,22,0.35)",
-              }}
+              style={{ boxShadow: "0 4px 20px rgba(249,115,22,0.35)" }}
             >
               Generate free tags
               <ArrowRight className="h-4 w-4" />
@@ -154,61 +135,77 @@ function HeroSection({ onGenerate }: HeroSectionProps) {
   );
 }
 
-type FeaturesSectionProps = {
-  benefits: BenefitItem[];
-};
-
-function FeaturesSection({ benefits }: FeaturesSectionProps) {
+function AboutSection() {
   return (
-    <section id="features" className="bg-white px-5 py-24">
+    <section id="about" className="bg-white px-5 py-20">
       <div className="mx-auto max-w-5xl">
         <motion.div
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-80px" }}
           variants={stagger}
-          className="mb-14 text-center"
+          className="rounded-3xl border border-stone-100 bg-stone-50 p-8 sm:p-10"
         >
-          <motion.p
-            variants={fadeInUp}
-            className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600"
-          >
+          <motion.p variants={fadeInUp} className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600">
+            About Tagloom
+          </motion.p>
+          <motion.h2 variants={fadeInUp} className="mb-4 text-3xl font-bold text-stone-900 sm:text-4xl">
+            Good products can still get buried by weak tags
+          </motion.h2>
+          <motion.p variants={fadeInUp} className="mb-4 text-stone-600 leading-relaxed">
+            Many Etsy sellers ship strong products but lose visibility because listing tags are too broad, repetitive, or pulled from noisy text. At the same time, search is crowded with spammy or AI-slop listings that dilute buyer intent.
+          </motion.p>
+          <motion.p variants={fadeInUp} className="mb-6 text-stone-600 leading-relaxed">
+            Tagloom focuses on existing listings and builds tailored keyword sets sellers can actually test. You keep control of your listing and improve it in measured cycles.
+          </motion.p>
+          <motion.div variants={fadeInUp}>
+            <Link href="/blog" className={buttonClassNames({ variant: "secondary", className: "gap-2" })}>
+              Read the crash course
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </motion.div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+function FeaturesSection() {
+  return (
+    <section id="features" className="bg-white px-5 py-24">
+      <div className="mx-auto max-w-5xl">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={stagger} className="mb-12 text-center">
+          <motion.p variants={fadeInUp} className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600">
             Features
           </motion.p>
-          <motion.h2
-            variants={fadeInUp}
-            className="text-3xl font-bold text-stone-900 sm:text-4xl"
-          >
-            How our Etsy tags work
+          <motion.h2 variants={fadeInUp} className="text-3xl font-bold text-stone-900 sm:text-4xl">
+            A simple workflow for ongoing tag improvement
           </motion.h2>
         </motion.div>
 
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-80px" }}
-          variants={stagger}
-          className="grid gap-6 md:grid-cols-3"
-        >
-          {benefits.map((benefit) => (
-            <motion.div key={benefit.title} variants={fadeInUp}>
-              <Link href={benefit.href} className="group block h-full">
-                <Card className="flex h-full flex-col border-stone-100 bg-stone-50 p-6 transition-all group-hover:-translate-y-1 group-hover:shadow-lg">
-                  <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-orange-100">
-                    <benefit.icon className="h-5 w-5 text-orange-600" />
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={stagger} className="grid gap-6 md:grid-cols-3">
+          {featurePreviews.map((preview) => (
+            <motion.div key={preview.title} variants={fadeInUp}>
+              <Card className="h-full border-stone-100 bg-stone-50 p-6">
+                <h3 className="mb-2 text-lg font-semibold text-stone-900">{preview.title}</h3>
+                <p className="mb-4 text-sm leading-relaxed text-stone-600">{preview.description}</p>
+                <div className="rounded-xl border border-stone-200 bg-white p-3">
+                  <div className="mb-3 space-y-2">
+                    {preview.lines.map((line) => (
+                      <div key={line} className="h-7 rounded-md border border-stone-200 bg-stone-50 px-2 py-1 text-xs text-stone-600">
+                        {line}
+                      </div>
+                    ))}
                   </div>
-                  <h3 className="mb-2 text-lg font-semibold text-stone-900">
-                    {benefit.title}
-                  </h3>
-                  <p className="text-sm leading-relaxed text-stone-600">
-                    {benefit.description}
-                  </p>
-                  <span className="mt-auto pt-4 inline-flex items-center gap-1 text-sm font-semibold text-orange-600">
-                    Read more
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                  </span>
-                </Card>
-              </Link>
+                  <button
+                    type="button"
+                    disabled
+                    className="w-full rounded-lg bg-orange-100 px-3 py-2 text-sm font-semibold text-orange-700"
+                  >
+                    {preview.actionLabel}
+                  </button>
+                </div>
+              </Card>
             </motion.div>
           ))}
         </motion.div>
@@ -249,40 +246,19 @@ function PricingSection({ onGenerate, pricingState }: PricingSectionProps) {
   return (
     <section id="pricing" className="bg-stone-50 px-5 py-24">
       <div className="mx-auto max-w-5xl">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-80px" }}
-          variants={stagger}
-          className="mb-14 text-center"
-        >
-          <motion.p
-            variants={fadeInUp}
-            className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600"
-          >
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={stagger} className="mb-14 text-center">
+          <motion.p variants={fadeInUp} className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600">
             Pricing
           </motion.p>
-          <motion.h2
-            variants={fadeInUp}
-            className="mb-3 text-3xl font-bold text-stone-900 sm:text-4xl"
-          >
-            Simple pricing, clear outcomes.
+          <motion.h2 variants={fadeInUp} className="mb-3 text-3xl font-bold text-stone-900 sm:text-4xl">
+            Keep running test cycles as your listings evolve
           </motion.h2>
-          <motion.p
-            variants={fadeInUp}
-            className="mx-auto max-w-lg text-stone-500"
-          >
-            Start free, upgrade when better tags drive more sales.
+          <motion.p variants={fadeInUp} className="mx-auto max-w-2xl text-stone-500">
+            Generate, compare, update Etsy listings, and keep learning from your results and the crash-course guides.
           </motion.p>
         </motion.div>
 
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-80px" }}
-          variants={stagger}
-          className="grid"
-        >
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={stagger} className="grid">
           <PricingCards
             onSelectPlan={onSelectPricingPlan}
             currentTier={isLoggedIn ? currentTier : null}
@@ -290,11 +266,41 @@ function PricingSection({ onGenerate, pricingState }: PricingSectionProps) {
             disableCurrentPlanAction={isLoggedIn}
             renewingTier={isLoggedIn ? pendingRenewalTier : null}
             renewingLabel={renewingLabel}
-            allowStarterPurchaseWithSubscription={
-              allowStarterPurchaseWithSubscription
-            }
+            allowStarterPurchaseWithSubscription={allowStarterPurchaseWithSubscription}
           />
         </motion.div>
+      </div>
+    </section>
+  );
+}
+
+function BlogSection() {
+  return (
+    <section className="bg-white px-5 py-24">
+      <div className="mx-auto max-w-5xl">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={stagger} className="mb-10 text-center">
+          <motion.p variants={fadeInUp} className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600">
+            Blog Crash Course
+          </motion.p>
+          <motion.h2 variants={fadeInUp} className="mb-3 text-3xl font-bold text-stone-900 sm:text-4xl">
+            Learn the tag strategy behind each update
+          </motion.h2>
+          <motion.p variants={fadeInUp} className="mx-auto max-w-2xl text-stone-600">
+            Use the guides below to understand Etsy search behavior and improve listings with clearer buyer-intent tags.
+          </motion.p>
+        </motion.div>
+        <div className="grid gap-4 md:grid-cols-3">
+          {homeBlogCards.map((card) => (
+            <Link key={card.title} href={card.href} className="group rounded-2xl border border-stone-100 bg-stone-50 p-5 transition-all hover:-translate-y-0.5 hover:border-orange-200">
+              <h3 className="mb-2 font-semibold text-stone-900 group-hover:text-orange-600">{card.title}</h3>
+              <p className="mb-3 text-sm text-stone-600">{card.body}</p>
+              <span className="inline-flex items-center gap-1 text-sm font-semibold text-orange-600">
+                Read guide
+                <ArrowRight className="h-4 w-4" />
+              </span>
+            </Link>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -308,39 +314,17 @@ function FaqSection({ faqs }: FaqSectionProps) {
   return (
     <section id="faq" className="bg-white px-5 py-24">
       <div className="mx-auto max-w-2xl">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-80px" }}
-          variants={stagger}
-          className="mb-14 text-center"
-        >
-          <motion.p
-            variants={fadeInUp}
-            className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600"
-          >
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={stagger} className="mb-14 text-center">
+          <motion.p variants={fadeInUp} className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600">
             FAQ
           </motion.p>
-          <motion.h2
-            variants={fadeInUp}
-            className="text-3xl font-bold text-stone-900 sm:text-4xl"
-          >
-            Common questions
+          <motion.h2 variants={fadeInUp} className="text-3xl font-bold text-stone-900 sm:text-4xl">
+            Frequently asked questions
           </motion.h2>
         </motion.div>
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-80px" }}
-          variants={fadeInUp}
-          className="rounded-2xl border border-stone-100 bg-stone-50 px-6"
-        >
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={fadeInUp} className="rounded-2xl border border-stone-100 bg-stone-50 px-6">
           {faqs.map((faq) => (
-            <FAQItem
-              key={faq.question}
-              question={faq.question}
-              answer={faq.answer}
-            />
+            <FAQItem key={faq.question} question={faq.question} answer={faq.answer} />
           ))}
         </motion.div>
       </div>
@@ -366,45 +350,10 @@ function BottomCtaSection({ onGenerate }: BottomCtaSectionProps) {
             filter: "blur(64px)",
           }}
         />
-        <motion.div
-          animate={{ scale: [1, 1.08, 1], x: [0, -12, 0], y: [0, 8, 0] }}
-          transition={{
-            duration: 11,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 1.2,
-          }}
-          className="absolute right-0 top-0 h-[300px] w-[420px] rounded-full"
-          style={{
-            background:
-              "radial-gradient(ellipse, rgba(168,85,247,0.24) 0%, transparent 66%)",
-            filter: "blur(60px)",
-          }}
-        />
-        <motion.div
-          animate={{ scale: [1, 1.05, 1], x: [0, 6, 0], y: [0, 5, 0] }}
-          transition={{
-            duration: 10,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 0.5,
-          }}
-          className="absolute bottom-0 left-1/3 h-[240px] w-[340px] rounded-full"
-          style={{
-            background:
-              "radial-gradient(ellipse, rgba(236,72,153,0.2) 0%, transparent 66%)",
-            filter: "blur(58px)",
-          }}
-        />
       </div>
 
       <div className="relative mx-auto max-w-2xl text-center">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-80px" }}
-          variants={stagger}
-        >
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={stagger}>
           <motion.div
             variants={fadeInUp}
             className="rounded-3xl px-8 py-14 sm:px-14"
@@ -417,17 +366,11 @@ function BottomCtaSection({ onGenerate }: BottomCtaSectionProps) {
                 "0 8px 44px rgba(249,115,22,0.1), 0 2px 22px rgba(251,191,36,0.08)",
             }}
           >
-            <motion.h2
-              variants={fadeInUp}
-              className="mb-4 text-3xl font-bold text-stone-900 sm:text-4xl"
-            >
-              Ready to make more Etsy sales?
+            <motion.h2 variants={fadeInUp} className="mb-4 text-3xl font-bold text-stone-900 sm:text-4xl">
+              Ready for your next listing test cycle?
             </motion.h2>
-            <motion.p
-              variants={fadeInUp}
-              className="mx-auto mb-8 max-w-lg leading-relaxed text-stone-600"
-            >
-              Generate optimized tags for your Etsy listing in seconds
+            <motion.p variants={fadeInUp} className="mx-auto mb-8 max-w-lg leading-relaxed text-stone-600">
+              Generate a fresh 13-tag set, apply in Etsy, and keep improving listing visibility with clear buyer-intent keywords.
             </motion.p>
             <motion.div variants={fadeInUp} className="inline-flex">
               <button
@@ -436,9 +379,7 @@ function BottomCtaSection({ onGenerate }: BottomCtaSectionProps) {
                   className:
                     "gap-2 px-8 py-4 shadow-[0_6px_28px_rgba(249,115,22,0.32)]",
                 })}
-                style={{
-                  boxShadow: "0 6px 28px rgba(249,115,22,0.32)",
-                }}
+                style={{ boxShadow: "0 6px 28px rgba(249,115,22,0.32)" }}
               >
                 Generate Free Tags
                 <ArrowRight className="h-5 w-5" />
@@ -472,11 +413,7 @@ function FAQItem({ question, answer }: FAQItemProps) {
           className={`h-5 w-5 flex-shrink-0 text-stone-400 transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
-      <motion.div
-        initial={false}
-        animate={{ height: open ? "auto" : 0, opacity: open ? 1 : 0 }}
-        className="overflow-hidden"
-      >
+      <motion.div initial={false} animate={{ height: open ? "auto" : 0, opacity: open ? 1 : 0 }} className="overflow-hidden">
         <p className="pb-5 leading-relaxed text-stone-600">
           {answer.map((part, index) =>
             part.type === "text" ? (

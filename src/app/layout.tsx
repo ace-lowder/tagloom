@@ -15,8 +15,24 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Tagloom",
-  description: "Generate 13 Etsy-ready tags in under 60 seconds.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://tagloom.app"),
+  title: "Tagloom | Etsy Tag Generator for Existing Listings",
+  description:
+    "Tagloom helps Etsy sellers with existing listings generate better-fit tags, improve visibility, and run repeatable listing test cycles.",
+  openGraph: {
+    title: "Tagloom | Etsy Tag Generator for Existing Listings",
+    description:
+      "Generate 13 Etsy-ready tags, copy them into Etsy, and keep improving listing visibility with buyer-intent keywords.",
+    url: "/",
+    siteName: "Tagloom",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Tagloom | Etsy Tag Generator for Existing Listings",
+    description:
+      "Generate better-fit Etsy tags for existing listings and improve visibility with practical test cycles.",
+  },
 };
 
 export default function RootLayout({

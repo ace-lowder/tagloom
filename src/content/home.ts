@@ -1,14 +1,3 @@
-import { Clock, TrendingUp, Zap } from "lucide-react";
-
-// === Types ===
-
-export type BenefitItem = {
-  icon: typeof TrendingUp;
-  title: string;
-  description: string;
-  href: string;
-};
-
 export type FAQAnswerPart =
   | { type: "text"; text: string }
   | { type: "link"; text: string; href: string };
@@ -18,57 +7,108 @@ export type FAQEntry = {
   answer: FAQAnswerPart[];
 };
 
-// === Content ===
+export type FeaturePreview = {
+  title: string;
+  description: string;
+  lines: string[];
+  actionLabel: string;
+};
 
-export const benefits: BenefitItem[] = [
+export type HomeBlogCard = {
+  title: string;
+  body: string;
+  href: string;
+};
+
+export const featurePreviews: FeaturePreview[] = [
   {
-    icon: TrendingUp,
-    title: "Get found in Etsy search",
+    title: "Paste a live Etsy listing",
     description:
-      "We craft tags based on what buyers are actually searching for so your listings get found by the right people.",
-    href: "/blog/how-to-rank-higher-on-etsy#why-tags-matter",
+      "Bring your existing title and description into Tagloom, then generate a full set of 13 tags.",
+    lines: [
+      "Listing title + description",
+      "Generate 13 tags",
+      "Target + discovery coverage",
+    ],
+    actionLabel: "Generate",
   },
   {
-    icon: Clock,
-    title: "Get tags in seconds",
+    title: "Compare in Generator + History",
     description:
-      "Stop wasting time on keyword research and generate optimized tags for your listing in seconds.",
+      "Run multiple drafts, keep previous generations, and compare what changed before you update Etsy.",
+    lines: ["Generator tab", "History tab", "Saved generations"],
+    actionLabel: "History",
+  },
+  {
+    title: "Copy tags into Etsy",
+    description:
+      "Copy your best set, test it in Etsy, and repeat updates over time as you learn what performs.",
+    lines: ["13 Etsy-ready tags", "Copy in one click", "Test and improve"],
+    actionLabel: "Copy tags",
+  },
+];
+
+export const homeBlogCards: HomeBlogCard[] = [
+  {
+    title: "Tagloom Crash Course",
+    body: "Start with the core workflow: listing context, buyer keywords, and test cycles that improve fit.",
+    href: "/blog/how-to-rank-higher-on-etsy",
+  },
+  {
+    title: "Etsy Tag Strategy Basics",
+    body: "Learn what Etsy tags do, how buyers search, and how to avoid weak or repeated phrases.",
     href: "/blog/etsy-tag-tips-every-seller-should-know",
   },
   {
-    icon: Zap,
-    title: "No more guesswork",
-    description:
-      "Every tag is selected to match you with Etsy customers and make your listing discoverable.",
-    href: "/blog/mistakes-new-etsy-sellers-make",
+    title: "Fix Clicks Without Sales",
+    body: "Use better-fit tags and listing context to attract buyers who are more likely to convert.",
+    href: "/blog/why-your-etsy-listings-get-clicked-but-dont-sell",
   },
 ];
 
 export const faqs: FAQEntry[] = [
   {
-    question: "How does Tagloom generate tags?",
+    question: "What is Tagloom?",
     answer: [
       {
         type: "text",
-        text: "Tagloom analyzes your title and description, identifies high-intent keywords, and builds a balanced 13-tag set that combines direct search terms with broader discovery terms. We find the best combination of tags that will boost sales for your listing.",
+        text: "Tagloom is an Etsy tag generator for sellers with existing listings. It turns listing context into 13 practical tags you can test in Etsy.",
       },
     ],
   },
   {
-    question: "Will these tags work for my niche?",
+    question: "What are Etsy tags?",
     answer: [
       {
         type: "text",
-        text: "Yes. Your tags are generated using the niche terms from your listing title and description. We generate optimized tags for both exact-match shopper intent and discovery, then add generalized synonyms to keep you relevant across categories.",
+        text: "Etsy tags are keyword phrases buyers use in search. Etsy uses those phrases to decide which listings to show for a query.",
       },
     ],
   },
   {
-    question: "Do I need to connect my Etsy account to Tagloom?",
+    question: "How can better tags help with sales?",
     answer: [
       {
         type: "text",
-        text: "No, you don't need to connect anything. Generate your tags here, then quickly copy and paste them into your Etsy listing.",
+        text: "Better tags can help your listing show up for more relevant searches. Better-fit visibility can contribute to more sales over time when your listing and offer are strong.",
+      },
+    ],
+  },
+  {
+    question: "How do I use Tagloom?",
+    answer: [
+      {
+        type: "text",
+        text: "Paste your listing title and description, generate tags, copy them into Etsy, then monitor results and keep iterating.",
+      },
+    ],
+  },
+  {
+    question: "How often should I update tags?",
+    answer: [
+      {
+        type: "text",
+        text: "Review tags regularly, especially after listing updates or seasonal shifts. Change one clear batch at a time so you can measure impact.",
       },
     ],
   },
@@ -77,70 +117,29 @@ export const faqs: FAQEntry[] = [
     answer: [
       {
         type: "text",
-        text: "Yes, every account gets 1 free generation so you can test Tagloom before upgrading.",
+        text: "Yes. New accounts get one free generation so you can validate fit before buying a plan.",
       },
     ],
   },
   {
-    question: "Can I switch between Monthly and Yearly plans?",
+    question: "Where do I manage billing and plans?",
     answer: [
+      { type: "text", text: "Use " },
+      { type: "link", text: "billing settings", href: "/billing" },
       {
         type: "text",
-        text: "Yes, you can switch between Monthly and Yearly anytime from your ",
-      },
-      {
-        type: "link",
-        text: "billing settings",
-        href: "/billing",
-      },
-      {
-        type: "text",
-        text: ".",
+        text: " to switch plans, manage renewals, and review your current generation limits.",
       },
     ],
   },
   {
-    question: "What happens when I run out of monthly generations?",
+    question: "Where can I get help if something breaks?",
     answer: [
+      { type: "text", text: "Visit the " },
+      { type: "link", text: "Support Center", href: "/support" },
       {
         type: "text",
-        text: "Your Monthly generation limit resets on your billing date. If you need more before then you can upgrade to Yearly for unlimited generations or buy Starter generations.",
-      },
-    ],
-  },
-  {
-    question: "Where can I manage my plan?",
-    answer: [
-      {
-        type: "text",
-        text: "Open the profile icon in the top-right corner, click ",
-      },
-      {
-        type: "link",
-        text: "Manage Plan",
-        href: "/billing",
-      },
-      {
-        type: "text",
-        text: ", and view your billing settings there.",
-      },
-    ],
-  },
-  {
-    question: "How many tags does Etsy allow?",
-    answer: [
-      {
-        type: "text",
-        text: "Etsy allows 13 tags per listing. Tagloom generates an optimized list of 13 tags that takes advantage of the character limit to make the most of every tag slot.",
-      },
-    ],
-  },
-  {
-    question: "Can I cancel anytime?",
-    answer: [
-      {
-        type: "text",
-        text: "Yes, you can cancel anytime in billing and your plan stays active until the end of your current period. At the end of your period, your plan will cancel and you will not be charged.",
+        text: " for setup, generation, billing, and troubleshooting guides, or contact support directly.",
       },
     ],
   },

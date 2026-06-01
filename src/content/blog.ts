@@ -30,7 +30,6 @@ export type BlogPost = {
   sections: BlogSection[];
 };
 
-
 export const DEFAULT_BLOG_BOTTOM_CTA: BlogBottomCta = {
   eyebrow: "Ready to Apply This?",
   heading: "Try the Tagloom tag generator for free",

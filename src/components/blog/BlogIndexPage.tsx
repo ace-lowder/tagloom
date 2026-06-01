@@ -4,7 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, Calendar } from "lucide-react";
-import type { BlogCategory, BlogPost } from "@/content/blog";
+import { type BlogCategory, type BlogPost } from "@/content/blog";
+import { BLOG_INDEX_INTRO } from "@/content/blogIndex";
 import SiteFooter from "@/components/shared/SiteFooter";
 
 const categoryColors: Record<BlogCategory, string> = {
@@ -43,16 +44,16 @@ export default function BlogIndexPage({ posts }: BlogIndexPageProps) {
               variants={fadeInUp}
               className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600"
             >
-              Blog
+              {BLOG_INDEX_INTRO.eyebrow}
             </motion.p>
             <motion.h1
               variants={fadeInUp}
               className="mb-3 text-4xl font-bold text-stone-900 sm:text-5xl"
             >
-              Insights for Etsy Sellers
+              {BLOG_INDEX_INTRO.heading}
             </motion.h1>
             <motion.p variants={fadeInUp} className="max-w-xl text-lg text-stone-500">
-              Practical guides on tags, SEO, and listing optimization.
+              {BLOG_INDEX_INTRO.body}
             </motion.p>
           </motion.div>
 
