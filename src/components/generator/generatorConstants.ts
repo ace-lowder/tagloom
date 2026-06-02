@@ -4,8 +4,7 @@ import type { DemoFixture, DemoTimings } from "./generatorTypes";
 
 export const DEMO_FIXTURES: DemoFixture[] = [
   {
-    title:
-      "Personalized Birthflower Ring – Dainty Stacking Floral Ring, Meaningful Gift for Bridesmaids, Mother’s Day Gift, US 3–12",
+    title: "Personalized Birthflower Ring Gift",
     tags: {
       target: [
         "birth flower ring",
@@ -27,8 +26,7 @@ export const DEMO_FIXTURES: DemoFixture[] = [
     },
   },
   {
-    title:
-      "8oz Essential Oil Soy Wax Candle, Home Decor, Gift For Her, Clean Burning Candle, Cozy Home Decor, Esthetic Candle, Aromatherapy",
+    title: "Vanilla Soy Candle in Amber Jar",
     tags: {
       target: [
         "soy wax candle",
@@ -50,8 +48,7 @@ export const DEMO_FIXTURES: DemoFixture[] = [
     },
   },
   {
-    title:
-      "2026 ADHD Planner, ADHD Digital Planner, Goodnotes Planner, iPad Planner, Daily Weekly Monthly Planner, Productivity, Self Care Planner",
+    title: "Editable Kids Birthday Party Invitation",
     tags: {
       target: [
         "adhd planner",
