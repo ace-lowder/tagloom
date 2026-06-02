@@ -17,6 +17,7 @@ import { buttonClassNames } from "@/components/ui/button";
 import SiteFooter from "@/components/shared/SiteFooter";
 import { consumePendingGeneratorCta, dispatchGeneratorCta } from "@/lib/generatorCta";
 import {
+  aboutSectionCopy,
   faqs,
   featurePreviews,
   homeBlogCards,
@@ -151,33 +152,52 @@ function HeroSection({ onGenerate }: HeroSectionProps) {
 
 function AboutSection() {
   return (
-    <section id="about" className="bg-white px-5 py-20">
-      <div className="mx-auto max-w-5xl">
+    <section
+      id="about"
+      className="scroll-mt-24 bg-stone-100/70 px-6 py-20 sm:py-24"
+    >
+      <div className="mx-auto max-w-4xl">
         <motion.div
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-80px" }}
           variants={stagger}
-          className="rounded-3xl border border-stone-100 bg-stone-50 p-8 sm:p-10"
         >
-          <motion.p variants={fadeInUp} className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600">
-            About Tagloom
-          </motion.p>
-          <motion.h2 variants={fadeInUp} className="mb-4 text-3xl font-bold text-stone-900 sm:text-4xl">
-            Good products can still get buried by weak tags
-          </motion.h2>
-          <motion.p variants={fadeInUp} className="mb-4 text-stone-600 leading-relaxed">
-            Many Etsy sellers ship strong products but lose visibility because listing tags are too broad, repetitive, or pulled from noisy text. At the same time, search is crowded with spammy or AI-slop listings that dilute buyer intent.
-          </motion.p>
-          <motion.p variants={fadeInUp} className="mb-6 text-stone-600 leading-relaxed">
-            Tagloom focuses on existing listings and builds tailored keyword sets sellers can actually test. You keep control of your listing and improve it in measured cycles.
-          </motion.p>
-          <motion.div variants={fadeInUp}>
-            <Link href="/blog" className={buttonClassNames({ variant: "secondary", className: "gap-2" })}>
-              Read the crash course
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </motion.div>
+          <div className="text-center">
+            <motion.p
+              variants={fadeInUp}
+              className="text-xs font-semibold uppercase tracking-[0.18em] text-orange-600"
+            >
+              {aboutSectionCopy.eyebrow}
+            </motion.p>
+            <motion.h2
+              variants={fadeInUp}
+              className="mt-4 text-3xl font-semibold tracking-tight text-stone-950 sm:text-4xl"
+            >
+              {aboutSectionCopy.heading}
+            </motion.h2>
+          </div>
+
+          <div className="mx-auto mt-6 max-w-3xl space-y-4 text-center text-base leading-8 text-stone-700 sm:text-lg">
+            <motion.p variants={fadeInUp}>
+              {aboutSectionCopy.paragraphs[0]}
+            </motion.p>
+            <motion.p variants={fadeInUp}>
+              {aboutSectionCopy.paragraphs[1]}
+            </motion.p>
+          </div>
+
+          <div className="mx-auto mt-8 flex max-w-3xl justify-end">
+            <motion.div variants={fadeInUp}>
+              <Link
+                href="/blog"
+                className="group inline-flex items-center gap-2 text-sm font-semibold text-stone-500 transition-colors hover:text-orange-600"
+              >
+                {aboutSectionCopy.cta}
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Link>
+            </motion.div>
+          </div>
         </motion.div>
       </div>
     </section>

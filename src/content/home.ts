@@ -20,6 +20,23 @@ export type HomeBlogCard = {
   href: string;
 };
 
+export type AboutSectionCopy = {
+  eyebrow: string;
+  heading: string;
+  paragraphs: [string, string];
+  cta: string;
+};
+
+export const aboutSectionCopy: AboutSectionCopy = {
+  eyebrow: "ABOUT",
+  heading: "Tagloom turns your Etsy listing into searchable tags",
+  paragraphs: [
+    "Etsy tags are keywords shoppers use to find products. If your tags are too broad, missing details, or copied from noisy listing text, your products can be harder to find.",
+    "Tagloom reads your existing listing and suggests tags that match what you sell. Copy them into Etsy, then keep testing new tag sets as your listings change.",
+  ],
+  cta: "Learn more",
+};
+
 export const featurePreviews: FeaturePreview[] = [
   {
     title: "Paste a live Etsy listing",

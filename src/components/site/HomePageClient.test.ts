@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { benefits, heroCopy } from "@/components/site/HomePageClient";
+import { aboutSectionCopy } from "@/content/home";
 import { PRIMARY_NAV_ACTION_LABEL } from "@/components/site/SiteNavParts";
 
 describe("HomePageClient feature previews", () => {
@@ -22,5 +23,17 @@ describe("HomePageClient feature previews", () => {
       cta: "Generate tags for free",
     });
     expect(PRIMARY_NAV_ACTION_LABEL).toBe("Try free");
+  });
+
+  it("uses the clarified about section copy", () => {
+    expect(aboutSectionCopy).toEqual({
+      eyebrow: "ABOUT",
+      heading: "Tagloom turns your Etsy listing into searchable tags",
+      paragraphs: [
+        "Etsy tags are keywords shoppers use to find products. If your tags are too broad, missing details, or copied from noisy listing text, your products can be harder to find.",
+        "Tagloom reads your existing listing and suggests tags that match what you sell. Copy them into Etsy, then keep testing new tag sets as your listings change.",
+      ],
+      cta: "Learn more",
+    });
   });
 });
