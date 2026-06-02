@@ -42,6 +42,14 @@ const fadeInUp = {
 const stagger = { visible: { transition: { staggerChildren: 0.1 } } };
 
 export const benefits = featurePreviews;
+export const heroCopy = {
+  pill: "Etsy tag generator for sellers",
+  headlineStart: "Generate Etsy tags that",
+  headlineEmphasis: "help shoppers find your listings",
+  body:
+    "Etsy tags are keywords shoppers search for. Paste your listing, generate tags, and copy them into Etsy.",
+  cta: "Generate tags for free",
+};
 
 type HomePageClientProps = {
   pricingState: HomePricingState;
@@ -105,19 +113,19 @@ function HeroSection({ onGenerate }: HeroSectionProps) {
             className="mb-6 inline-flex items-center gap-2 rounded-full bg-orange-100 px-4 py-1.5 text-sm font-medium text-orange-700"
           >
             <Tag className="h-3.5 w-3.5" />
-            Tagloom for Etsy sellers with existing listings
+            {heroCopy.pill}
           </motion.div>
           <motion.h1
             variants={fadeInUp}
             className="mb-3 text-4xl font-bold leading-[1.06] text-stone-900 sm:text-5xl"
           >
-            Generate better Etsy tags
+            {heroCopy.headlineStart}
             <span className="mt-2 block pb-1 leading-[1.12] bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
-              so better-fit buyers can find your listings
+              {heroCopy.headlineEmphasis}
             </span>
           </motion.h1>
           <motion.p variants={fadeInUp} className="mx-auto mb-8 max-w-2xl text-lg leading-relaxed text-stone-600">
-            Etsy tags are buyer search keywords. Better tags can improve visibility and contribute to more sales over time. Paste a listing, generate tags, copy into Etsy, and keep testing.
+            {heroCopy.body}
           </motion.p>
           <motion.div variants={fadeInUp} className="inline-flex">
             <button
@@ -127,7 +135,7 @@ function HeroSection({ onGenerate }: HeroSectionProps) {
               })}
               style={{ boxShadow: "0 4px 20px rgba(249,115,22,0.35)" }}
             >
-              Generate free tags
+              {heroCopy.cta}
               <ArrowRight className="h-4 w-4" />
             </button>
           </motion.div>

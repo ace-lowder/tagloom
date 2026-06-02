@@ -28,6 +28,8 @@ type PrimaryNavActionProps = {
   mobile?: boolean;
 };
 
+export const PRIMARY_NAV_ACTION_LABEL = "Try free";
+
 export function DesktopNavLinks({
   links,
   onSectionClick,
@@ -140,7 +142,7 @@ export function PrimaryNavAction({ onClick, mobile = false }: PrimaryNavActionPr
           : "rounded-lg px-4 py-2 shadow-[0_3px_14px_rgba(249,115,22,0.3)]"
       }
     >
-      Get Tags
+      {PRIMARY_NAV_ACTION_LABEL}
     </Button>
   );
 }
