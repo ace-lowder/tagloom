@@ -154,7 +154,7 @@ function AboutSection() {
   return (
     <section
       id="about"
-      className="scroll-mt-24 bg-stone-100/70 px-6 py-20 sm:py-24"
+      className="scroll-mt-24 bg-orange-50/70 px-6 py-14 sm:py-16"
     >
       <div className="mx-auto max-w-4xl">
         <motion.div
@@ -166,19 +166,19 @@ function AboutSection() {
           <div className="text-center">
             <motion.p
               variants={fadeInUp}
-              className="text-xs font-semibold uppercase tracking-[0.18em] text-orange-600"
+              className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600"
             >
               {aboutSectionCopy.eyebrow}
             </motion.p>
             <motion.h2
               variants={fadeInUp}
-              className="mt-4 text-3xl font-semibold tracking-tight text-stone-950 sm:text-4xl"
+              className="text-3xl font-semibold tracking-tight text-stone-950 sm:text-4xl"
             >
               {aboutSectionCopy.heading}
             </motion.h2>
           </div>
 
-          <div className="mx-auto mt-6 max-w-3xl space-y-4 text-center text-base leading-8 text-stone-700 sm:text-lg">
+          <div className="mx-auto mt-6 max-w-3xl space-y-4 text-left text-base leading-8 text-stone-700 sm:text-lg">
             <motion.p variants={fadeInUp}>
               {aboutSectionCopy.paragraphs[0]}
             </motion.p>
@@ -187,7 +187,7 @@ function AboutSection() {
             </motion.p>
           </div>
 
-          <div className="mx-auto mt-8 flex max-w-3xl justify-end">
+          <div className="mx-auto mt-6 flex max-w-3xl justify-end">
             <motion.div variants={fadeInUp}>
               <Link
                 href="/blog"
