@@ -1,16 +1,45 @@
 import { describe, expect, it } from "vitest";
 
 import { benefits, heroCopy } from "@/components/site/HomePageClient";
-import { aboutSectionCopy } from "@/content/home";
+import { aboutSectionCopy, featureSectionCopy } from "@/content/home";
 import { PRIMARY_NAV_ACTION_LABEL } from "@/components/site/SiteNavParts";
 
 describe("HomePageClient feature previews", () => {
   it("uses the expected static feature previews", () => {
-    expect(benefits.map((benefit) => [benefit.title, benefit.actionLabel])).toEqual([
-      ["Paste a live Etsy listing", "Generate"],
-      ["Compare in Generator + History", "History"],
-      ["Copy tags into Etsy", "Copy tags"],
+    expect(benefits.map((benefit) => [benefit.title, benefit.description])).toEqual([
+      ["Paste your listing", "Generate tags from an existing Etsy title and description."],
+      ["Compare Generator + History", "Review saved generations and compare previous tag sets."],
+      ["Copy tags into Etsy", "Copy your generated tags and update your listing in Etsy."],
     ]);
+    expect(featureSectionCopy).toEqual({
+      eyebrow: "FEATURES",
+      heading: "A simple workflow for ongoing tag improvement",
+      subcopy: "Paste a listing, save each generation, and copy your best tags into Etsy.",
+      steps: [
+        {
+          title: "Paste your listing",
+          description: "Generate tags from an existing Etsy title and description.",
+        },
+        {
+          title: "Compare Generator + History",
+          description: "Review saved generations and compare previous tag sets.",
+        },
+        {
+          title: "Copy tags into Etsy",
+          description: "Copy your generated tags and update your listing in Etsy.",
+        },
+      ],
+      demoTitle: "Vanilla Soy Candle in Amber Jar",
+      demoDescription: "Warm vanilla candle for cozy home gifts",
+      historyRows: ["Vanilla candle tags", "Ring gift tags", "Birthday invite tags"],
+      copyTags: [
+        "soy candle",
+        "amber jar candle",
+        "vanilla home gift",
+        "cozy candle",
+        "housewarming gift",
+      ],
+    });
   });
 
   it("uses the clarified hero and nav copy", () => {

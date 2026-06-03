@@ -20,6 +20,11 @@ export type HomeBlogCard = {
   href: string;
 };
 
+export type FeatureStep = {
+  title: string;
+  description: string;
+};
+
 export type AboutSectionCopy = {
   eyebrow: string;
   heading: string;
@@ -32,6 +37,47 @@ export const aboutSectionCopy: AboutSectionCopy = {
   heading: "Tagloom turns your Etsy listing into searchable tags",
   body: "Etsy tags are keywords shoppers use to find products. If your tags are too broad, missing details, or copied from noisy listing text, your products can be harder to find. Tagloom reads your existing listing and suggests tags that match what you sell, so you can copy your generated tags into Etsy and keep testing new tag sets as your listings change.",
   cta: "Learn more",
+};
+
+export type FeatureSectionCopy = {
+  eyebrow: string;
+  heading: string;
+  subcopy: string;
+  steps: FeatureStep[];
+  demoTitle: string;
+  demoDescription: string;
+  historyRows: string[];
+  copyTags: string[];
+};
+
+export const featureSectionCopy: FeatureSectionCopy = {
+  eyebrow: "FEATURES",
+  heading: "A simple workflow for ongoing tag improvement",
+  subcopy: "Paste a listing, save each generation, and copy your best tags into Etsy.",
+  steps: [
+    {
+      title: "Paste your listing",
+      description: "Generate tags from an existing Etsy title and description.",
+    },
+    {
+      title: "Compare Generator + History",
+      description: "Review saved generations and compare previous tag sets.",
+    },
+    {
+      title: "Copy tags into Etsy",
+      description: "Copy your generated tags and update your listing in Etsy.",
+    },
+  ],
+  demoTitle: "Vanilla Soy Candle in Amber Jar",
+  demoDescription: "Warm vanilla candle for cozy home gifts",
+  historyRows: ["Vanilla candle tags", "Ring gift tags", "Birthday invite tags"],
+  copyTags: [
+    "soy candle",
+    "amber jar candle",
+    "vanilla home gift",
+    "cozy candle",
+    "housewarming gift",
+  ],
 };
 
 export const featurePreviews: FeaturePreview[] = [

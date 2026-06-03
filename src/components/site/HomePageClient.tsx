@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { ArrowRight, ChevronDown, Tag } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowRight, ChevronDown, Copy, Sparkles, Tag } from "lucide-react";
 
 import PricingCards from "@/components/pricing/PricingCards";
 import { usePricingActions } from "@/components/pricing/usePricingActions";
@@ -12,14 +12,13 @@ import Generator from "@/components/generator/Generator";
 import { useAuthController } from "@/components/auth/AuthController";
 import { useToast } from "@/components/toasts/toasts";
 import { toastMessages } from "@/components/toasts/toastMessages";
-import { Card } from "@/components/ui/card";
 import { buttonClassNames } from "@/components/ui/button";
 import SiteFooter from "@/components/shared/SiteFooter";
 import { consumePendingGeneratorCta, dispatchGeneratorCta } from "@/lib/generatorCta";
 import {
   aboutSectionCopy,
   faqs,
-  featurePreviews,
+  featureSectionCopy,
   homeBlogCards,
   type FAQAnswerPart,
   type FAQEntry,
@@ -42,7 +41,7 @@ const fadeInUp = {
 
 const stagger = { visible: { transition: { staggerChildren: 0.1 } } };
 
-export const benefits = featurePreviews;
+export const benefits = featureSectionCopy.steps;
 export const heroCopy = {
   pill: "Etsy tag generator for sellers",
   headlineStart: "Generate Etsy tags that",
@@ -57,6 +56,12 @@ type HomePageClientProps = {
 };
 
 export default function HomePageClient({ pricingState }: HomePageClientProps) {
+  const [historyPreviewMode, setHistoryPreviewMode] = useState<"generator" | "history">(
+    "generator",
+  );
+  const [isHistoryPreviewPaused, setIsHistoryPreviewPaused] = useState(false);
+  const [isFeatureCopyComplete, setIsFeatureCopyComplete] = useState(false);
+
   const triggerGeneratorFlow = () => {
     dispatchGeneratorCta({ requestReset: true }, { smoothScroll: true });
   };
@@ -75,11 +80,50 @@ export default function HomePageClient({ pricingState }: HomePageClientProps) {
     return () => window.clearTimeout(timeout);
   }, []);
 
+  useEffect(() => {
+    if (isHistoryPreviewPaused) return;
+
+    const interval = window.setInterval(() => {
+      setHistoryPreviewMode((current) =>
+        current === "generator" ? "history" : "generator",
+      );
+    }, 2400);
+
+    return () => window.clearInterval(interval);
+  }, [isHistoryPreviewPaused]);
+
+  useEffect(() => {
+    if (!isFeatureCopyComplete) return;
+
+    const timeout = window.setTimeout(() => {
+      setIsFeatureCopyComplete(false);
+    }, 1500);
+
+    return () => window.clearTimeout(timeout);
+  }, [isFeatureCopyComplete]);
+
+  const handleFeatureCopyAll = async () => {
+    try {
+      await navigator.clipboard.writeText(featureSectionCopy.copyTags.join(", "));
+      setIsFeatureCopyComplete(false);
+      window.setTimeout(() => setIsFeatureCopyComplete(true), 0);
+    } catch {
+      // Fail silently if clipboard access is unavailable.
+    }
+  };
+
   return (
     <div id="home" className="min-h-screen bg-stone-50 font-sans">
       <HeroSection onGenerate={triggerGeneratorFlow} />
       <AboutSection />
-      <FeaturesSection />
+      <FeaturesSection
+        onGenerate={triggerGeneratorFlow}
+        historyPreviewMode={historyPreviewMode}
+        setHistoryPreviewMode={setHistoryPreviewMode}
+        setIsHistoryPreviewPaused={setIsHistoryPreviewPaused}
+        isFeatureCopyComplete={isFeatureCopyComplete}
+        onCopyAll={handleFeatureCopyAll}
+      />
       <PricingSection pricingState={pricingState} />
       <BlogSection />
       <FaqSection faqs={faqs} />
@@ -186,47 +230,303 @@ function AboutSection() {
   );
 }
 
-function FeaturesSection() {
+type FeaturesSectionProps = {
+  onGenerate: () => void;
+  historyPreviewMode: "generator" | "history";
+  setHistoryPreviewMode: Dispatch<SetStateAction<"generator" | "history">>;
+  setIsHistoryPreviewPaused: Dispatch<SetStateAction<boolean>>;
+  isFeatureCopyComplete: boolean;
+  onCopyAll: () => void;
+};
+
+function FeaturesSection({
+  onGenerate,
+  historyPreviewMode,
+  setHistoryPreviewMode,
+  setIsHistoryPreviewPaused,
+  isFeatureCopyComplete,
+  onCopyAll,
+}: FeaturesSectionProps) {
   return (
-    <section id="features" className="bg-white px-5 py-24">
+    <motion.section
+      id="features"
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-80px" }}
+      variants={stagger}
+      className="bg-white px-5 py-24"
+    >
       <div className="mx-auto max-w-5xl">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={stagger} className="mb-12 text-center">
+        <motion.div
+          variants={stagger}
+          className="mb-12 text-center"
+        >
           <motion.p variants={fadeInUp} className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600">
-            Features
+            {featureSectionCopy.eyebrow}
           </motion.p>
           <motion.h2 variants={fadeInUp} className="text-3xl font-bold text-stone-900 sm:text-4xl">
-            A simple workflow for ongoing tag improvement
+            {featureSectionCopy.heading}
           </motion.h2>
+          <motion.p variants={fadeInUp} className="mx-auto mt-3 max-w-2xl text-stone-600">
+            {featureSectionCopy.subcopy}
+          </motion.p>
         </motion.div>
 
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={stagger} className="grid gap-6 md:grid-cols-3">
-          {featurePreviews.map((preview) => (
-            <motion.div key={preview.title} variants={fadeInUp}>
-              <Card className="h-full border-stone-100 bg-stone-50 p-6">
-                <h3 className="mb-2 text-lg font-semibold text-stone-900">{preview.title}</h3>
-                <p className="mb-4 text-sm leading-relaxed text-stone-600">{preview.description}</p>
-                <div className="rounded-xl border border-stone-200 bg-white p-3">
-                  <div className="mb-3 space-y-2">
-                    {preview.lines.map((line) => (
-                      <div key={line} className="h-7 rounded-md border border-stone-200 bg-stone-50 px-2 py-1 text-xs text-stone-600">
-                        {line}
-                      </div>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    disabled
-                    className="w-full rounded-lg bg-orange-100 px-3 py-2 text-sm font-semibold text-orange-700"
-                  >
-                    {preview.actionLabel}
-                  </button>
-                </div>
-              </Card>
-            </motion.div>
-          ))}
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-80px" }}
+          variants={stagger}
+          className="mt-10 grid gap-6 md:grid-cols-3"
+        >
+          <motion.div variants={fadeInUp}>
+            <FeaturePreviewCard>
+              <FeatureListingPreview onGenerate={onGenerate} />
+            </FeaturePreviewCard>
+            <FeatureStepCopy
+              title={featureSectionCopy.steps[0].title}
+              description={featureSectionCopy.steps[0].description}
+            />
+          </motion.div>
+
+          <motion.div variants={fadeInUp}>
+            <FeaturePreviewCard
+              onMouseEnter={() => setIsHistoryPreviewPaused(true)}
+              onMouseLeave={() => setIsHistoryPreviewPaused(false)}
+            >
+              <FeatureHistoryPreview
+                mode={historyPreviewMode}
+                onChangeMode={setHistoryPreviewMode}
+              />
+            </FeaturePreviewCard>
+            <FeatureStepCopy
+              title={featureSectionCopy.steps[1].title}
+              description={featureSectionCopy.steps[1].description}
+            />
+          </motion.div>
+
+          <motion.div variants={fadeInUp}>
+            <FeaturePreviewCard>
+              <FeatureCopyPreview
+                isCopied={isFeatureCopyComplete}
+                onCopyAll={onCopyAll}
+              />
+            </FeaturePreviewCard>
+            <FeatureStepCopy
+              title={featureSectionCopy.steps[2].title}
+              description={featureSectionCopy.steps[2].description}
+            />
+          </motion.div>
         </motion.div>
       </div>
-    </section>
+    </motion.section>
+  );
+}
+
+function FeaturePreviewCard({
+  children,
+  onMouseEnter,
+  onMouseLeave,
+}: {
+  children: ReactNode;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
+}) {
+  return (
+    <div
+      className="rounded-2xl border border-orange-100/80 bg-white/90 p-4 shadow-[0_18px_45px_rgba(249,115,22,0.10)]"
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
+      {children}
+    </div>
+  );
+}
+
+function FeaturePreviewHeader({
+  rightSlot,
+}: {
+  rightSlot?: ReactNode;
+}) {
+  return (
+    <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="flex items-center gap-2">
+        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-500 text-white">
+          <Sparkles className="h-3.5 w-3.5" />
+        </span>
+        <span className="text-sm font-semibold text-stone-800">
+          Tagloom Generator
+        </span>
+      </div>
+      {rightSlot ? <div>{rightSlot}</div> : null}
+    </div>
+  );
+}
+
+function FeatureStepCopy({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="mt-4">
+      <h3 className="text-lg font-semibold text-stone-900">{title}</h3>
+      <p className="mt-1 text-sm leading-6 text-stone-600">{description}</p>
+    </div>
+  );
+}
+
+function FeatureListingPreview({ onGenerate }: { onGenerate: () => void }) {
+  return (
+    <>
+      <FeaturePreviewHeader />
+      <div className="space-y-3">
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-stone-500">
+            Listing Title
+          </label>
+          <div className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-700">
+            {featureSectionCopy.demoTitle}
+          </div>
+        </div>
+        <div className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm leading-6 text-stone-600">
+          {featureSectionCopy.demoDescription}
+        </div>
+        <button
+          type="button"
+          onClick={onGenerate}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(249,115,22,0.28)] transition-all hover:from-orange-600 hover:to-orange-700"
+        >
+          Generate tags
+          <ArrowRight className="h-4 w-4" />
+        </button>
+      </div>
+    </>
+  );
+}
+
+function FeatureHistoryPreview({
+  mode,
+  onChangeMode,
+}: {
+  mode: "generator" | "history";
+  onChangeMode: Dispatch<SetStateAction<"generator" | "history">>;
+}) {
+  return (
+    <>
+      <FeaturePreviewHeader
+        rightSlot={
+          <div className="rounded-full bg-orange-50 p-1">
+            <button
+              type="button"
+              onClick={() => onChangeMode("generator")}
+              className={`rounded-full px-3 py-1 text-[11px] font-semibold transition-all ${
+                mode === "generator"
+                  ? "bg-orange-500 text-white shadow-sm"
+                  : "text-stone-500 hover:text-orange-600"
+              }`}
+            >
+              Generator
+            </button>
+            <button
+              type="button"
+              onClick={() => onChangeMode("history")}
+              className={`rounded-full px-3 py-1 text-[11px] font-semibold transition-all ${
+                mode === "history"
+                  ? "bg-orange-500 text-white shadow-sm"
+                  : "text-stone-500 hover:text-orange-600"
+              }`}
+            >
+              History
+            </button>
+          </div>
+        }
+      />
+
+      <div className="min-h-[188px]">
+        <AnimatePresence mode="wait" initial={false}>
+          {mode === "generator" ? (
+            <motion.div
+              key="generator"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="space-y-3"
+            >
+              <div className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-700">
+                Listing title
+              </div>
+              <div className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm leading-6 text-stone-600">
+                Listing description
+              </div>
+              <button
+                type="button"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(249,115,22,0.28)]"
+              >
+                Generate tags
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="history"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="space-y-2"
+            >
+              {featureSectionCopy.historyRows.map((row) => (
+                <div
+                  key={row}
+                  className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-700"
+                >
+                  {row}
+                </div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </>
+  );
+}
+
+function FeatureCopyPreview({
+  isCopied,
+  onCopyAll,
+}: {
+  isCopied: boolean;
+  onCopyAll: () => void;
+}) {
+  return (
+    <>
+      <FeaturePreviewHeader />
+      <div className="space-y-4">
+        <div className="text-sm font-medium text-stone-600">13 tags generated</div>
+        <div className="flex flex-wrap gap-2">
+          {featureSectionCopy.copyTags.map((tag) => (
+            <span
+              key={tag}
+              className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-sm text-stone-700"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={onCopyAll}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(249,115,22,0.24)] transition-colors hover:bg-orange-600"
+        >
+          <Copy className="h-4 w-4" />
+          {isCopied ? "Copied" : "Copy all"}
+        </button>
+      </div>
+    </>
   );
 }
 
