@@ -152,53 +152,28 @@ function HeroSection({ onGenerate }: HeroSectionProps) {
 
 function AboutSection() {
   return (
-    <section
-      id="about"
-      className="scroll-mt-24 bg-orange-50/70 px-6 py-14 sm:py-16"
-    >
-      <div className="mx-auto max-w-4xl">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-80px" }}
-          variants={stagger}
-        >
-          <div className="text-center">
-            <motion.p
-              variants={fadeInUp}
-              className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600"
-            >
-              {aboutSectionCopy.eyebrow}
-            </motion.p>
-            <motion.h2
-              variants={fadeInUp}
-              className="text-3xl font-semibold tracking-tight text-stone-950 sm:text-4xl"
-            >
-              {aboutSectionCopy.heading}
-            </motion.h2>
-          </div>
-
-          <div className="mx-auto mt-6 max-w-3xl space-y-4 text-left text-base leading-8 text-stone-700 sm:text-lg">
-            <motion.p variants={fadeInUp}>
-              {aboutSectionCopy.paragraphs[0]}
-            </motion.p>
-            <motion.p variants={fadeInUp}>
-              {aboutSectionCopy.paragraphs[1]}
-            </motion.p>
-          </div>
-
-          <div className="mx-auto mt-6 flex max-w-3xl justify-end">
-            <motion.div variants={fadeInUp}>
-              <Link
-                href="/blog"
-                className="group inline-flex items-center gap-2 text-sm font-semibold text-stone-500 transition-colors hover:text-orange-600"
-              >
-                {aboutSectionCopy.cta}
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </Link>
-            </motion.div>
-          </div>
-        </motion.div>
+    <section id="about" className="scroll-mt-24 bg-[#ffead6] px-6 py-10 sm:py-12">
+      <div className="mx-auto max-w-5xl">
+        <div className="text-center">
+          <p className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600">
+            {aboutSectionCopy.eyebrow}
+          </p>
+          <h2 className="mx-auto max-w-4xl text-3xl font-semibold tracking-tight text-stone-950 sm:text-4xl">
+            {aboutSectionCopy.heading}
+          </h2>
+        </div>
+        <p className="mx-auto mt-5 max-w-5xl text-left text-base leading-8 text-stone-700 sm:text-lg">
+          {aboutSectionCopy.body}
+        </p>
+        <div className="mx-auto mt-5 flex max-w-5xl justify-end">
+          <Link
+            href="/blog"
+            className="group inline-flex items-center gap-2 text-sm font-semibold text-stone-500 transition-colors hover:text-orange-600"
+          >
+            {aboutSectionCopy.cta}
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </Link>
+        </div>
       </div>
     </section>
   );
