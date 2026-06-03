@@ -152,7 +152,14 @@ function HeroSection({ onGenerate }: HeroSectionProps) {
 
 function AboutSection() {
   return (
-    <section id="about" className="scroll-mt-24 bg-[#ffead6] px-6 py-10 sm:py-12">
+    <motion.section
+      id="about"
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-80px" }}
+      variants={fadeInUp}
+      className="scroll-mt-24 bg-[#ffead6] px-6 py-10 sm:py-12"
+    >
       <div className="mx-auto max-w-5xl">
         <div className="text-center">
           <p className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600">
@@ -175,7 +182,7 @@ function AboutSection() {
           </Link>
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 }
 
