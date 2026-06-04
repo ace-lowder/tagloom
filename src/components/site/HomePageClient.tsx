@@ -151,9 +151,6 @@ function AboutSection() {
     >
       <div className="mx-auto max-w-5xl">
         <div className="text-center">
-          <p className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600">
-            {aboutSectionCopy.eyebrow}
-          </p>
           <h2 className="mx-auto max-w-4xl text-3xl font-semibold tracking-tight text-stone-950 sm:text-4xl">
             {aboutSectionCopy.heading}
           </h2>

@@ -7,15 +7,13 @@ export type FAQEntry = {
 };
 
 export type AboutSectionCopy = {
-  eyebrow: string;
   heading: string;
   body: string;
   cta: string;
 };
 
 export const aboutSectionCopy: AboutSectionCopy = {
-  eyebrow: "ABOUT",
-  heading: "Tagloom turns your Etsy listing into searchable tags",
+  heading: "Turn your Etsy listing into searchable tags",
   body: "Etsy tags are keywords shoppers use to find products. If your tags are too broad, missing details, or copied from noisy listing text, your products can be harder to find. Tagloom reads your existing listing and suggests tags that match what you sell, so you can copy your generated tags into Etsy and keep testing new tag sets as your listings change.",
   cta: "Learn more",
 };
@@ -26,10 +24,13 @@ export const faqs: FAQEntry[] = [
     answer: [
       {
         type: "text",
-        text: "Tagloom is an Etsy tag generator for sellers with existing listings. Paste your listing title and description, and Tagloom suggests search tags you can copy into Etsy.",
+        text: "Tagloom is an Etsy tag generator for sellers with existing listings. Paste your listing into Tagloom, use ",
       },
-      { type: "text", text: " " },
-      { type: "link", label: "Try it now", href: "#generator" },
+      { type: "link", label: "try it now", href: "#generator" },
+      {
+        type: "text",
+        text: ", and it suggests search tags you can copy into Etsy. You stay in control of which tags you use.",
+      },
     ],
   },
   {
@@ -37,10 +38,13 @@ export const faqs: FAQEntry[] = [
     answer: [
       {
         type: "text",
-        text: "Etsy tags are keywords shoppers use when searching for products. They help Etsy understand what your listing is and when it should show up in search.",
+        text: "Etsy tags are keywords shoppers use when searching for products. If you want a deeper explanation, ",
       },
-      { type: "text", text: " " },
-      { type: "link", label: "Learn more about tags", href: "/blog" },
+      { type: "link", label: "learn more about tags", href: "/blog" },
+      {
+        type: "text",
+        text: " in the guide. The simple version is that tags help Etsy understand when your listing should appear in search.",
+      },
     ],
   },
   {
@@ -48,10 +52,13 @@ export const faqs: FAQEntry[] = [
     answer: [
       {
         type: "text",
-        text: "Better tags can help improve visibility, and better visibility can lead to more sales over time. Tagloom helps you find stronger tag ideas without guessing, but no tag tool can guarantee sales.",
+        text: "Better tags can help more relevant shoppers find your listing. Use ",
       },
-      { type: "text", text: " " },
-      { type: "link", label: "Generate better tags", href: "#generator" },
+      { type: "link", label: "generate better tags", href: "#generator" },
+      {
+        type: "text",
+        text: " to test stronger search phrases for products you already sell. More relevant visibility can lead to more chances for views, favorites, and sales, but no tag tool can guarantee sales.",
+      },
     ],
   },
   {
@@ -59,10 +66,13 @@ export const faqs: FAQEntry[] = [
     answer: [
       {
         type: "text",
-        text: "Copy your Etsy listing title and description into Tagloom, generate tags, then copy your favorite tags into the tag section of your Etsy listing. You stay in control of what gets added to Etsy.",
+        text: "You do not need to rebuild your whole listing. Paste your title and description into ",
       },
-      { type: "text", text: " " },
-      { type: "link", label: "Start generating", href: "#generator" },
+      { type: "link", label: "Tagloom", href: "#generator" },
+      {
+        type: "text",
+        text: ", then review the generated tags. Copy the best matches into Etsy and keep the ones that fit your product.",
+      },
     ],
   },
   {
@@ -70,10 +80,13 @@ export const faqs: FAQEntry[] = [
     answer: [
       {
         type: "text",
-        text: "Test new tags when a listing is not getting views, when your product changes, or when you learn better search terms from shoppers and competitors. Tag changes can take time to show results, so compare over time instead of changing everything daily.",
+        text: "Update tags when a listing is not getting views, when your product changes, or when you learn better search terms. You can ",
       },
-      { type: "text", text: " " },
-      { type: "link", label: "Read the guides", href: "/blog" },
+      { type: "link", label: "read the guides", href: "/blog" },
+      {
+        type: "text",
+        text: " to understand what to test. Give changes time before replacing everything again.",
+      },
     ],
   },
   {
@@ -81,10 +94,13 @@ export const faqs: FAQEntry[] = [
     answer: [
       {
         type: "text",
-        text: "Yes. Tagloom saves your generations so you can review older tag sets, compare ideas, and keep improving your listings over time.",
+        text: "Yes, Tagloom saves your past generations. Open the generator and ",
       },
-      { type: "text", text: " " },
-      { type: "link", label: "Try history", href: "#generator" },
+      { type: "link", label: "try history", href: "#generator" },
+      {
+        type: "text",
+        text: " to compare previous tag sets. This makes it easier to keep improving instead of losing every idea after one run.",
+      },
     ],
   },
   {
@@ -92,10 +108,13 @@ export const faqs: FAQEntry[] = [
     answer: [
       {
         type: "text",
-        text: "After you copy your generated tags into Etsy, watch your views, favorites, and sales. If a listing still is not getting found, generate another set and test a different search angle.",
+        text: "Once the tags are in Etsy, your next job is to watch the listing. If performance stays weak, ",
       },
-      { type: "text", text: " " },
-      { type: "link", label: "Read optimization tips", href: "/blog" },
+      { type: "link", label: "learn what to test", href: "/blog" },
+      {
+        type: "text",
+        text: " and generate another set. Tagloom is meant to support repeated improvement, not one magic update.",
+      },
     ],
   },
   {
@@ -103,18 +122,24 @@ export const faqs: FAQEntry[] = [
     answer: [
       {
         type: "text",
-        text: "You can try Tagloom for free. Paid plans are for sellers who want more generations, saved history, and more room to keep testing across listings.",
+        text: "You can try Tagloom for free. If you need more generations, ",
       },
-      { type: "text", text: " " },
-      { type: "link", label: "See pricing", href: "#pricing" },
+      { type: "link", label: "see pricing", href: "#pricing" },
+      {
+        type: "text",
+        text: " for paid plans. Paid plans are for sellers testing tags across more listings over time.",
+      },
     ],
   },
   {
     question: "How do I get help if something goes wrong?",
     answer: [
-      { type: "text", text: "Visit " },
+      { type: "text", text: "If something breaks, visit " },
       { type: "link", label: "support", href: "/support" },
-      { type: "text", text: " for account, billing, generation, or contact help." },
+      {
+        type: "text",
+        text: " for account, billing, generation, or contact help. Include what you were trying to do when the issue happened. That makes it easier to troubleshoot quickly.",
+      },
     ],
   },
 ];

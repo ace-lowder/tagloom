@@ -136,6 +136,10 @@ describe("HomePageClient funnel", () => {
   it("renders the beginner FAQ funnel and keeps only one question open", () => {
     renderHome();
 
+    expect(
+      screen.getByRole("heading", { name: "Turn your Etsy listing into searchable tags" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("ABOUT")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Frequently asked questions" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "What is Tagloom?" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "How do I get help if something goes wrong?" })).toBeInTheDocument();
@@ -156,10 +160,15 @@ describe("HomePageClient funnel", () => {
     );
     expect(
       screen.getByText(
-        /Etsy tags are keywords shoppers use when searching for products\. They help Etsy understand what your listing is and when it should show up in search\./,
+        /Etsy tags are keywords shoppers use when searching for products\./,
       ),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Learn more about tags" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "learn more about tags" })).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /The simple version is that tags help Etsy understand when your listing should appear in search\./,
+      ),
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "What are Etsy tags?" }));
 
@@ -176,7 +185,7 @@ describe("HomePageClient funnel", () => {
     renderHome();
 
     fireEvent.click(screen.getByRole("button", { name: "What is Tagloom?" }));
-    fireEvent.click(screen.getByRole("button", { name: "Try it now" }));
+    fireEvent.click(screen.getByRole("button", { name: "try it now" }));
 
     expect(mockRefs.dispatchGeneratorCta).toHaveBeenCalledWith(
       { requestReset: true },
