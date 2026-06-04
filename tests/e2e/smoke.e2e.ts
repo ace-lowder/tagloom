@@ -11,7 +11,11 @@ test("authenticated user reaches the protected home area", async ({ page }) => {
   await expect(page).toHaveURL(/\/$/);
   await page.getByRole("button", { name: "Open profile menu" }).click();
   await expect(page.getByRole("button", { name: /Manage Plan|View Plans/ })).toBeVisible();
-  await expect(page.getByRole("heading", { name: /Generate better Etsy tags/i })).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      name: /Generate Etsy tags that help shoppers find your listings/i,
+    }),
+  ).toBeVisible();
 });
 
 test("billing page loads for an authenticated user", async ({ page }) => {
@@ -137,8 +141,10 @@ test("generation flow exposes core generator actions", async ({ page }) => {
   );
   await titleInput.fill("Minimalist ceramic coffee mug handmade");
   await expect(titleInput).toHaveValue(/Minimalist ceramic coffee mug handmade/);
-  await page.getByRole("button", { name: "Generate 13 tags" }).click();
-  await expect(page.getByRole("button", { name: "Generate 13 tags" })).toBeVisible();
+  const generatorPanel = page.getByTestId("generator-scroll-panel");
+  const generateButton = generatorPanel.getByRole("button", { name: "Generate tags" });
+  await generateButton.click();
+  await expect(generateButton).toBeVisible();
   await expect(page.getByRole("button", { name: "Show generation history" })).toBeVisible();
 });
 

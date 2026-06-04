@@ -89,7 +89,7 @@ describe("Generator generation feedback", () => {
 
     const titleInput = screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER);
     fireEvent.change(titleInput, { target: { value: "Generated listing title" } });
-    fireEvent.click(screen.getByRole("button", { name: "Generate 13 tags" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate tags" }));
 
     await waitFor(() => expect(screen.getByLabelText("Thumbs up")).toBeInTheDocument());
     expect(screen.getByLabelText("Thumbs down")).toBeInTheDocument();
@@ -119,7 +119,7 @@ describe("Generator generation feedback", () => {
     fireEvent.change(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER), {
       target: { value: "Generated listing title" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Generate 13 tags" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate tags" }));
 
     expect(screen.getByRole("button", { name: "Generating tags" })).toBeDisabled();
     await screen.findByLabelText("Thumbs up");
@@ -133,7 +133,7 @@ describe("Generator generation feedback", () => {
     fireEvent.change(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER), {
       target: { value: "Generated listing title" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Generate 13 tags" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate tags" }));
 
     const upButton = await screen.findByLabelText("Thumbs up");
     fireEvent.click(upButton);
@@ -151,7 +151,7 @@ describe("Generator generation feedback", () => {
     fireEvent.change(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER), {
       target: { value: "Generated listing title" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Generate 13 tags" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate tags" }));
 
     const downButton = await screen.findByLabelText("Thumbs down");
     fireEvent.click(downButton);
@@ -178,7 +178,7 @@ describe("Generator generation feedback", () => {
     fireEvent.change(screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER), {
       target: { value: "Generated listing title" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Generate 13 tags" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate tags" }));
 
     const upButton = await screen.findByLabelText("Thumbs up");
     const downButton = screen.getByLabelText("Thumbs down");

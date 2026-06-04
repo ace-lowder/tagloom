@@ -266,7 +266,7 @@ describe("Generator demo chips", () => {
     const titleInput = screen.getByPlaceholderText(DEFAULT_TITLE_PLACEHOLDER) as HTMLInputElement;
     await waitFor(() => expect(titleInput.value.length).toBeGreaterThan(0));
 
-    fireEvent.click(screen.getByRole("button", { name: "Generate 13 tags" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate tags" }));
 
     await waitFor(() => expect(titleInput.value).toBe(""));
     expect(titleInput).toHaveAttribute("placeholder", `e.g. ${fixture.title}`);

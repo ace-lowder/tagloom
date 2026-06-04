@@ -148,6 +148,14 @@ describe("HomePageClient funnel", () => {
       "lg:max-w-5xl",
       "lg:text-center",
     );
+    expect(
+      screen.getByText(/Better tags can help your listings show up in more searches\./),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Etsy tags are keywords shoppers search for. Better tags can help your listings show up in more searches. Paste your listing, generate tags, and copy them into Etsy.",
+      ),
+    ).toBeInTheDocument();
     expect(screen.queryByText("ABOUT")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Frequently asked questions" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "What is Tagloom?" })).toBeInTheDocument();
@@ -207,12 +215,12 @@ describe("HomePageClient funnel", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: "Want more Etsy shoppers to find your products?",
+        name: "Help more Etsy shoppers find what you sell",
       }),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Tagloom helps you turn an existing listing into search tags shoppers can use to find what you sell.",
+        "Paste your listing into Tagloom, generate search tags, and copy your favorites into Etsy.",
       ),
     ).toBeInTheDocument();
     expect(

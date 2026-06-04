@@ -126,7 +126,7 @@ export function GeneratorForm({
             boxShadow: title.trim() ? "0 4px 20px rgba(249,115,22,0.35)" : "none",
           }}
         >
-          Generate 13 tags
+          Generate tags
         </Button>
       </div>
     </>

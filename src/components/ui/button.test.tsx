@@ -30,7 +30,7 @@ describe("Button", () => {
   it("shows the shared spinner while loading", () => {
     render(
       <Button isLoading loadingLabel="Generating tags">
-        Generate 13 tags
+        Generate tags
       </Button>,
     );
 
@@ -40,7 +40,7 @@ describe("Button", () => {
   it("does not visually render the loading label as normal text", () => {
     render(
       <Button isLoading loadingLabel="Generating tags">
-        Generate 13 tags
+        Generate tags
       </Button>,
     );
 

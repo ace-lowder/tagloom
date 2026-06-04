@@ -89,7 +89,7 @@ describe("Generator auth unlock flow", () => {
         value: "Personalized Dad V-Neck T-Shirt - 100% Cotton Custom Name Shirt",
       },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Generate 13 tags" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate tags" }));
 
     await screen.findByText("Create an account or log in to unlock this generation for FREE");
     await screen.findByText("hidden keyword");
@@ -166,7 +166,7 @@ describe("Generator auth unlock flow", () => {
         value: "Personalized Dad V-Neck T-Shirt - 100% Cotton Custom Name Shirt",
       },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Generate 13 tags" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate tags" }));
 
     await screen.findByText("Create an account or log in to unlock this generation for FREE");
     expect(screen.getByText("hidden keyword")).toBeInTheDocument();
@@ -203,7 +203,7 @@ describe("Generator auth unlock flow", () => {
       "e.g. Handmade ceramic coffee mug with minimalist design",
     );
     fireEvent.change(titleInput, { target: { value: "Custom Dad Shirt Gift" } });
-    fireEvent.click(screen.getByRole("button", { name: "Generate 13 tags" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate tags" }));
 
     await screen.findByText("You have no remaining generation credits.");
 
@@ -302,7 +302,7 @@ describe("Generator auth unlock flow", () => {
         },
       },
     );
-    fireEvent.click(screen.getByRole("button", { name: "Generate 13 tags" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate tags" }));
 
     await screen.findByText("Create an account or log in to unlock this generation for FREE");
     act(() => {

@@ -14,7 +14,7 @@ export type AboutSectionCopy = {
 
 export const aboutSectionCopy: AboutSectionCopy = {
   heading: "Turn your Etsy listing into searchable tags",
-  body: "Etsy tags are keywords shoppers use to find products. If your tags are too broad, missing details, or copied from noisy listing text, your products can be harder to find. Tagloom reads your existing listing and suggests tags that match what you sell, so you can copy your generated tags into Etsy and keep testing new tag sets as your listings change.",
+  body: "Showing up in Etsy search keeps getting harder. We built Tagloom to help sellers connect their products with the shoppers already looking for them. Etsy tags are the keywords shoppers use when searching for products like yours, and Tagloom helps turn your existing listing into tags you can copy into Etsy and keep testing over time.",
   cta: "Learn more",
 };
 

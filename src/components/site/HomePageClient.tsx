@@ -39,7 +39,7 @@ export const heroCopy = {
   headlineStart: "Generate Etsy tags that",
   headlineEmphasis: "help shoppers find your listings",
   body:
-    "Etsy tags are keywords shoppers search for. Paste your listing, generate tags, and copy them into Etsy.",
+    "Etsy tags are keywords shoppers search for. Better tags can help your listings show up in more searches. Paste your listing, generate tags, and copy them into Etsy.",
   cta: "Generate tags for free",
 };
 
@@ -224,10 +224,10 @@ function PricingSection({ pricingState }: PricingSectionProps) {
             Pricing
           </motion.p>
           <motion.h2 variants={fadeInUp} className="mb-3 text-3xl font-bold text-stone-900 sm:text-4xl">
-            Keep running test cycles as your listings evolve
+            Choose the plan that fits how often you update your Etsy listings
           </motion.h2>
           <motion.p variants={fadeInUp} className="mx-auto max-w-2xl text-stone-500">
-            Generate, compare, update Etsy listings, and keep learning from your results and the crash-course guides.
+            Start free, then upgrade when you want more generations, saved history, and room to keep testing tags across more listings.
           </motion.p>
         </motion.div>
 
@@ -332,10 +332,10 @@ function BottomCtaSection({ onGenerate }: BottomCtaSectionProps) {
             }}
           >
             <motion.h2 variants={fadeInUp} className="mb-4 text-3xl font-bold text-stone-900 sm:text-4xl">
-              Want more Etsy shoppers to find your products?
+              Help more Etsy shoppers find what you sell
             </motion.h2>
             <motion.p variants={fadeInUp} className="mx-auto mb-8 max-w-lg leading-relaxed text-stone-600">
-              Tagloom helps you turn an existing listing into search tags shoppers can use to find what you sell.
+              Paste your listing into Tagloom, generate search tags, and copy your favorites into Etsy.
             </motion.p>
             <motion.div variants={fadeInUp} className="inline-flex">
               <button
