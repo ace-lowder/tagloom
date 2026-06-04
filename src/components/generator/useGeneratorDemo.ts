@@ -271,7 +271,6 @@ export function useGeneratorDemo({
                   setShellHeightTransitionMs(0);
                   setShellHeightPx(fromHeight);
                 }
-                clearVisibleResults();
                 setClearPhase("collapsing");
 
                 collapseRafRef.current = requestAnimationFrame(() => {
@@ -290,6 +289,7 @@ export function useGeneratorDemo({
 
                   setDemoTimer(() => {
                     if (!isDemoActive || shouldSkipDemoRef.current) return;
+                    clearVisibleResults();
                     setShellHeightTransitionMs(0);
                     setShellHeightPx(null);
                     setClearPhase("idle");

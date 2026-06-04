@@ -420,6 +420,8 @@ export default function Generator({ onFocus, glowRef, demoConfig }: GeneratorPro
 
   // === Derived State ===
   const isClearingFade = clearPhase === "fading";
+  const isClearingCollapse = clearPhase === "collapsing";
+  const isClearingResults = clearPhase !== "idle";
   const hasTitle = Boolean(title.trim());
   const showGenerationFeedbackControls =
     !isDemoActive &&
@@ -581,13 +583,24 @@ export default function Generator({ onFocus, glowRef, demoConfig }: GeneratorPro
                       skipGeneratorReturnAnimations ? false : { opacity: 0, y: 8 }
                     }
                     animate={
-                      isClearingFade ? { opacity: 0, y: 10 } : { opacity: 1, y: 0 }
+                      isClearingResults ? { opacity: 0, y: 10 } : { opacity: 1, y: 0 }
                     }
                     transition={{
                       duration: isClearingFade ? 0.16 : 0.22,
                       ease: "easeOut",
                     }}
-                    className="mt-6"
+                    className={cn(
+                      "mt-6 overflow-hidden",
+                      isClearingCollapse ? "mt-0" : undefined,
+                    )}
+                    style={
+                      isClearingCollapse
+                        ? {
+                            maxHeight: 0,
+                            transition: "max-height " + shellHeightTransitionMs + "ms ease-out, margin-top " + shellHeightTransitionMs + "ms ease-out",
+                          }
+                        : undefined
+                    }
                   >
                     <GeneratorResults
                       showResults={showResults}

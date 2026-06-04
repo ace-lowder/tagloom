@@ -140,10 +140,11 @@ describe("Generator demo chips", () => {
 
     await waitFor(() => expect(shell).toHaveAttribute("data-clear-phase", "collapsing"));
     expect(shell).toHaveAttribute("data-height-locked", "true");
-    expect(screen.queryByTestId("results-block")).not.toBeInTheDocument();
+    expect(screen.getByTestId("results-block")).toBeInTheDocument();
 
     await waitFor(() => expect(shell).toHaveAttribute("data-clear-phase", "idle"));
     expect(shell).toHaveAttribute("data-height-locked", "false");
+    expect(screen.queryByTestId("results-block")).not.toBeInTheDocument();
 
     const titleInput = screen.getByPlaceholderText(
       "e.g. Handmade ceramic coffee mug with minimalist design",
