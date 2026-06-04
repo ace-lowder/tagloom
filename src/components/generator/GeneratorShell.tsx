@@ -54,7 +54,9 @@ export function GeneratorShell({
         transition={{ duration: 0.6 }}
         className={cn(
           "relative rounded-2xl",
-          historyMode === "history" ? "overflow-hidden" : "overflow-visible",
+          historyMode === "history" || clearPhase === "collapsing"
+            ? "overflow-hidden"
+            : "overflow-visible",
         )}
         style={{
           background: "rgba(255,255,255,0.8)",

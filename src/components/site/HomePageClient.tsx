@@ -150,8 +150,8 @@ function AboutSection() {
       className="scroll-mt-24 bg-[#ffead6] px-6 py-10 sm:py-12"
     >
       <div className="mx-auto max-w-5xl">
-        <div className="text-left lg:text-center">
-          <h2 className="mx-auto max-w-4xl text-3xl font-semibold tracking-tight text-stone-950 sm:text-4xl">
+        <div className="mx-auto max-w-2xl text-left lg:max-w-5xl lg:text-center">
+          <h2 className="text-3xl font-semibold tracking-tight text-stone-950 sm:text-4xl lg:mx-auto lg:max-w-4xl">
             {aboutSectionCopy.heading}
           </h2>
         </div>

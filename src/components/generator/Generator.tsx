@@ -53,6 +53,7 @@ export default function Generator({ onFocus, glowRef, demoConfig }: GeneratorPro
   // === Timers ===
   const shellRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const resultsBlockRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const clearVisibleResultsRef = useRef<() => void>(() => {});
   const resetGenerationStateRef = useRef<() => void>(() => {});
@@ -162,7 +163,7 @@ export default function Generator({ onFocus, glowRef, demoConfig }: GeneratorPro
     demoConfig,
     onFocus,
     shellRef,
-    contentRef,
+    resultsBlockRef,
     titleInputRef,
     showDescription,
     skipGeneratorReturnAnimations,
@@ -420,7 +421,6 @@ export default function Generator({ onFocus, glowRef, demoConfig }: GeneratorPro
 
   // === Derived State ===
   const isClearingFade = clearPhase === "fading";
-  const isClearingCollapse = clearPhase === "collapsing";
   const isClearingResults = clearPhase !== "idle";
   const hasTitle = Boolean(title.trim());
   const showGenerationFeedbackControls =
@@ -575,6 +575,7 @@ export default function Generator({ onFocus, glowRef, demoConfig }: GeneratorPro
               <AnimatePresence>
                 {showResults && (
                   <motion.div
+                    ref={resultsBlockRef}
                     data-testid="results-block"
                     data-results-animation={
                       skipGeneratorReturnAnimations ? "none" : "enter"
@@ -589,18 +590,7 @@ export default function Generator({ onFocus, glowRef, demoConfig }: GeneratorPro
                       duration: isClearingFade ? 0.16 : 0.22,
                       ease: "easeOut",
                     }}
-                    className={cn(
-                      "mt-6 overflow-hidden",
-                      isClearingCollapse ? "mt-0" : undefined,
-                    )}
-                    style={
-                      isClearingCollapse
-                        ? {
-                            maxHeight: 0,
-                            transition: "max-height " + shellHeightTransitionMs + "ms ease-out, margin-top " + shellHeightTransitionMs + "ms ease-out",
-                          }
-                        : undefined
-                    }
+                    className="mt-6"
                   >
                     <GeneratorResults
                       showResults={showResults}

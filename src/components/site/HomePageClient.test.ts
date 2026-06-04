@@ -136,9 +136,18 @@ describe("HomePageClient funnel", () => {
   it("renders the beginner FAQ funnel and keeps only one question open", () => {
     renderHome();
 
-    expect(
-      screen.getByRole("heading", { name: "Turn your Etsy listing into searchable tags" }),
-    ).toBeInTheDocument();
+    const aboutHeading = screen.getByRole("heading", {
+      name: "Turn your Etsy listing into searchable tags",
+    });
+    expect(aboutHeading).toBeInTheDocument();
+    expect(aboutHeading).toHaveClass("lg:mx-auto", "lg:max-w-4xl");
+    expect(aboutHeading.parentElement).toHaveClass(
+      "mx-auto",
+      "max-w-2xl",
+      "text-left",
+      "lg:max-w-5xl",
+      "lg:text-center",
+    );
     expect(screen.queryByText("ABOUT")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Frequently asked questions" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "What is Tagloom?" })).toBeInTheDocument();

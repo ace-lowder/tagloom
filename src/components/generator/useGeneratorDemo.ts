@@ -23,7 +23,7 @@ export function useGeneratorDemo({
   demoConfig,
   onFocus,
   shellRef,
-  contentRef,
+  resultsBlockRef,
   titleInputRef,
   showDescription,
   skipGeneratorReturnAnimations,
@@ -70,6 +70,17 @@ export function useGeneratorDemo({
       collapseRafRef.current = null;
     }
   }, [clearDemoTimerBase]);
+
+  const getOuterHeight = useCallback((node: HTMLElement | null) => {
+    if (!node) return null;
+
+    const rect = node.getBoundingClientRect();
+    const styles = window.getComputedStyle(node);
+    const marginTop = Number.parseFloat(styles.marginTop) || 0;
+    const marginBottom = Number.parseFloat(styles.marginBottom) || 0;
+
+    return rect.height + marginTop + marginBottom;
+  }, []);
 
   const markUserInteraction = useCallback(() => {
     if (!isDemoActive) return;
@@ -276,11 +287,12 @@ export function useGeneratorDemo({
                 collapseRafRef.current = requestAnimationFrame(() => {
                   collapseRafRef.current = null;
                   if (!isDemoActive || shouldSkipDemoRef.current) return;
-                  const contentHeight =
-                    contentRef.current?.getBoundingClientRect().height ?? null;
+                  const resultsBlockHeight = getOuterHeight(
+                    resultsBlockRef.current,
+                  );
                   const toHeight =
-                    contentHeight !== null
-                      ? Math.max(contentHeight + 2, 0)
+                    fromHeight !== null && resultsBlockHeight !== null
+                      ? Math.max(fromHeight - resultsBlockHeight, 0)
                       : fromHeight;
                   if (fromHeight !== null && toHeight !== undefined) {
                     setShellHeightTransitionMs(demoTimings.clearCollapseMs);
@@ -312,7 +324,7 @@ export function useGeneratorDemo({
     clearDemoTimer,
     clearRevealTimer,
     clearVisibleResults,
-    contentRef,
+    getOuterHeight,
     demoFixtures,
     demoTimings,
     isDemoActive,
@@ -322,6 +334,7 @@ export function useGeneratorDemo({
     setResultTags,
     setTitle,
     setTitlePlaceholder,
+    resultsBlockRef,
     shellRef,
   ]);
 
@@ -432,7 +445,7 @@ type UseGeneratorDemoParams = {
   demoConfig: GeneratorProps["demoConfig"];
   onFocus?: () => void;
   shellRef: RefObject<HTMLDivElement | null>;
-  contentRef: RefObject<HTMLDivElement | null>;
+  resultsBlockRef: RefObject<HTMLDivElement | null>;
   titleInputRef: RefObject<HTMLInputElement | null>;
   showDescription: boolean;
   skipGeneratorReturnAnimations: boolean;
