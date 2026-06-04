@@ -9,7 +9,6 @@ export type AccountType = "verified" | "monthly" | "yearly";
 export const NAV_LINKS: NavLink[] = [
   { label: "Home", href: "home", type: "section" },
   { label: "About", href: "about", type: "section" },
-  { label: "Features", href: "features", type: "section" },
   { label: "Pricing", href: "pricing", type: "section" },
   { label: "Blog", href: "/blog", type: "route" },
   { label: "Support", href: "/support", type: "route" },

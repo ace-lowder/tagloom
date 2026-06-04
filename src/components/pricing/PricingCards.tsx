@@ -42,7 +42,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     description: "For sellers optimizing listings weekly.",
     features: [
       "100 generations per month",
-      "Tag strategy explanation",
+      "Saved generation history",
       "Priority support",
     ],
     cta: "Go monthly",
@@ -57,7 +57,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     description: "Best value for year-round growth.",
     features: [
       "Unlimited generations",
-      "Tag strategy explanation",
+      "Saved generation history",
       "Priority support",
       "Best annual savings",
     ],

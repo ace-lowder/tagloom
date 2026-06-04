@@ -1,66 +1,207 @@
-import { describe, expect, it } from "vitest";
+import { createElement } from "react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
-import { benefits, heroCopy } from "@/components/site/HomePageClient";
-import { aboutSectionCopy, featureSectionCopy } from "@/content/home";
-import { PRIMARY_NAV_ACTION_LABEL } from "@/components/site/SiteNavParts";
+import HomePageClient from "@/components/site/HomePageClient";
+import { PRICING_PLANS } from "@/components/pricing/PricingCards";
+import { faqs } from "@/content/home";
+import { NAV_LINKS } from "@/components/site/siteNavConfig";
 
-describe("HomePageClient feature previews", () => {
-  it("uses the expected static feature previews", () => {
-    expect(benefits.map((benefit) => [benefit.title, benefit.description])).toEqual([
-      ["Paste your listing", "Generate tags from an existing Etsy title and description."],
-      ["Compare Generator + History", "Review saved generations and compare previous tag sets."],
-      ["Copy tags into Etsy", "Copy your generated tags and update your listing in Etsy."],
+const router = {
+  push: vi.fn(),
+  refresh: vi.fn(),
+};
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => router,
+  usePathname: () => "/",
+}));
+
+vi.mock("framer-motion", async () => {
+  const React = await import("react");
+
+  const createMotionTag = (tag: keyof React.JSX.IntrinsicElements) => {
+    return function MotionTag({
+      children,
+      initial: _initial,
+      animate: _animate,
+      exit: _exit,
+      transition: _transition,
+      variants: _variants,
+      viewport: _viewport,
+      whileInView: _whileInView,
+      whileHover: _whileHover,
+      whileTap: _whileTap,
+      layout: _layout,
+      ...rest
+    }: Record<string, unknown> & { children?: React.ReactNode }) {
+      return React.createElement(tag, rest, children);
+    };
+  };
+
+  return {
+    AnimatePresence: ({ children }: { children?: React.ReactNode }) =>
+      React.createElement(React.Fragment, null, children),
+    motion: new Proxy(
+      {},
+      {
+        get: (_target, key) => createMotionTag(key as keyof React.JSX.IntrinsicElements),
+      },
+    ),
+  };
+});
+
+vi.mock("@/components/generator/Generator", () => ({
+  default: () => createElement("div", { "data-testid": "generator-mock" }),
+}));
+
+vi.mock("@/components/pricing/PricingCards", async () => {
+  const actual = await vi.importActual<typeof import("@/components/pricing/PricingCards")>(
+    "@/components/pricing/PricingCards",
+  );
+
+  return {
+    ...actual,
+    default: () => createElement("div", { "data-testid": "pricing-cards-mock" }),
+  };
+});
+
+vi.mock("@/components/shared/SiteFooter", () => ({
+  default: () => createElement("footer", { "data-testid": "site-footer-mock" }),
+}));
+
+vi.mock("@/components/auth/AuthController", () => ({
+  useAuthController: () => ({
+    openAuthModal: vi.fn(),
+  }),
+}));
+
+vi.mock("@/components/toasts/toasts", () => ({
+  useToast: () => ({
+    showToast: vi.fn(),
+  }),
+}));
+
+vi.mock("@/components/pricing/usePricingActions", () => ({
+  usePricingActions: () => ({
+    isAnyRedirecting: false,
+    redirectingPlanId: null,
+    onSelectPlan: vi.fn(),
+    onManagePortal: vi.fn(),
+  }),
+}));
+
+vi.mock("@/lib/generatorCta", () => ({
+  consumePendingGeneratorCta: () => null,
+  dispatchGeneratorCta: vi.fn(),
+}));
+
+const pricingState = {
+  isLoggedIn: false,
+  currentTier: null,
+  isExpiring: false,
+  pendingRenewalTier: null,
+  pendingRenewalAt: null,
+  allowStarterPurchaseWithSubscription: true,
+  canManageSubscription: false,
+} as const;
+
+function renderHome() {
+  return render(createElement(HomePageClient, { pricingState }));
+}
+
+describe("HomePageClient funnel", () => {
+  it("uses the simplified nav and pricing copy", () => {
+    expect(NAV_LINKS.map((link) => link.label)).toEqual([
+      "Home",
+      "About",
+      "Pricing",
+      "Blog",
+      "Support",
+      "FAQ",
     ]);
-    expect(featureSectionCopy).toEqual({
-      eyebrow: "FEATURES",
-      heading: "A simple workflow for ongoing tag improvement",
-      subcopy: "Paste a listing, save each generation, and copy your best tags into Etsy.",
-      steps: [
-        {
-          title: "Paste your listing",
-          description: "Generate tags from an existing Etsy title and description.",
-        },
-        {
-          title: "Compare Generator + History",
-          description: "Review saved generations and compare previous tag sets.",
-        },
-        {
-          title: "Copy tags into Etsy",
-          description: "Copy your generated tags and update your listing in Etsy.",
-        },
-      ],
-      demoTitle: "Vanilla Soy Candle in Amber Jar",
-      demoDescription: "Warm vanilla candle for cozy home gifts",
-      historyRows: ["Vanilla candle tags", "Ring gift tags", "Birthday invite tags"],
-      copyTags: [
-        "soy candle",
-        "amber jar candle",
-        "vanilla home gift",
-        "cozy candle",
-        "housewarming gift",
-      ],
-    });
+
+    expect(
+      PRICING_PLANS.find((plan) => plan.id === "monthly")?.features,
+    ).toContain("Saved generation history");
+    expect(
+      PRICING_PLANS.find((plan) => plan.id === "yearly")?.features,
+    ).toContain("Saved generation history");
   });
 
-  it("uses the clarified hero and nav copy", () => {
-    expect(heroCopy).toEqual({
-      pill: "Etsy tag generator for sellers",
-      headlineStart: "Generate Etsy tags that",
-      headlineEmphasis: "help shoppers find your listings",
-      body:
-        "Etsy tags are keywords shoppers search for. Paste your listing, generate tags, and copy them into Etsy.",
-      cta: "Generate tags for free",
-    });
-    expect(PRIMARY_NAV_ACTION_LABEL).toBe("Try free");
+  it("renders the beginner FAQ funnel and keeps only one question open", () => {
+    renderHome();
+
+    expect(screen.getByRole("heading", { name: "Frequently asked questions" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "What is Tagloom?" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "How do I get help if something goes wrong?" })).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        /Tagloom is an Etsy tag generator for sellers with existing listings\. Paste your listing title and description, and Tagloom suggests search tags you can copy into Etsy\./,
+      ),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "What are Etsy tags?" }));
+
+    expect(screen.getByRole("button", { name: "What is Tagloom?" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    expect(screen.getByRole("button", { name: "What are Etsy tags?" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(
+      screen.getByText(
+        /Etsy tags are keywords shoppers use when searching for products\. They help Etsy understand what your listing is and when it should show up in search\./,
+      ),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "What are Etsy tags?" }));
+
+    expect(screen.getByRole("button", { name: "What are Etsy tags?" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
   });
 
-  it("uses the clarified about section copy", () => {
-    expect(aboutSectionCopy).toEqual({
-      eyebrow: "ABOUT",
-      heading: "Tagloom turns your Etsy listing into searchable tags",
-      body:
-        "Etsy tags are keywords shoppers use to find products. If your tags are too broad, missing details, or copied from noisy listing text, your products can be harder to find. Tagloom reads your existing listing and suggests tags that match what you sell, so you can copy your generated tags into Etsy and keep testing new tag sets as your listings change.",
-      cta: "Learn more",
-    });
+  it("renders the revised bottom CTA and removes the old funnel sections", () => {
+    renderHome();
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Want more Etsy shoppers to find your products?",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Tagloom helps you turn an existing listing into search tags shoppers can use to find what you sell.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("button", { name: "Generate tags for free" }),
+    ).toHaveLength(2);
+    expect(
+      screen.queryByText("A simple workflow for ongoing tag improvement"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Blog Crash Course")).not.toBeInTheDocument();
+    expect(screen.getByTestId("generator-mock")).toBeInTheDocument();
+    expect(screen.getByTestId("pricing-cards-mock")).toBeInTheDocument();
+    expect(screen.getByTestId("site-footer-mock")).toBeInTheDocument();
+  });
+
+  it("uses the rewritten FAQ order", () => {
+    expect(faqs.map((item) => item.question)).toEqual([
+      "What is Tagloom?",
+      "What are Etsy tags?",
+      "Can better Etsy tags help me get more sales?",
+      "How do I use Tagloom with my Etsy listing?",
+      "How often should I update my tags?",
+      "Can I save and compare past tag generations?",
+      "What happens after I copy my tags into Etsy?",
+      "How much does Tagloom cost?",
+      "How do I get help if something goes wrong?",
+    ]);
   });
 });
