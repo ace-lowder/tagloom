@@ -71,7 +71,7 @@ export default function HomePageClient({ pricingState }: HomePageClientProps) {
       <HeroSection onGenerate={triggerGeneratorFlow} />
       <AboutSection />
       <PricingSection pricingState={pricingState} />
-      <FaqSection faqs={faqs} />
+      <FaqSection faqs={faqs} onGeneratorCta={triggerGeneratorFlow} />
       <BottomCtaSection onGenerate={triggerGeneratorFlow} />
       <SiteFooter />
     </div>
@@ -158,10 +158,10 @@ function AboutSection() {
             {aboutSectionCopy.heading}
           </h2>
         </div>
-        <p className="mx-auto mt-5 max-w-5xl text-left text-base leading-8 text-stone-700 sm:text-lg">
+        <p className="mx-auto mt-5 max-w-2xl text-left text-base leading-8 text-stone-700 sm:text-lg lg:max-w-5xl">
           {aboutSectionCopy.body}
         </p>
-        <div className="mx-auto mt-5 flex max-w-5xl justify-end">
+        <div className="mx-auto mt-5 flex max-w-2xl justify-end lg:max-w-5xl">
           <Link
             href="/blog"
             className="group inline-flex items-center gap-2 text-sm font-semibold text-stone-500 transition-colors hover:text-orange-600"
@@ -262,8 +262,11 @@ type FaqSectionProps = {
   faqs: FAQEntry[];
 };
 
-function FaqSection({ faqs }: FaqSectionProps) {
-  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
+function FaqSection({
+  faqs,
+  onGeneratorCta,
+}: FaqSectionProps & { onGeneratorCta: () => void }) {
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   return (
     <section id="faq" className="bg-white px-5 py-24">
@@ -282,13 +285,13 @@ function FaqSection({ faqs }: FaqSectionProps) {
               key={faq.question}
               question={faq.question}
               answer={faq.answer}
-              link={faq.link}
               isOpen={openFaqIndex === index}
               onToggle={() =>
                 setOpenFaqIndex((current) =>
                   current === index ? null : index,
                 )
               }
+              onGeneratorCta={onGeneratorCta}
             />
           ))}
         </motion.div>
@@ -359,16 +362,13 @@ function BottomCtaSection({ onGenerate }: BottomCtaSectionProps) {
 
 type FAQItemProps = {
   question: string;
-  answer: string;
-  link?: {
-    label: string;
-    href: string;
-  };
+  answer: FAQEntry["answer"];
   isOpen: boolean;
   onToggle: () => void;
+  onGeneratorCta: () => void;
 };
 
-function FAQItem({ question, answer, link, isOpen, onToggle }: FAQItemProps) {
+function FAQItem({ question, answer, isOpen, onToggle, onGeneratorCta }: FAQItemProps) {
   return (
     <div className="last:border-0 border-b border-stone-200">
       <button
@@ -386,15 +386,28 @@ function FAQItem({ question, answer, link, isOpen, onToggle }: FAQItemProps) {
       </button>
       <motion.div initial={false} animate={{ height: isOpen ? "auto" : 0, opacity: isOpen ? 1 : 0 }} className="overflow-hidden">
         <p className="pb-5 leading-relaxed text-stone-600">
-          {answer}
-          {link ? (
-            <>
-              {" "}
-              <Link href={link.href} className="font-semibold text-orange-600 hover:text-orange-700">
-                {link.label}
+          {answer.map((part, index) =>
+            part.type === "text" ? (
+              <span key={`${question}-text-${index}`}>{part.text}</span>
+            ) : part.href === "#generator" ? (
+              <button
+                key={`${question}-link-${part.href}-${index}`}
+                type="button"
+                onClick={onGeneratorCta}
+                className="font-semibold text-orange-600 transition-colors hover:text-orange-700"
+              >
+                {part.label}
+              </button>
+            ) : (
+              <Link
+                key={`${question}-link-${part.href}-${index}`}
+                href={part.href}
+                className="font-semibold text-orange-600 transition-colors hover:text-orange-700"
+              >
+                {part.label}
               </Link>
-            </>
-          ) : null}
+            ),
+          )}
         </p>
       </motion.div>
     </div>

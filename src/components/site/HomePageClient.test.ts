@@ -12,6 +12,10 @@ const router = {
   refresh: vi.fn(),
 };
 
+const mockRefs = vi.hoisted(() => ({
+  dispatchGeneratorCta: vi.fn(),
+}));
+
 vi.mock("next/navigation", () => ({
   useRouter: () => router,
   usePathname: () => "/",
@@ -93,7 +97,7 @@ vi.mock("@/components/pricing/usePricingActions", () => ({
 
 vi.mock("@/lib/generatorCta", () => ({
   consumePendingGeneratorCta: () => null,
-  dispatchGeneratorCta: vi.fn(),
+  dispatchGeneratorCta: mockRefs.dispatchGeneratorCta,
 }));
 
 const pricingState = {
@@ -135,12 +139,10 @@ describe("HomePageClient funnel", () => {
     expect(screen.getByRole("heading", { name: "Frequently asked questions" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "What is Tagloom?" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "How do I get help if something goes wrong?" })).toBeInTheDocument();
-
-    expect(
-      screen.getByText(
-        /Tagloom is an Etsy tag generator for sellers with existing listings\. Paste your listing title and description, and Tagloom suggests search tags you can copy into Etsy\./,
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "What is Tagloom?" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "What are Etsy tags?" }));
 
@@ -157,12 +159,28 @@ describe("HomePageClient funnel", () => {
         /Etsy tags are keywords shoppers use when searching for products\. They help Etsy understand what your listing is and when it should show up in search\./,
       ),
     ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Learn more about tags" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "What are Etsy tags?" }));
 
     expect(screen.getByRole("button", { name: "What are Etsy tags?" })).toHaveAttribute(
       "aria-expanded",
       "false",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "How do I get help if something goes wrong?" }));
+    expect(screen.getByRole("link", { name: "support" })).toBeInTheDocument();
+  });
+
+  it("reuses the generator CTA for faq generator links", () => {
+    renderHome();
+
+    fireEvent.click(screen.getByRole("button", { name: "What is Tagloom?" }));
+    fireEvent.click(screen.getByRole("button", { name: "Try it now" }));
+
+    expect(mockRefs.dispatchGeneratorCta).toHaveBeenCalledWith(
+      { requestReset: true },
+      { smoothScroll: true },
     );
   });
 
