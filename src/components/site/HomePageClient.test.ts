@@ -125,12 +125,12 @@ describe("HomePageClient funnel", () => {
       "FAQ",
     ]);
 
-    expect(
-      PRICING_PLANS.find((plan) => plan.id === "monthly")?.features,
-    ).toContain("Saved generation history");
-    expect(
-      PRICING_PLANS.find((plan) => plan.id === "yearly")?.features,
-    ).toContain("Saved generation history");
+    expect(PRICING_PLANS.find((plan) => plan.id === "monthly")?.features).toContain(
+      "Save and compare past tags",
+    );
+    expect(PRICING_PLANS.find((plan) => plan.id === "yearly")?.features).toContain(
+      "Save and compare past tags",
+    );
   });
 
   it("renders the beginner FAQ funnel and keeps only one question open", () => {

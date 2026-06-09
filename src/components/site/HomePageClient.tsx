@@ -224,10 +224,10 @@ function PricingSection({ pricingState }: PricingSectionProps) {
             Pricing
           </motion.p>
           <motion.h2 variants={fadeInUp} className="mb-3 text-3xl font-bold text-stone-900 sm:text-4xl">
-            Choose the plan that fits how often you update your Etsy listings
+            Choose the right plan for your Etsy listings
           </motion.h2>
           <motion.p variants={fadeInUp} className="mx-auto max-w-2xl text-stone-500">
-            Start free, then upgrade when you want more generations, saved history, and room to keep testing tags across more listings.
+            Start free, then upgrade when you want more tag generations, saved tag history, and room to test tags across more listings.
           </motion.p>
         </motion.div>
 

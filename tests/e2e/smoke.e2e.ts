@@ -52,7 +52,7 @@ test("billing actions use the real billing UI with mocked endpoints", async ({ p
   await page.goto("/billing");
 
   const checkoutButton = page
-    .getByRole("button", { name: /Start now|Go monthly|Get Unlimited|Purchase generations|Change plan|Renew plan/ })
+    .getByRole("button", { name: /Start now|Start monthly|Go unlimited|Purchase generations|Change plan|Renew plan/ })
     .first();
   const checkoutRequest = page.waitForRequest("**/api/checkout/session");
   await checkoutButton.click();
@@ -107,7 +107,7 @@ test("billing actions use the real billing UI with mocked endpoints", async ({ p
   await page.goto("/billing");
 
   const errorCheckoutButton = page
-    .getByRole("button", { name: /Start now|Go monthly|Get Unlimited|Purchase generations|Change plan|Renew plan/ })
+    .getByRole("button", { name: /Start now|Start monthly|Go unlimited|Purchase generations|Change plan|Renew plan/ })
     .first();
   const errorCheckoutRequest = page.waitForRequest("**/api/checkout/session");
   await errorCheckoutButton.click();
