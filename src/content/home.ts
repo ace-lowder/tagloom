@@ -44,12 +44,22 @@ export const faqs: FAQEntry[] = [
     answer: [
       {
         type: "text",
-        text: "Etsy tags are keywords shoppers use when searching for products. If you want a deeper explanation, ",
+        text: "Etsy tags are keywords and phrases you add to a listing to help Etsy understand what you sell. Shoppers do not always search with the same words you use in your title, so tags give you more chances to describe your product.",
       },
-      { type: "link", label: "learn more about tags", href: "/blog" },
+      { type: "break" },
       {
         type: "text",
-        text: " in the guide. The simple version is that tags help Etsy understand when your listing should appear in search.",
+        text: "Good tags usually describe what the item is, who it is for, when someone might buy it, and what style or details make it specific. For example, a candle listing might use tags for the scent, gift occasion, room, material, or type of shopper. If you want a deeper explanation, read more on the ",
+      },
+      { type: "link", label: "blog", href: "/blog" },
+      {
+        type: "text",
+        text: ", or paste your listing into the ",
+      },
+      { type: "link", label: "Tagloom generator", href: "#generator" },
+      {
+        type: "text",
+        text: " to see tag ideas for your own product.",
       },
     ],
   },
