@@ -386,6 +386,8 @@ function FAQItem({ question, answer, isOpen, onToggle, onGeneratorCta }: FAQItem
           {answer.map((part, index) =>
             part.type === "text" ? (
               <span key={`${question}-text-${index}`}>{part.text}</span>
+            ) : part.type === "break" ? (
+              <br key={index} />
             ) : part.href === "#generator" ? (
               <button
                 key={`${question}-link-${part.href}-${index}`}

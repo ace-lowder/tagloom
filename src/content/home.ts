@@ -3,6 +3,7 @@ export type FAQEntry = {
   answer: (
     | { type: "text"; text: string }
     | { type: "link"; label: string; href: string }
+    | { type: "break" }
   )[];
 };
 
@@ -24,12 +25,17 @@ export const faqs: FAQEntry[] = [
     answer: [
       {
         type: "text",
-        text: "Tagloom is an Etsy tag generator for sellers with existing listings. Paste your listing into Tagloom, use ",
+        text: "Tagloom is an Etsy tag generator for sellers who want to improve existing listings. One of the hardest parts of Etsy is helping the right shoppers find what you sell. Tags are one way Etsy understands your product and matches it with shopper searches.",
       },
-      { type: "link", label: "try it now", href: "#generator" },
+      { type: "break" },
       {
         type: "text",
-        text: ", and it suggests search tags you can copy into Etsy. You stay in control of which tags you use.",
+        text: "When your tags are too broad, missing details, or aimed at the wrong audience, your listing can be harder to find. Tagloom reads your title and description, then suggests tags that fit your product and the shoppers likely searching for it. Paste your listing into the ",
+      },
+      { type: "link", label: "Tagloom generator", href: "#generator" },
+      {
+        type: "text",
+        text: " and you’ll get tags you can copy into Etsy and test today.",
       },
     ],
   },

@@ -153,7 +153,12 @@ describe("HomePageClient funnel", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Etsy tags are keywords shoppers search for. Better tags can help your listings show up in more searches. Paste your listing, generate tags, and copy them into Etsy.",
+        /One of the hardest parts of Etsy is helping the right shoppers find what you sell\./,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Tagloom reads your title and description, then suggests tags that fit your product and the shoppers likely searching for it\./,
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText("ABOUT")).not.toBeInTheDocument();
@@ -181,6 +186,7 @@ describe("HomePageClient funnel", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "learn more about tags" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Tagloom generator" })).toBeInTheDocument();
     expect(
       screen.getByText(
         /The simple version is that tags help Etsy understand when your listing should appear in search\./,
@@ -202,7 +208,7 @@ describe("HomePageClient funnel", () => {
     renderHome();
 
     fireEvent.click(screen.getByRole("button", { name: "What is Tagloom?" }));
-    fireEvent.click(screen.getByRole("button", { name: "try it now" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tagloom generator" }));
 
     expect(mockRefs.dispatchGeneratorCta).toHaveBeenCalledWith(
       { requestReset: true },
