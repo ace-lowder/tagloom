@@ -195,7 +195,7 @@ describe("HomePageClient funnel", () => {
     expect(screen.getAllByRole("button", { name: "Tagloom generator" })).toHaveLength(2);
     expect(
       screen.getByText(
-        /see tag ideas for your own product\./,
+        /to get tag ideas for your own product\./,
       ),
     ).toBeInTheDocument();
 
@@ -205,6 +205,26 @@ describe("HomePageClient funnel", () => {
       "aria-expanded",
       "false",
     );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Can better Etsy tags help me get more sales?" }),
+    );
+    expect(
+      screen.getByText(
+        /Better Etsy tags can help you get more sales, but they can’t promise sales\./,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Tags help Etsy figure out what your listing is about/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/right shoppers to find what you sell/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/more chances for views, favorites, and orders/),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Tagloom" })[0]).toBeInTheDocument();
+    expect(
+      screen.getByText(/copy the best ones into Etsy and test what works\./),
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "How do I get help if something goes wrong?" }));
     expect(screen.getByRole("link", { name: "support" })).toBeInTheDocument();

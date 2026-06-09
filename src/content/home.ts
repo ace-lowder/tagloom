@@ -49,7 +49,7 @@ export const faqs: FAQEntry[] = [
       { type: "break" },
       {
         type: "text",
-        text: "Good tags usually describe what the item is, who it is for, when someone might buy it, and what style or details make it specific. For example, a candle listing might use tags for the scent, gift occasion, room, material, or type of shopper. If you want a deeper explanation, read more on the ",
+        text: "Good tags usually describe what the item is, who it is for, when someone might buy it, and what style or details make it specific. For example, a candle listing might use tags for the scent, gift occasion, room, material, or type of shopper. You can learn more on the ",
       },
       { type: "link", label: "blog", href: "/blog" },
       {
@@ -59,7 +59,7 @@ export const faqs: FAQEntry[] = [
       { type: "link", label: "Tagloom generator", href: "#generator" },
       {
         type: "text",
-        text: " to see tag ideas for your own product.",
+        text: " to get tag ideas for your own product.",
       },
     ],
   },
@@ -68,12 +68,17 @@ export const faqs: FAQEntry[] = [
     answer: [
       {
         type: "text",
-        text: "Better tags can help more relevant shoppers find your listing. Use ",
+        text: "Better Etsy tags can help you get more sales, but they can’t promise sales. Tags help Etsy figure out what your listing is about, so better tags can make it easier for the right shoppers to find what you sell.",
       },
-      { type: "link", label: "generate better tags", href: "#generator" },
+      { type: "break" },
       {
         type: "text",
-        text: " to test stronger search phrases for products you already sell. More relevant visibility can lead to more chances for views, favorites, and sales, but no tag tool can guarantee sales.",
+        text: "That can mean more chances for views, favorites, and orders, especially if your photos, price, and product are already strong. ",
+      },
+      { type: "link", label: "Tagloom", href: "#generator" },
+      {
+        type: "text",
+        text: " gives you tag ideas for listings you already have, so you can copy the best ones into Etsy and test what works.",
       },
     ],
   },
