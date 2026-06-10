@@ -153,12 +153,12 @@ describe("HomePageClient funnel", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        /One of the hardest parts of Etsy is helping the right shoppers find what you sell\./,
+        /We built Tagloom to help sellers connect their products with the shoppers already looking for them\./,
       ),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        /Tagloom reads your title and description, then suggests tags that fit your product and the shoppers likely searching for it\./,
+        /Tagloom helps turn your existing listing into tags you can copy into Etsy and keep testing over time\./,
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText("ABOUT")).not.toBeInTheDocument();
@@ -170,63 +170,74 @@ describe("HomePageClient funnel", () => {
       "false",
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "What are Etsy tags?" }));
+    fireEvent.click(screen.getByRole("button", { name: "What is Tagloom?" }));
 
     expect(screen.getByRole("button", { name: "What is Tagloom?" })).toHaveAttribute(
       "aria-expanded",
-      "false",
+      "true",
     );
+    expect(
+      screen.getByText(/getting your products in front of the right shoppers/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/describe your product in ways shoppers might search for/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/copy into Etsy today/)).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Tagloom generator" })[0]).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "What are Etsy tags?" }));
+
     expect(screen.getByRole("button", { name: "What are Etsy tags?" })).toHaveAttribute(
       "aria-expanded",
       "true",
     );
     expect(
-      screen.getByText(
-        /Etsy tags are keywords and phrases you add to a listing/,
-      ),
+      screen.getByText(/Shoppers don’t always search with the same words you use in your title/),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Shoppers do not always search with the same words you use in your title/),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Good tags usually describe what the item is/),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "blog" })).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Tagloom generator" })).toHaveLength(2);
-    expect(
-      screen.getByText(
-        /to get tag ideas for your own product\./,
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/use tags to fill in those gaps/)).toBeInTheDocument();
+    expect(screen.getByText(/what makes good tags on our/)).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "blog" })[0]).toBeInTheDocument();
+    expect(screen.getByText(/to get tag ideas for your own product\./)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "What are Etsy tags?" }));
+    fireEvent.click(screen.getByRole("button", { name: "Can better Etsy tags help me get more sales?" }));
+    expect(
+      screen.getByText(/Etsy tags are a good place to start when you want more sales/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/match your listing with shoppers looking for products like yours/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/more chances for views, favorites, and orders/)).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Tagloom" })[0]).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "blog" })[0]).toBeInTheDocument();
+    expect(screen.getByText(/make the rest of your listing stronger too/)).toBeInTheDocument();
 
-    expect(screen.getByRole("button", { name: "What are Etsy tags?" })).toHaveAttribute(
-      "aria-expanded",
-      "false",
-    );
+    fireEvent.click(screen.getByRole("button", { name: "How do I use Tagloom with my Etsy listing?" }));
+    expect(screen.getByText(/Using Tagloom is as easy as copying and pasting from Etsy/)).toBeInTheDocument();
+    expect(screen.getByText(/copy over the tags you want to use/)).toBeInTheDocument();
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Can better Etsy tags help me get more sales?" }),
+      screen.getByRole("button", { name: "What should I do after I copy my tags into Etsy?" }),
     );
-    expect(
-      screen.getByText(
-        /Better Etsy tags can help you get more sales, but they can’t promise sales\./,
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Tags help Etsy figure out what your listing is about/),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/right shoppers to find what you sell/)).toBeInTheDocument();
-    expect(
-      screen.getByText(/more chances for views, favorites, and orders/),
-    ).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Tagloom" })[0]).toBeInTheDocument();
-    expect(
-      screen.getByText(/copy the best ones into Etsy and test what works\./),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/monitor how it does/)).toBeInTheDocument();
+    expect(screen.getByText(/regenerate tags from your updated listing/)).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "blog" })[0]).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "How often should I update my tags?" }));
+    expect(screen.getByText(/updating your tags once a month/)).toBeInTheDocument();
+    expect(screen.getByText(/over the next few weeks/)).toBeInTheDocument();
+    expect(screen.getByText(/fresh tag ideas/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Can I save and compare past tags?" }));
+    expect(screen.getByText(/great way to learn what works/)).toBeInTheDocument();
+    expect(screen.getByText(/Open your history in the/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "How much does Tagloom cost?" }));
+    expect(screen.getByText(/Your first tag generation is free/)).toBeInTheDocument();
+    expect(screen.getByText(/Create an account to try it/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "see pricing" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "How do I get help if something goes wrong?" }));
+    expect(screen.getByText(/support team can help faster/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "support" })).toBeInTheDocument();
   });
 
@@ -273,9 +284,9 @@ describe("HomePageClient funnel", () => {
       "What are Etsy tags?",
       "Can better Etsy tags help me get more sales?",
       "How do I use Tagloom with my Etsy listing?",
+      "What should I do after I copy my tags into Etsy?",
       "How often should I update my tags?",
-      "Can I save and compare past tag generations?",
-      "What happens after I copy my tags into Etsy?",
+      "Can I save and compare past tags?",
       "How much does Tagloom cost?",
       "How do I get help if something goes wrong?",
     ]);
