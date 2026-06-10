@@ -25,17 +25,17 @@ export const faqs: FAQEntry[] = [
     answer: [
       {
         type: "text",
-        text: "Tagloom is an Etsy tag generator for sellers who want to improve existing listings. One of the hardest parts of Etsy is getting your products in front of the right shoppers. Tags are one way Etsy understands your product and matches it with shopper searches.",
+        text: "Tagloom is an Etsy tag generator for sellers looking to improve their existing listings. One of the hardest parts of Etsy is getting your products in front of the right shoppers. Tags are one way Etsy understands your product and matches it with shopper searches.",
       },
       { type: "break" },
       {
         type: "text",
-        text: "When your tags are too broad, missing details, or aimed at the wrong audience, your listing can be harder to find. Tagloom reads your title and description, then suggests tags that describe your product in ways shoppers might search for. Paste your listing into the ",
+        text: "When your tags are too broad, missing details, or aimed at the wrong audience, your listing can get buried under countless others. Tagloom uses your title and description to suggest tags that are optimized for your product and niche. Just copy and paste your product details into the ",
       },
       { type: "link", label: "Tagloom generator", href: "#generator" },
       {
         type: "text",
-        text: " and you’ll get tags you can copy into Etsy today.",
+        text: " and upgrade your Etsy listings today.",
       },
     ],
   },
@@ -44,12 +44,12 @@ export const faqs: FAQEntry[] = [
     answer: [
       {
         type: "text",
-        text: "Etsy tags are keywords and phrases you add to a listing to help Etsy understand what you sell. Shoppers don’t always search with the same words you use in your title, so you can use tags to fill in those gaps.",
+        text: "Etsy tags are keywords and phrases you add to a listing to help Etsy understand what you sell. Shoppers don’t always search the exact words in your title, so you can use tags to fill in those gaps.",
       },
       { type: "break" },
       {
         type: "text",
-        text: "Good tags usually describe what the item is, who it is for, or when someone might buy it. For example, a candle listing might use tags for the scent, occasion, or ingredients. You can learn more about what makes good tags on our ",
+        text: "Good tags usually describe what the item is, who it's for, or when someone might buy it. For example, a candle listing might use tags for the scent, occasion, or ingredients. You can learn more about what makes good tags on our ",
       },
       { type: "link", label: "blog", href: "/blog" },
       {
@@ -68,22 +68,22 @@ export const faqs: FAQEntry[] = [
     answer: [
       {
         type: "text",
-        text: "Etsy tags are a good place to start when you want more sales, but they can’t promise sales. They’re easy to update and can help Etsy match your listing with shoppers looking for products like yours.",
+        text: "Yes, and Etsy tags are a great place to start. They’re easy to update and help Etsy match your listing with shoppers looking for products like yours.",
       },
       { type: "break" },
       {
         type: "text",
-        text: "That can mean more chances for views, favorites, and orders, especially if your photos, price, and product are already strong. ",
+        text: "That means more chances for views, favorites, and orders, especially if your product is already strong. ",
       },
       { type: "link", label: "Tagloom", href: "#generator" },
       {
         type: "text",
-        text: " gives you tag ideas for listings you already have, and you can use the guides on our ",
+        text: " generates tag ideas that are optimized for your product and niche. Once your tags are updated, you can use the guides on our ",
       },
       { type: "link", label: "blog", href: "/blog" },
       {
         type: "text",
-        text: " to make the rest of your listing stronger too.",
+        text: " to help convert those new customers into sales.",
       },
     ],
   },
@@ -92,12 +92,12 @@ export const faqs: FAQEntry[] = [
     answer: [
       {
         type: "text",
-        text: "Using Tagloom is as easy as copying and pasting from Etsy. Copy your product title and description from Etsy, paste them into the ",
+        text: "Using Tagloom is as easy as copying and pasting from Etsy. Take your product title and description from Etsy, paste them into the ",
       },
       { type: "link", label: "Tagloom generator", href: "#generator" },
       {
         type: "text",
-        text: ", and Tagloom will give you tag ideas for that product. Once your tags are generated, edit your listing in Etsy and copy over the tags you want to use. In just a few moments, you can update any listing in your shop.",
+        text: ", and we'll generate optimized tags for your product. Once your tags are generated, edit your listing in Etsy and copy over the tags you want to use. It only takes a few moments to update any listing in your shop.",
       },
     ],
   },
@@ -106,7 +106,7 @@ export const faqs: FAQEntry[] = [
     answer: [
       {
         type: "text",
-        text: "Once you copy your new tags into an Etsy listing, monitor how it does. Watch for signs like more views, favorites, or orders, and compare that with how the listing was doing before. If the listing still is not getting the views you expect, come back to ",
+        text: "Once you copy your new tags into an Etsy listing, you should keep an eye on your listing. Watch for signs like more views, favorites, or orders, and compare that with how the listing was doing before. If the listing still is not getting the views you expect, come back to ",
       },
       { type: "link", label: "Tagloom", href: "#generator" },
       {
@@ -116,7 +116,7 @@ export const faqs: FAQEntry[] = [
       { type: "link", label: "blog", href: "/blog" },
       {
         type: "text",
-        text: " to improve your title and description, then regenerate tags from your updated listing.",
+        text: " to improve your title and description, then regenerate tags based on your updates.",
       },
     ],
   },
@@ -125,7 +125,7 @@ export const faqs: FAQEntry[] = [
     answer: [
       {
         type: "text",
-        text: "A good starting point is updating your tags once a month. Update your tags today, then watch how the listing does over the next few weeks so you can compare one tag set against another. If your listing is not getting the views you expect, use the guides on our ",
+        text: "A good starting point is updating your tags once a month. Create a new set of tags today, then watch how the listing does over the next few weeks so you can get an understanding of how the listing does. If your product is not getting the views you expect, use the guides on our ",
       },
       { type: "link", label: "blog", href: "/blog" },
       {
@@ -135,7 +135,7 @@ export const faqs: FAQEntry[] = [
       { type: "link", label: "Tagloom generator", href: "#generator" },
       {
         type: "text",
-        text: " for fresh tag ideas.",
+        text: " to refresh your tags. Continue this process of updating and monitoring your product until you start earning the sales you expect.",
       },
     ],
   },
@@ -144,12 +144,12 @@ export const faqs: FAQEntry[] = [
     answer: [
       {
         type: "text",
-        text: "Yes, and it is a great way to learn what works. Tagloom saves your past tag ideas so you can come back and compare what you tried before. Open your history in the ",
+        text: "Yes, and it is a great way to learn what works. Tagloom saves your past tag ideas so you can come back and compare what you’ve tried before. Just click the history toggle button on the top right of the ",
       },
       { type: "link", label: "Tagloom generator", href: "#generator" },
       {
         type: "text",
-        text: " to review past tags, then compare your listing’s views, favorites, and sales across different tag sets.",
+        text: " to see your past generations. Over time, we recommend comparing your listing’s views, favorites, and sales across different tag sets.",
       },
     ],
   },
@@ -158,17 +158,17 @@ export const faqs: FAQEntry[] = [
     answer: [
       {
         type: "text",
-        text: "Your first tag generation is free. Create an account to try it.",
+        text: "Your first tag generation is free! All you need to do is create a new account.",
       },
       { type: "break" },
       {
         type: "text",
-        text: "If you want more tag generations, saved tag history, or unlimited generations, ",
+        text: "If you want more tag generations, saved tag history, or unlimited generations, take a look at our ",
       },
-      { type: "link", label: "see pricing", href: "#pricing" },
+      { type: "link", label: "pricing", href: "#pricing" },
       {
         type: "text",
-        text: " and choose the plan that fits your Etsy needs. Starter is great for sellers with a few listings, while Monthly and Yearly are better for sellers who want to keep testing tags across their shop.",
+        text: " and choose a plan that fits your Etsy needs. Starter is great for sellers with a few listings, while Monthly and Yearly are better for sellers who want to optimize tags across their shop.",
       },
     ],
   },
@@ -177,12 +177,12 @@ export const faqs: FAQEntry[] = [
     answer: [
       {
         type: "text",
-        text: "If something breaks, visit our ",
+        text: "If you aren't satisfied with your generated tags, or have any issues with your account, visit our ",
       },
       { type: "link", label: "support", href: "/support" },
       {
         type: "text",
-        text: " page for help. Include what you were trying to do and what went wrong so our support team can help faster.",
+        text: " page for help. Include what you were trying to do and what went wrong so our support team can help find a solution for your needs.",
       },
     ],
   },
