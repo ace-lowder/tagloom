@@ -41,7 +41,7 @@ function createHistoryQuery(
   count = rows.length,
   queryError: { code?: string; message: string; details?: string | null; hint?: string | null } | null = null,
 ) {
-  const query: Record<string, ReturnType<typeof vi.fn>> = {};
+  const query: Record<string, unknown> = {};
   query.select = vi.fn(() => query);
   query.eq = vi.fn(() => query);
   query.is = vi.fn(() => query);

@@ -8,7 +8,9 @@ import { POST } from "./route";
 vi.mock("@/lib/apiProtection", () => ({
   applyApiProtection: vi.fn(async () => ({})),
   jsonFromBlockedResult: vi.fn((blocked) =>
-    Response.json(blocked.body, { status: blocked.status }),
+    Response.json(blocked.body, { status: blocked.status }) as ReturnType<
+      typeof jsonFromBlockedResult
+    >,
   ),
 }));
 
@@ -68,7 +70,9 @@ describe("support contact route", () => {
 
     vi.mocked(applyApiProtection).mockResolvedValue({});
     vi.mocked(jsonFromBlockedResult).mockImplementation((blocked) =>
-      Response.json(blocked.body, { status: blocked.status }),
+      Response.json(blocked.body, { status: blocked.status }) as ReturnType<
+        typeof jsonFromBlockedResult
+      >,
     );
     vi.mocked(logServerError).mockReset();
 

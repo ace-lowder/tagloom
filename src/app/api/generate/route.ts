@@ -8,49 +8,193 @@ import { logServerError } from "@/lib/errorLogging";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { generateTags, getPlaceholderTags } from "@/lib/generation";
 
-type GenerateRequest = {
-  title?: string;
-  description?: string;
-  generationContextId?: string;
-  turnstileToken?: string;
-};
+export async function POST(req: NextRequest) {
+  const input = await parseGenerateRequest(req);
 
-type ProfileRecord = {
-  id: string;
-  stripe_customer_id: string | null;
-  subscription_tier: "monthly" | "yearly" | null;
-  subscription_active: boolean;
-  subscription_period_start: string | null;
-  subscription_period_end: string | null;
-  subscription_cancel_at?: string | null;
-  monthly_generation_count: number;
-  monthly_count_period_start: string | null;
-};
+  const preAuthProtection = await applyApiProtection({
+    route: "/api/generate",
+    request: req,
+    requireTurnstile: true,
+    turnstileToken: input.turnstileToken,
+    rateLimits: [{ name: "ip_20_per_min", actor: "ip", limit: 20, windowMs: 60_000 }],
+  });
 
-type EntitlementUsed =
-  | "free_credit"
-  | "single_use"
-  | "subscription_monthly"
-  | "subscription_yearly";
+  if (preAuthProtection.blocked) {
+    return jsonFromBlockedResult(preAuthProtection.blocked);
+  }
 
-type EntitlementResult = {
-  allowed: boolean;
-  entitlement_used: EntitlementUsed | null;
-  reason: string | null;
-};
+  if (!input.title) {
+    return NextResponse.json({ error: "Title is required." }, { status: 400 });
+  }
 
-type InsertedGenerationRow = {
-  id: string;
-};
+  const supabase = createSupabaseServerClient();
+  if (!supabase) {
+    return NextResponse.json(
+      {
+        error:
+          "Auth is not configured yet. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.",
+      },
+      { status: 500 },
+    );
+  }
 
-type ParsedGenerateRequest = {
-  title: string;
-  description: string;
-  generationContextId: string | null;
-  turnstileToken: string | null;
-};
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
 
-type SupabaseServerClient = NonNullable<ReturnType<typeof createSupabaseServerClient>>;
+  if (userError || !user) {
+    return paywall(
+      "auth_required",
+      "Create an account or log in to unlock this generation. New accounts get 1 free generation.",
+      input.generationContextId,
+    );
+  }
+
+  const userProtection = await applyApiProtection({
+    route: "/api/generate",
+    request: req,
+    userId: user.id,
+    rateLimits: [
+      { name: "user_30_per_min", actor: "user", limit: 30, windowMs: 60_000 },
+      { name: "user_300_per_day", actor: "user", limit: 300, windowMs: 86_400_000 },
+    ],
+  });
+
+  if (userProtection.blocked) {
+    return jsonFromBlockedResult(userProtection.blocked);
+  }
+
+  const profileResult = await loadProfile({
+    supabase,
+    userId: user.id,
+    req,
+    input,
+  });
+  if (!profileResult.ok) return profileResult.response;
+
+  const refreshedProfile = await refreshProfileBillingProjection(
+    profileResult.profile,
+  );
+  const { profile, entitlement, entitlementError } =
+    await reserveEntitlementWithBillingRefresh({
+      supabase,
+      userId: user.id,
+      profile: refreshedProfile,
+    });
+
+  if (entitlementError || !entitlement) {
+    await logServerError({
+      source: "api.generate.entitlement_reservation",
+      route: "/api/generate",
+      method: req.method,
+      status: 500,
+      userId: user.id,
+      error: entitlementError ?? new Error("Entitlement reservation returned empty result"),
+      metadata: {
+        stage: "entitlement_reservation",
+        titleLength: input.title.length,
+        descriptionLength: input.description.length,
+        generationContextId: input.generationContextId,
+        hasStripeCustomer: Boolean(profile.stripe_customer_id),
+        supabaseDetails: entitlementError?.details ?? null,
+        supabaseHint: entitlementError?.hint ?? null,
+      },
+    });
+    return NextResponse.json(
+      { error: "Could not reserve generation entitlement." },
+      { status: 500 },
+    );
+  }
+
+  if (!entitlement.allowed && entitlement.reason === "monthly_limit") {
+    return paywall(
+      "limit_reached",
+      "Monthly generation limit reached (100). Upgrade to yearly or wait for your next Stripe billing period.",
+      input.generationContextId,
+    );
+  }
+
+  if (!entitlement.allowed || !entitlement.entitlement_used) {
+    return paywall(
+      "payment_required",
+      "You have no remaining generation credits. Purchase single use or subscribe to keep generating tags.",
+      input.generationContextId,
+    );
+  }
+
+  const entitlementUsed = entitlement.entitlement_used;
+
+  try {
+    const generated = await generateTags(input.title, input.description);
+    const { data: insertedGeneration, error: insertError } =
+      await persistGenerationResult({
+        supabase,
+        userId: user.id,
+        title: input.title,
+        description: input.description,
+        generated,
+        entitlementUsed,
+      });
+
+    if (insertError || !insertedGeneration?.id) {
+      await logServerError({
+        source: "api.generate.generation_insert",
+        route: "/api/generate",
+        method: req.method,
+        status: 500,
+        userId: user.id,
+        error: insertError ?? new Error("Generation insert returned empty row"),
+        metadata: {
+          stage: "generation_insert",
+          titleLength: input.title.length,
+          descriptionLength: input.description.length,
+          generationContextId: input.generationContextId,
+          entitlementUsed,
+          supabaseDetails: insertError?.details ?? null,
+          supabaseHint: insertError?.hint ?? null,
+        },
+      });
+      await refundGenerationEntitlement(supabase, user.id, entitlementUsed);
+      return NextResponse.json(
+        { error: "Could not save generation." },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({
+      status: "ok",
+      requestId: input.generationContextId,
+      generationId: insertedGeneration.id,
+      tags: generated.tags,
+      source: generated.source,
+      entitlementUsed,
+    });
+  } catch (error) {
+    await logServerError({
+      source: "api.generate.generate_tags",
+      route: "/api/generate",
+      method: req.method,
+      status: 500,
+      userId: user.id,
+      error,
+      metadata: {
+        stage: "generate_tags",
+        titleLength: input.title.length,
+        descriptionLength: input.description.length,
+        generationContextId: input.generationContextId,
+        entitlementUsed,
+      },
+    });
+    await refundGenerationEntitlement(supabase, user.id, entitlementUsed);
+    return NextResponse.json(
+      { error: "Tag generation failed." },
+      { status: 500 },
+    );
+  }
+}
+
+// === Helpers ===
 
 function paywall(
   reason: "auth_required" | "payment_required" | "limit_reached",
@@ -264,188 +408,48 @@ async function persistGenerationResult({
     .single<InsertedGenerationRow>();
 }
 
-export async function POST(req: NextRequest) {
-  const input = await parseGenerateRequest(req);
+// === Types ===
 
-  const preAuthProtection = await applyApiProtection({
-    route: "/api/generate",
-    request: req,
-    requireTurnstile: true,
-    turnstileToken: input.turnstileToken,
-    rateLimits: [{ name: "ip_20_per_min", actor: "ip", limit: 20, windowMs: 60_000 }],
-  });
+type GenerateRequest = {
+  title?: string;
+  description?: string;
+  generationContextId?: string;
+  turnstileToken?: string;
+};
 
-  if (preAuthProtection.blocked) {
-    return jsonFromBlockedResult(preAuthProtection.blocked);
-  }
+type ProfileRecord = {
+  id: string;
+  stripe_customer_id: string | null;
+  subscription_tier: "monthly" | "yearly" | null;
+  subscription_active: boolean;
+  subscription_period_start: string | null;
+  subscription_period_end: string | null;
+  subscription_cancel_at?: string | null;
+  monthly_generation_count: number;
+  monthly_count_period_start: string | null;
+};
 
-  if (!input.title) {
-    return NextResponse.json({ error: "Title is required." }, { status: 400 });
-  }
+type EntitlementUsed =
+  | "free_credit"
+  | "single_use"
+  | "subscription_monthly"
+  | "subscription_yearly";
 
-  const supabase = createSupabaseServerClient();
-  if (!supabase) {
-    return NextResponse.json(
-      {
-        error:
-          "Auth is not configured yet. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.",
-      },
-      { status: 500 },
-    );
-  }
+type EntitlementResult = {
+  allowed: boolean;
+  entitlement_used: EntitlementUsed | null;
+  reason: string | null;
+};
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+type InsertedGenerationRow = {
+  id: string;
+};
 
-  if (userError || !user) {
-    return paywall(
-      "auth_required",
-      "Create an account or log in to unlock this generation. New accounts get 1 free generation.",
-      input.generationContextId,
-    );
-  }
+type ParsedGenerateRequest = {
+  title: string;
+  description: string;
+  generationContextId: string | null;
+  turnstileToken: string | null;
+};
 
-  const userProtection = await applyApiProtection({
-    route: "/api/generate",
-    request: req,
-    userId: user.id,
-    rateLimits: [
-      { name: "user_30_per_min", actor: "user", limit: 30, windowMs: 60_000 },
-      { name: "user_300_per_day", actor: "user", limit: 300, windowMs: 86_400_000 },
-    ],
-  });
-
-  if (userProtection.blocked) {
-    return jsonFromBlockedResult(userProtection.blocked);
-  }
-
-  const profileResult = await loadProfile({
-    supabase,
-    userId: user.id,
-    req,
-    input,
-  });
-  if (!profileResult.ok) return profileResult.response;
-
-  const refreshedProfile = await refreshProfileBillingProjection(
-    profileResult.profile,
-  );
-  const { profile, entitlement, entitlementError } =
-    await reserveEntitlementWithBillingRefresh({
-      supabase,
-      userId: user.id,
-      profile: refreshedProfile,
-    });
-
-  if (entitlementError || !entitlement) {
-    await logServerError({
-      source: "api.generate.entitlement_reservation",
-      route: "/api/generate",
-      method: req.method,
-      status: 500,
-      userId: user.id,
-      error: entitlementError ?? new Error("Entitlement reservation returned empty result"),
-      metadata: {
-        stage: "entitlement_reservation",
-        titleLength: input.title.length,
-        descriptionLength: input.description.length,
-        generationContextId: input.generationContextId,
-        hasStripeCustomer: Boolean(profile.stripe_customer_id),
-        supabaseDetails: entitlementError?.details ?? null,
-        supabaseHint: entitlementError?.hint ?? null,
-      },
-    });
-    return NextResponse.json(
-      { error: "Could not reserve generation entitlement." },
-      { status: 500 },
-    );
-  }
-
-  if (!entitlement.allowed && entitlement.reason === "monthly_limit") {
-    return paywall(
-      "limit_reached",
-      "Monthly generation limit reached (100). Upgrade to yearly or wait for your next Stripe billing period.",
-      input.generationContextId,
-    );
-  }
-
-  if (!entitlement.allowed || !entitlement.entitlement_used) {
-    return paywall(
-      "payment_required",
-      "You have no remaining generation credits. Purchase single use or subscribe to keep generating tags.",
-      input.generationContextId,
-    );
-  }
-
-  const entitlementUsed = entitlement.entitlement_used;
-
-  try {
-    const generated = await generateTags(input.title, input.description);
-    const { data: insertedGeneration, error: insertError } =
-      await persistGenerationResult({
-        supabase,
-        userId: user.id,
-        title: input.title,
-        description: input.description,
-        generated,
-        entitlementUsed,
-      });
-
-    if (insertError || !insertedGeneration?.id) {
-      await logServerError({
-        source: "api.generate.generation_insert",
-        route: "/api/generate",
-        method: req.method,
-        status: 500,
-        userId: user.id,
-        error: insertError ?? new Error("Generation insert returned empty row"),
-        metadata: {
-          stage: "generation_insert",
-          titleLength: input.title.length,
-          descriptionLength: input.description.length,
-          generationContextId: input.generationContextId,
-          entitlementUsed,
-          supabaseDetails: insertError?.details ?? null,
-          supabaseHint: insertError?.hint ?? null,
-        },
-      });
-      await refundGenerationEntitlement(supabase, user.id, entitlementUsed);
-      return NextResponse.json(
-        { error: "Could not save generation." },
-        { status: 500 },
-      );
-    }
-
-    return NextResponse.json({
-      status: "ok",
-      requestId: input.generationContextId,
-      generationId: insertedGeneration.id,
-      tags: generated.tags,
-      source: generated.source,
-      entitlementUsed,
-    });
-  } catch (error) {
-    await logServerError({
-      source: "api.generate.generate_tags",
-      route: "/api/generate",
-      method: req.method,
-      status: 500,
-      userId: user.id,
-      error,
-      metadata: {
-        stage: "generate_tags",
-        titleLength: input.title.length,
-        descriptionLength: input.description.length,
-        generationContextId: input.generationContextId,
-        entitlementUsed,
-      },
-    });
-    await refundGenerationEntitlement(supabase, user.id, entitlementUsed);
-    return NextResponse.json(
-      { error: "Tag generation failed." },
-      { status: 500 },
-    );
-  }
-}
+type SupabaseServerClient = NonNullable<ReturnType<typeof createSupabaseServerClient>>;

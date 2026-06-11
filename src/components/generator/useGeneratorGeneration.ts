@@ -106,9 +106,12 @@ export function useGeneratorGeneration({
       contextId: string,
       turnstileToken?: string | null,
     ) => {
-      const data = await requestGeneration(
-        buildGenerationRequest(inputTitle, inputDescription, contextId, turnstileToken),
-      );
+      const data = await requestGeneration({
+        title: inputTitle,
+        description: inputDescription,
+        generationContextId: contextId,
+        turnstileToken: turnstileToken ?? null,
+      });
 
       if (data.status === "paywall") {
         applyPaywallState(data);
@@ -241,17 +244,21 @@ export function useGeneratorGeneration({
     turnstileRef,
   ]);
 
-  const shouldConfirmFreeGeneration = useMemo(() => {
-    return shouldConfirmFreeGenerationUsage(usageLabel, paywall, isUnlockingFromPaywall);
+  const requiresFreeGenerationConfirmation = useMemo(() => {
+    return isFreeGenerationConfirmationRequired(
+      usageLabel,
+      paywall,
+      isUnlockingFromPaywall,
+    );
   }, [isUnlockingFromPaywall, paywall, usageLabel]);
 
   const handleGenerate = useCallback(async () => {
-    if (shouldConfirmFreeGeneration) {
+    if (requiresFreeGenerationConfirmation) {
       setConfirmModalMode("generate");
       return;
     }
     await executeGenerate();
-  }, [executeGenerate, shouldConfirmFreeGeneration]);
+  }, [executeGenerate, requiresFreeGenerationConfirmation]);
 
   const confirmModalState = useMemo(
     () => deriveConfirmModalState(confirmModalMode, usageLabel),
@@ -291,20 +298,6 @@ export function useGeneratorGeneration({
 }
 
 // === Helpers ===
-
-function buildGenerationRequest(
-  title: string,
-  description: string,
-  contextId: string,
-  turnstileToken?: string | null,
-) {
-  return {
-    title,
-    description,
-    generationContextId: contextId,
-    turnstileToken: turnstileToken ?? null,
-  };
-}
 
 function prepareGenerationContext({
   currentContextId,
@@ -370,7 +363,7 @@ function clearResumeParams() {
   }
 }
 
-function shouldConfirmFreeGenerationUsage(
+function isFreeGenerationConfirmationRequired(
   usageLabel: string | null,
   paywall: PaywallState | null,
   isUnlockingFromPaywall: boolean,
