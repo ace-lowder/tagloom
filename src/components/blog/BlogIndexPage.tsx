@@ -66,7 +66,10 @@ function BlogHero({ featured }: BlogHeroProps) {
           >
             {BLOG_INDEX_INTRO.heading}
           </motion.h1>
-          <motion.p variants={fadeInUp} className="max-w-xl text-lg text-stone-500">
+          <motion.p
+            variants={fadeInUp}
+            className="max-w-3xl text-lg leading-relaxed text-stone-500"
+          >
             {BLOG_INDEX_INTRO.body}
           </motion.p>
         </motion.div>
@@ -135,50 +138,22 @@ function BlogGuideSection() {
       whileInView="visible"
       viewport={{ once: true, margin: "-80px" }}
       variants={fadeInUp}
-      className="bg-[#ffead6] px-6 py-10 sm:py-12"
+      className="bg-[#ffead6] px-6 py-8 sm:py-10"
     >
       <div className="mx-auto max-w-5xl">
-        <div className="mx-auto max-w-2xl text-left lg:max-w-5xl lg:text-center">
-          <motion.p
-            variants={fadeInUp}
-            className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600"
-          >
-            {BLOG_INDEX_GUIDE.eyebrow}
-          </motion.p>
+        <div className="mx-auto max-w-3xl text-left lg:text-center">
           <motion.h2
             variants={fadeInUp}
-            className="text-3xl font-semibold tracking-tight text-stone-950 sm:text-4xl lg:mx-auto lg:max-w-4xl"
+            className="text-2xl font-semibold tracking-tight text-stone-950 sm:text-3xl"
           >
             {BLOG_INDEX_GUIDE.heading}
           </motion.h2>
         </div>
 
-        <div className="mx-auto mt-5 max-w-2xl text-left text-base leading-8 text-stone-700 sm:text-lg lg:max-w-5xl">
-          <motion.p variants={fadeInUp}>{BLOG_INDEX_GUIDE.body[0]}</motion.p>
-          <motion.p variants={fadeInUp} className="mt-4">
-            {BLOG_INDEX_GUIDE.body[1]}
+        <div className="mx-auto mt-4 max-w-3xl text-left text-base leading-8 text-stone-700 sm:text-lg">
+          <motion.p variants={fadeInUp}>
+            {BLOG_INDEX_GUIDE.body}
           </motion.p>
-        </div>
-
-        <div className="mx-auto mt-8 max-w-2xl text-left lg:max-w-5xl">
-          <motion.h3 variants={fadeInUp} className="text-xl font-bold text-stone-900 sm:text-2xl">
-            {BLOG_INDEX_GUIDE.ctaHeading}
-          </motion.h3>
-          <motion.p
-            variants={fadeInUp}
-            className="mt-3 max-w-3xl text-sm leading-relaxed text-stone-600 sm:text-base"
-          >
-            {BLOG_INDEX_GUIDE.ctaBody}
-          </motion.p>
-          <motion.div variants={fadeInUp}>
-            <Link
-              href={BLOG_INDEX_GUIDE.ctaHref}
-              className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-orange-600 transition-colors hover:text-orange-700"
-            >
-              {BLOG_INDEX_GUIDE.ctaLabel}
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </motion.div>
         </div>
       </div>
     </motion.section>
