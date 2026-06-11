@@ -151,9 +151,11 @@ function BlogGuideSection() {
         </div>
 
         <div className="mx-auto mt-4 max-w-3xl text-left text-base leading-8 text-stone-700 sm:text-lg">
-          <motion.p variants={fadeInUp}>
-            {BLOG_INDEX_GUIDE.body}
-          </motion.p>
+          {BLOG_INDEX_GUIDE.body.map((paragraph) => (
+            <motion.p key={paragraph} variants={fadeInUp} className="mt-4">
+              {paragraph}
+            </motion.p>
+          ))}
         </div>
       </div>
     </motion.section>
@@ -174,11 +176,11 @@ function BlogPostList({ posts }: BlogPostListProps) {
       <div className="mx-auto max-w-4xl">
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-stone-900 sm:text-3xl">
-            Guides to improve your Etsy listings
+            Posts to help improve your Etsy listings
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-500 sm:text-base">
-            Pick one area to improve, make the update in Etsy, then compare how the listing
-            performs before changing the next thing.
+            Pick one post, make the update in Etsy, then compare how the listing performs
+            before changing the next thing.
           </p>
         </div>
         <motion.div initial="hidden" animate="visible" variants={stagger} className="grid gap-6">
