@@ -12,7 +12,7 @@ export async function handleInvoiceEvent({
   event: Stripe.Event;
   stripe: Stripe;
 }) {
-  const invoice = event.data.object as any;
+  const invoice = event.data.object as InvoiceWithSubscription;
   const subscriptionId =
     typeof invoice.subscription === "string" ? invoice.subscription : null;
 
@@ -21,7 +21,7 @@ export async function handleInvoiceEvent({
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
   const metadata = subscription.metadata || {};
   const customerId = typeof subscription.customer === "string" ? subscription.customer : null;
-  let userId = metadata[STRIPE_METADATA_KEYS.userId] ?? null;
+  let userId: string | null = metadata[STRIPE_METADATA_KEYS.userId] ?? null;
 
   if (!userId && customerId) {
     userId = await findUserIdFromStripeCustomerId(customerId);
@@ -35,3 +35,7 @@ export async function handleInvoiceEvent({
     });
   }
 }
+
+type InvoiceWithSubscription = Stripe.Invoice & {
+  subscription?: string | Stripe.Subscription | null;
+};

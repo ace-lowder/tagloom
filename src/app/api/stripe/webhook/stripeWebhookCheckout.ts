@@ -29,7 +29,7 @@ export async function handleCheckoutSessionCompleted({
   const metadata = session.metadata || {};
   const customerId = typeof session.customer === "string" ? session.customer : null;
 
-  let userId = metadata[STRIPE_METADATA_KEYS.userId] ?? null;
+  let userId: string | null = metadata[STRIPE_METADATA_KEYS.userId] ?? null;
   if (!userId && customerId) {
     userId = await findUserIdFromStripeCustomerId(customerId);
   }

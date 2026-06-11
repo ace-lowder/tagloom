@@ -64,10 +64,10 @@ export async function POST(req: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const adminClient = admin as any;
+  const generations = generationsTable(admin);
+  const generationFeedback = generationFeedbackTable(admin);
 
-  const { data: generation, error: generationError } = await adminClient
-    .from("generations")
+  const { data: generation, error: generationError } = await generations
     .select("id, title, description, target_tags, discovery_tags")
     .eq("id", generationId)
     .eq("user_id", user.id)
@@ -94,8 +94,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === "clear") {
-    const { error } = await adminClient
-      .from("generation_feedback")
+    const { error } = await generationFeedback
       .delete()
       .eq("user_id", user.id)
       .eq("generation_id", generationId);
@@ -131,8 +130,7 @@ export async function POST(req: NextRequest) {
 
   const nextNote = rating === "up" ? null : note;
 
-  const { data, error } = await adminClient
-    .from("generation_feedback")
+  const { data, error } = await generationFeedback
     .upsert(
       {
         user_id: user.id,
@@ -175,3 +173,45 @@ export async function POST(req: NextRequest) {
     },
   });
 }
+
+function generationsTable(admin: NonNullable<ReturnType<typeof createSupabaseAdminClient>>) {
+  return admin.from("generations") as unknown as GenerationsTable;
+}
+
+function generationFeedbackTable(
+  admin: NonNullable<ReturnType<typeof createSupabaseAdminClient>>,
+) {
+  return admin.from("generation_feedback") as unknown as GenerationFeedbackTable;
+}
+
+type GenerationsTable = {
+  select: (columns: string) => {
+    eq: (column: string, value: string) => {
+      eq: (column: string, value: string) => {
+        maybeSingle: () => Promise<{
+          data: GenerationRow | null;
+          error: unknown;
+        }>;
+      };
+    };
+  };
+};
+
+type GenerationFeedbackTable = {
+  delete: () => {
+    eq: (column: string, value: string) => {
+      eq: (column: string, value: string) => Promise<{ error: unknown }>;
+    };
+  };
+  upsert: (
+    values: Record<string, unknown>,
+    options: { onConflict: string },
+  ) => {
+    select: (columns: string) => {
+      single: () => Promise<{
+        data: { rating: "up" | "down"; note: string | null } | null;
+        error: unknown;
+      }>;
+    };
+  };
+};

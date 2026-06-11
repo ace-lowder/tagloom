@@ -143,15 +143,15 @@ export function needsBillingProjectionRefresh(profile: BillingProjectionProfile 
 export async function findUserIdFromStripeCustomerId(customerId: string) {
   const admin = createSupabaseAdminClient();
   if (!admin) return null;
-  const adminClient = admin as any;
+  const profiles = billingProfilesTable(admin);
 
-  const { data } = await adminClient
-    .from("profiles")
+  const { data } = await profiles
     .select("id")
     .eq("stripe_customer_id", customerId)
     .maybeSingle();
 
-  return data?.id ?? null;
+  const profile = data as { id: string } | null;
+  return profile?.id ?? null;
 }
 
 async function getCurrentStripeSubscription(customerId: string) {
@@ -189,12 +189,11 @@ export async function syncBillingProjectionForUser(options: {
 }) {
   const admin = createSupabaseAdminClient();
   if (!admin) return null;
-  const adminClient = admin as any;
+  const profiles = billingProfilesTable(admin);
 
   let customerId = options.customerId ?? null;
   if (!customerId) {
-    const { data: rawProfile } = await adminClient
-      .from("profiles")
+    const { data: rawProfile } = await profiles
       .select("stripe_customer_id")
       .eq("id", options.userId)
       .maybeSingle();
@@ -207,17 +206,15 @@ export async function syncBillingProjectionForUser(options: {
   const subscription = await getCurrentStripeSubscription(customerId);
 
   const update = buildProjectionUpdate(customerId, subscription ?? null);
-  const { error: updateError } = await adminClient
-    .from("profiles")
+  const { error: updateError } = await profiles
     .update(update)
     .eq("id", options.userId);
   if (updateError && isMissingCancelAtColumnError(updateError)) {
     const { subscription_cancel_at: _ignored, ...legacyUpdate } = update;
-    await adminClient.from("profiles").update(legacyUpdate).eq("id", options.userId);
+    await profiles.update(legacyUpdate).eq("id", options.userId);
   }
 
-  const { data: rawRefreshed, error: refreshedError } = await adminClient
-    .from("profiles")
+  const { data: rawRefreshed, error: refreshedError } = await profiles
     .select(
       "id, stripe_customer_id, subscription_tier, subscription_active, subscription_period_start, subscription_period_end, subscription_cancel_at",
     )
@@ -225,8 +222,7 @@ export async function syncBillingProjectionForUser(options: {
     .maybeSingle();
   const refreshed = rawRefreshed as BillingProjectionProfile | null;
   if (refreshedError && isMissingCancelAtColumnError(refreshedError)) {
-    const { data: rawLegacyRefreshed } = await adminClient
-      .from("profiles")
+    const { data: rawLegacyRefreshed } = await profiles
       .select(
         "id, stripe_customer_id, subscription_tier, subscription_active, subscription_period_start, subscription_period_end",
       )
@@ -243,3 +239,23 @@ export async function syncBillingProjectionForUser(options: {
 
   return refreshed ?? null;
 }
+
+function billingProfilesTable(
+  admin: NonNullable<ReturnType<typeof createSupabaseAdminClient>>,
+) {
+  return admin.from("profiles") as unknown as BillingProfilesTable;
+}
+
+type BillingProfilesTable = {
+  select: (columns: string) => {
+    eq: (column: string, value: string) => {
+      maybeSingle: () => Promise<{
+        data: Record<string, unknown> | null;
+        error: unknown;
+      }>;
+    };
+  };
+  update: (values: Record<string, unknown>) => {
+    eq: (column: string, value: string) => Promise<{ error: unknown }>;
+  };
+};

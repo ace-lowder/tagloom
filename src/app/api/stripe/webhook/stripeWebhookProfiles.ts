@@ -2,17 +2,15 @@ import { STARTER_GENERATION_CREDITS, type AdminClient } from "./stripeWebhookTyp
 
 export async function grantSingleUseCredit(userId: string, admin: AdminClient) {
   if (!admin) return;
-  const adminClient = admin as any;
-  const { data: profile } = await adminClient
-    .from("profiles")
+  const profiles = profilesTable(admin);
+  const { data: profile } = await profiles
     .select("id, single_use_credits")
     .eq("id", userId)
     .single();
 
   if (!profile) return;
 
-  await adminClient
-    .from("profiles")
+  await profiles
     .update({
       single_use_credits:
         (profile.single_use_credits || 0) + STARTER_GENERATION_CREDITS,
@@ -27,27 +25,21 @@ export async function updateStripeCustomerId(
   admin: AdminClient,
 ) {
   if (!admin) return;
-  const adminClient = admin as any;
-  await adminClient
-    .from("profiles")
+  await profilesTable(admin)
     .update({ stripe_customer_id: customerId })
     .eq("id", userId);
 }
 
 export async function consumeStarterUpgradeDiscount(userId: string, admin: AdminClient) {
   if (!admin) return;
-  const adminClient = admin as any;
-  await adminClient
-    .from("profiles")
+  await profilesTable(admin)
     .update({ starter_upgrade_discount_available: false })
     .eq("id", userId);
 }
 
 export async function clearSubscriptionFields(userId: string, admin: AdminClient) {
   if (!admin) return;
-  const adminClient = admin as any;
-  await adminClient
-    .from("profiles")
+  await profilesTable(admin)
     .update({
       subscription_active: false,
       subscription_tier: null,
@@ -57,3 +49,20 @@ export async function clearSubscriptionFields(userId: string, admin: AdminClient
     })
     .eq("id", userId);
 }
+
+function profilesTable(admin: NonNullable<AdminClient>) {
+  return admin.from("profiles") as unknown as ProfilesTable;
+}
+
+type ProfilesTable = {
+  select: (columns: string) => {
+    eq: (column: string, value: string) => {
+      single: () => Promise<{
+        data: { id: string; single_use_credits: number | null } | null;
+      }>;
+    };
+  };
+  update: (values: Record<string, unknown>) => {
+    eq: (column: string, value: string) => Promise<unknown>;
+  };
+};
