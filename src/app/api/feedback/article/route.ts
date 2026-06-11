@@ -53,11 +53,10 @@ export async function POST(req: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const adminClient = admin as any;
+  const articleFeedback = articleFeedbackTable(admin);
 
   if (action === "clear") {
-    const { error } = await adminClient
-      .from("support_article_feedback")
+    const { error } = await articleFeedback
       .delete()
       .eq("user_id", user.id)
       .eq("article_slug", articleSlug);
@@ -93,8 +92,7 @@ export async function POST(req: NextRequest) {
 
   const nextNote = rating === "up" ? null : note;
 
-  const { data, error } = await adminClient
-    .from("support_article_feedback")
+  const { data, error } = await articleFeedback
     .upsert(
       {
         user_id: user.id,
@@ -133,3 +131,26 @@ export async function POST(req: NextRequest) {
     },
   });
 }
+
+function articleFeedbackTable(admin: NonNullable<ReturnType<typeof createSupabaseAdminClient>>) {
+  return admin.from("support_article_feedback") as unknown as ArticleFeedbackTable;
+}
+
+type ArticleFeedbackTable = {
+  delete: () => {
+    eq: (column: string, value: string) => {
+      eq: (column: string, value: string) => Promise<{ error: unknown }>;
+    };
+  };
+  upsert: (
+    values: Record<string, unknown>,
+    options: { onConflict: string },
+  ) => {
+    select: (columns: string) => {
+      single: () => Promise<{
+        data: { rating: "up" | "down"; note: string | null } | null;
+        error: unknown;
+      }>;
+    };
+  };
+};

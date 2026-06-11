@@ -23,7 +23,7 @@ export async function handleSubscriptionUpsertEvent({
   const metadata = subscription.metadata || {};
   const customerId = typeof subscription.customer === "string" ? subscription.customer : null;
 
-  let userId = metadata[STRIPE_METADATA_KEYS.userId] ?? null;
+  let userId: string | null = metadata[STRIPE_METADATA_KEYS.userId] ?? null;
   if (!userId && customerId) {
     userId = await findUserIdFromStripeCustomerId(customerId);
   }
@@ -67,7 +67,7 @@ export async function handleSubscriptionDeletedEvent({
   const metadata = subscription.metadata || {};
   const customerId = typeof subscription.customer === "string" ? subscription.customer : null;
 
-  let userId = metadata[STRIPE_METADATA_KEYS.userId] ?? null;
+  let userId: string | null = metadata[STRIPE_METADATA_KEYS.userId] ?? null;
   if (!userId && customerId) {
     userId = await findUserIdFromStripeCustomerId(customerId);
   }

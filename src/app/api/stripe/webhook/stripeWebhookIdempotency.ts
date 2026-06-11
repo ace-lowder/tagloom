@@ -24,8 +24,8 @@ export function formatStripeEventError(error: unknown) {
 
 export async function claimStripeEvent(admin: AdminClient, event: Stripe.Event) {
   if (!admin) return "error";
-  const adminClient = admin as any;
-  const { error } = await adminClient.from("stripe_events").insert({
+  const stripeEvents = stripeEventsTable(admin);
+  const { error } = await stripeEvents.insert({
     id: event.id,
     type: event.type,
     status: STRIPE_EVENT_STATUS.processing,
@@ -33,7 +33,7 @@ export async function claimStripeEvent(admin: AdminClient, event: Stripe.Event) 
 
   if (!error) return "claimed";
   if (isDuplicateStripeEventError(error)) {
-    return reclaimExistingStripeEvent(adminClient, event);
+    return reclaimExistingStripeEvent(stripeEvents, event);
   }
 
   await logServerError({
@@ -46,9 +46,11 @@ export async function claimStripeEvent(admin: AdminClient, event: Stripe.Event) 
   return "error";
 }
 
-export async function reclaimExistingStripeEvent(adminClient: any, event: Stripe.Event) {
-  const { data: existing, error: readError } = await adminClient
-    .from("stripe_events")
+export async function reclaimExistingStripeEvent(
+  stripeEvents: StripeEventsTable,
+  event: Stripe.Event,
+) {
+  const { data: existing, error: readError } = await stripeEvents
     .select("status")
     .eq("id", event.id)
     .maybeSingle();
@@ -65,8 +67,7 @@ export async function reclaimExistingStripeEvent(adminClient: any, event: Stripe
   }
 
   if (existing.status === STRIPE_EVENT_STATUS.failed) {
-    const { error: updateError } = await adminClient
-      .from("stripe_events")
+    const { error: updateError } = await stripeEvents
       .update({
         type: event.type,
         status: STRIPE_EVENT_STATUS.processing,
@@ -95,9 +96,7 @@ export async function reclaimExistingStripeEvent(adminClient: any, event: Stripe
 
 export async function markStripeEventProcessed(admin: AdminClient, eventId: string) {
   if (!admin) return;
-  const adminClient = admin as any;
-  const { error } = await adminClient
-    .from("stripe_events")
+  const { error } = await stripeEventsTable(admin)
     .update({
       status: STRIPE_EVENT_STATUS.processed,
       processed_at: new Date().toISOString(),
@@ -126,9 +125,7 @@ export async function markStripeEventFailed(
   error: unknown,
 ) {
   if (!admin) return;
-  const adminClient = admin as any;
-  const { error: updateError } = await adminClient
-    .from("stripe_events")
+  const { error: updateError } = await stripeEventsTable(admin)
     .update({
       status: STRIPE_EVENT_STATUS.failed,
       updated_at: new Date().toISOString(),
@@ -149,3 +146,22 @@ export async function markStripeEventFailed(
     });
   }
 }
+
+function stripeEventsTable(admin: NonNullable<AdminClient>) {
+  return admin.from("stripe_events") as unknown as StripeEventsTable;
+}
+
+type StripeEventsTable = {
+  insert: (values: Record<string, unknown>) => Promise<{ error: unknown }>;
+  select: (columns: string) => {
+    eq: (column: string, value: string) => {
+      maybeSingle: () => Promise<{
+        data: { status: string } | null;
+        error: unknown;
+      }>;
+    };
+  };
+  update: (values: Record<string, unknown>) => {
+    eq: (column: string, value: string) => Promise<{ error: unknown }>;
+  };
+};

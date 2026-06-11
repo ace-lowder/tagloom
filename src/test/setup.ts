@@ -5,6 +5,7 @@ import { cleanup } from "@testing-library/react";
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 Object.defineProperty(window, "matchMedia", {

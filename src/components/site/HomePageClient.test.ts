@@ -180,9 +180,9 @@ describe("HomePageClient funnel", () => {
       screen.getByText(/getting your products in front of the right shoppers/),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/describe your product in ways shoppers might search for/),
+      screen.getByText(/suggest tags that are optimized for your product and niche/),
     ).toBeInTheDocument();
-    expect(screen.getByText(/copy into Etsy today/)).toBeInTheDocument();
+    expect(screen.getByText(/upgrade your Etsy listings today/)).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Tagloom generator" })[0]).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "What are Etsy tags?" }));
@@ -192,7 +192,7 @@ describe("HomePageClient funnel", () => {
       "true",
     );
     expect(
-      screen.getByText(/Shoppers don’t always search with the same words you use in your title/),
+      screen.getByText(/Shoppers don’t always search the exact words in your title/),
     ).toBeInTheDocument();
     expect(screen.getByText(/use tags to fill in those gaps/)).toBeInTheDocument();
     expect(screen.getByText(/what makes good tags on our/)).toBeInTheDocument();
@@ -201,7 +201,7 @@ describe("HomePageClient funnel", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Can better Etsy tags help me get more sales?" }));
     expect(
-      screen.getByText(/Etsy tags are a good place to start when you want more sales/),
+      screen.getByText(/Etsy tags are a great place to start/),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/match your listing with shoppers looking for products like yours/),
@@ -209,7 +209,7 @@ describe("HomePageClient funnel", () => {
     expect(screen.getByText(/more chances for views, favorites, and orders/)).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Tagloom" })[0]).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "blog" })[0]).toBeInTheDocument();
-    expect(screen.getByText(/make the rest of your listing stronger too/)).toBeInTheDocument();
+    expect(screen.getByText(/help convert those new customers into sales/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "How do I use Tagloom with my Etsy listing?" }));
     expect(screen.getByText(/Using Tagloom is as easy as copying and pasting from Etsy/)).toBeInTheDocument();
@@ -218,26 +218,26 @@ describe("HomePageClient funnel", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "What should I do after I copy my tags into Etsy?" }),
     );
-    expect(screen.getByText(/monitor how it does/)).toBeInTheDocument();
-    expect(screen.getByText(/regenerate tags from your updated listing/)).toBeInTheDocument();
+    expect(screen.getByText(/keep an eye on your listing/)).toBeInTheDocument();
+    expect(screen.getByText(/generate another set of tag ideas/)).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "blog" })[0]).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "How often should I update my tags?" }));
     expect(screen.getByText(/updating your tags once a month/)).toBeInTheDocument();
     expect(screen.getByText(/over the next few weeks/)).toBeInTheDocument();
-    expect(screen.getByText(/fresh tag ideas/)).toBeInTheDocument();
+    expect(screen.getByText(/refresh your tags/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Can I save and compare past tags?" }));
     expect(screen.getByText(/great way to learn what works/)).toBeInTheDocument();
-    expect(screen.getByText(/Open your history in the/)).toBeInTheDocument();
+    expect(screen.getByText(/history toggle button on the top right/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "How much does Tagloom cost?" }));
     expect(screen.getByText(/Your first tag generation is free/)).toBeInTheDocument();
-    expect(screen.getByText(/Create an account to try it/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "see pricing" })).toBeInTheDocument();
+    expect(screen.getByText(/All you need to do is create a new account/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "pricing" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "How do I get help if something goes wrong?" }));
-    expect(screen.getByText(/support team can help faster/)).toBeInTheDocument();
+    expect(screen.getByText(/support team can help find a solution/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "support" })).toBeInTheDocument();
   });
 

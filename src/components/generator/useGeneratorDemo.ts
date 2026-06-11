@@ -208,6 +208,10 @@ export function useGeneratorDemo({
 
     clearDemoTimer();
     clearRevealTimer();
+
+    const shouldContinueDemo = () =>
+      isDemoActive && !shouldSkipDemoRef.current;
+
     const resetDemoVisualState = () => {
       setDemoPhase("typing");
       setIsDemoGenerating(false);
@@ -217,104 +221,129 @@ export function useGeneratorDemo({
       setClearPhase("idle");
     };
 
+    const startBackspaceLoop = (fixtureTitle: string, restartCycle: () => void) => {
+      let titleLength = fixtureTitle.length;
+
+      const backspaceNextCharacter = () => {
+        if (!shouldContinueDemo()) return;
+        if (titleLength <= 0) {
+          demoFixtureIndexRef.current += 1;
+          setDemoTimer(restartCycle, demoTimings.cyclePauseMs);
+          return;
+        }
+
+        titleLength -= 1;
+        setTitle(fixtureTitle.slice(0, titleLength));
+        setDemoTimer(backspaceNextCharacter, demoTimings.backspaceCharMs);
+      };
+
+      backspaceNextCharacter();
+    };
+
+    const scheduleClearAndRestart = (
+      fixture: (typeof demoFixtures)[number],
+      restartCycle: () => void,
+    ) => {
+      if (!shouldContinueDemo()) return;
+      setDemoPhase("clearing");
+      setClearPhase("fading");
+
+      setDemoTimer(() => {
+        if (!shouldContinueDemo()) return;
+        const shell = shellRef.current;
+        const fromHeight = shell?.getBoundingClientRect().height ?? null;
+        if (fromHeight !== null) {
+          setShellHeightTransitionMs(0);
+          setShellHeightPx(fromHeight);
+        }
+        setClearPhase("collapsing");
+
+        collapseRafRef.current = requestAnimationFrame(() => {
+          collapseRafRef.current = null;
+          if (!shouldContinueDemo()) return;
+          const resultsBlockHeight = getOuterHeight(resultsBlockRef.current);
+          const toHeight =
+            fromHeight !== null && resultsBlockHeight !== null
+              ? Math.max(fromHeight - resultsBlockHeight, 0)
+              : fromHeight;
+          if (fromHeight !== null && toHeight !== undefined) {
+            setShellHeightTransitionMs(demoTimings.clearCollapseMs);
+            setShellHeightPx(toHeight);
+          }
+
+          setDemoTimer(() => {
+            if (!shouldContinueDemo()) return;
+            clearVisibleResults();
+            setShellHeightTransitionMs(0);
+            setShellHeightPx(null);
+            setClearPhase("idle");
+            startBackspaceLoop(fixture.title, restartCycle);
+          }, demoTimings.clearCollapseMs);
+        });
+      }, demoTimings.clearFadeMs);
+    };
+
+    const scheduleGenerationReveal = (
+      fixture: (typeof demoFixtures)[number],
+      restartCycle: () => void,
+    ) => {
+      if (!shouldContinueDemo()) return;
+      setDemoPhase("generating");
+      setIsDemoGenerating(true);
+
+      setDemoTimer(() => {
+        if (!shouldContinueDemo()) return;
+        setIsDemoGenerating(false);
+        setDemoPhase("revealing");
+        setResultTags(fixture.tags.target, fixture.tags.discovery);
+
+        const revealTagCount = sanitizeMergedTags(
+          fixture.tags.target,
+          fixture.tags.discovery,
+        ).length;
+        const revealDuration =
+          revealTagCount * demoTimings.revealStepMs +
+          demoTimings.revealTailMs +
+          demoTimings.showDwellMs;
+
+        setDemoTimer(
+          () => scheduleClearAndRestart(fixture, restartCycle),
+          revealDuration,
+        );
+      }, demoTimings.generatingLoadMs);
+    };
+
+    const startTypingLoop = (
+      fixture: (typeof demoFixtures)[number],
+      restartCycle: () => void,
+    ) => {
+      const typeNextCharacter = () => {
+        if (!shouldContinueDemo()) return;
+        demoCharIndexRef.current += 1;
+        setTitle(fixture.title.slice(0, demoCharIndexRef.current));
+        if (demoCharIndexRef.current < fixture.title.length) {
+          setDemoTimer(typeNextCharacter, demoTimings.typingCharMs);
+          return;
+        }
+
+        setDemoTimer(
+          () => scheduleGenerationReveal(fixture, restartCycle),
+          demoTimings.generatingDelayMs,
+        );
+      };
+
+      setDemoTimer(typeNextCharacter, demoTimings.typingStartDelayMs);
+    };
+
     const runCycle = () => {
-      if (!isDemoActive || shouldSkipDemoRef.current) return;
+      if (!shouldContinueDemo()) return;
 
       const fixture =
         demoFixtures[demoFixtureIndexRef.current % demoFixtures.length];
       resetDemoVisualState();
       demoCharIndexRef.current = 0;
       setTitle("");
-
-      const runTyping = () => {
-        if (!isDemoActive || shouldSkipDemoRef.current) return;
-        demoCharIndexRef.current += 1;
-        setTitle(fixture.title.slice(0, demoCharIndexRef.current));
-        if (demoCharIndexRef.current < fixture.title.length) {
-          setDemoTimer(runTyping, demoTimings.typingCharMs);
-          return;
-        }
-
-        setDemoTimer(() => {
-          if (!isDemoActive || shouldSkipDemoRef.current) return;
-          setDemoPhase("generating");
-          setIsDemoGenerating(true);
-
-          setDemoTimer(() => {
-            if (!isDemoActive || shouldSkipDemoRef.current) return;
-            setIsDemoGenerating(false);
-            setDemoPhase("revealing");
-            setResultTags(fixture.tags.target, fixture.tags.discovery);
-
-            const revealTagCount = sanitizeMergedTags(
-              fixture.tags.target,
-              fixture.tags.discovery,
-            ).length;
-            const revealDuration =
-              revealTagCount * demoTimings.revealStepMs +
-              demoTimings.revealTailMs +
-              demoTimings.showDwellMs;
-            setDemoTimer(() => {
-              if (!isDemoActive || shouldSkipDemoRef.current) return;
-              setDemoPhase("clearing");
-              setClearPhase("fading");
-
-              let titleLength = fixture.title.length;
-              const runBackspace = () => {
-                if (!isDemoActive || shouldSkipDemoRef.current) return;
-                if (titleLength <= 0) {
-                  demoFixtureIndexRef.current += 1;
-                  setDemoTimer(runCycle, demoTimings.cyclePauseMs);
-                  return;
-                }
-
-                titleLength -= 1;
-                setTitle(fixture.title.slice(0, titleLength));
-                setDemoTimer(runBackspace, demoTimings.backspaceCharMs);
-              };
-
-              setDemoTimer(() => {
-                if (!isDemoActive || shouldSkipDemoRef.current) return;
-                const shell = shellRef.current;
-                const fromHeight =
-                  shell?.getBoundingClientRect().height ?? null;
-                if (fromHeight !== null) {
-                  setShellHeightTransitionMs(0);
-                  setShellHeightPx(fromHeight);
-                }
-                setClearPhase("collapsing");
-
-                collapseRafRef.current = requestAnimationFrame(() => {
-                  collapseRafRef.current = null;
-                  if (!isDemoActive || shouldSkipDemoRef.current) return;
-                  const resultsBlockHeight = getOuterHeight(
-                    resultsBlockRef.current,
-                  );
-                  const toHeight =
-                    fromHeight !== null && resultsBlockHeight !== null
-                      ? Math.max(fromHeight - resultsBlockHeight, 0)
-                      : fromHeight;
-                  if (fromHeight !== null && toHeight !== undefined) {
-                    setShellHeightTransitionMs(demoTimings.clearCollapseMs);
-                    setShellHeightPx(toHeight);
-                  }
-
-                  setDemoTimer(() => {
-                    if (!isDemoActive || shouldSkipDemoRef.current) return;
-                    clearVisibleResults();
-                    setShellHeightTransitionMs(0);
-                    setShellHeightPx(null);
-                    setClearPhase("idle");
-                    runBackspace();
-                  }, demoTimings.clearCollapseMs);
-                });
-              }, demoTimings.clearFadeMs);
-            }, revealDuration);
-          }, demoTimings.generatingLoadMs);
-        }, demoTimings.generatingDelayMs);
-      };
-
-      setDemoTimer(runTyping, demoTimings.typingStartDelayMs);
+      startTypingLoop(fixture, runCycle);
     };
 
     runCycle();
