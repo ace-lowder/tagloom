@@ -86,14 +86,21 @@ type FeaturedPostCardProps = {
 
 function FeaturedPostCard({ post }: FeaturedPostCardProps) {
   return (
-    <motion.article variants={fadeInUp} initial="hidden" animate="visible" className="mt-10">
+    <motion.article
+      variants={fadeInUp}
+      initial="hidden"
+      animate="visible"
+      className="mt-10"
+    >
       <Link
         href={`/blog/${post.slug}`}
         className="group grid overflow-hidden rounded-3xl border border-stone-200 bg-white transition-all hover:-translate-y-1 hover:border-orange-200 hover:shadow-lg lg:grid-cols-[1.2fr_1fr]"
       >
         <div className="p-7 sm:p-9">
           <div className={featuredMetaClass}>
-            <span className={`${categoryBadgeClass} ${categoryColors[post.category]}`}>
+            <span
+              className={`${categoryBadgeClass} ${categoryColors[post.category]}`}
+            >
               Featured
             </span>
             <span className="text-xs text-stone-400">{post.readTime}</span>
@@ -140,7 +147,7 @@ function BlogGuideSection() {
       variants={fadeInUp}
       className="bg-[#ffead6] px-5 py-12"
     >
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto max-w-4xl px-6 sm:px-8 lg:px-0">
         <div className="text-left">
           <motion.h2
             variants={fadeInUp}
@@ -150,7 +157,7 @@ function BlogGuideSection() {
           </motion.h2>
         </div>
 
-        <div className="mt-4 max-w-2xl text-left text-base leading-8 text-stone-700 sm:text-lg">
+        <div className="mt-4 text-left text-base leading-8 text-stone-700 sm:text-lg">
           {BLOG_INDEX_GUIDE.body.map((paragraph) => (
             <motion.p key={paragraph} variants={fadeInUp} className="mt-4">
               {paragraph}
@@ -174,7 +181,12 @@ function BlogPostList({ posts }: BlogPostListProps) {
   return (
     <section className="px-5 py-16">
       <div className="mx-auto max-w-4xl">
-        <motion.div initial="hidden" animate="visible" variants={stagger} className="grid gap-6">
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={stagger}
+          className="grid gap-6"
+        >
           {posts.map((post) => (
             <BlogPostCard key={post.slug} post={post} />
           ))}
@@ -198,7 +210,9 @@ function BlogPostCard({ post }: BlogPostCardProps) {
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
             <div className={featuredMetaClass}>
-              <span className={`${categoryBadgeClass} ${categoryColors[post.category]}`}>
+              <span
+                className={`${categoryBadgeClass} ${categoryColors[post.category]}`}
+              >
                 {post.category}
               </span>
               <span className="text-xs text-stone-400">{post.readTime}</span>
@@ -206,7 +220,9 @@ function BlogPostCard({ post }: BlogPostCardProps) {
             <h2 className="mb-2 text-xl font-bold leading-snug text-stone-900 transition-colors group-hover:text-orange-600">
               {post.title}
             </h2>
-            <p className="mb-4 text-sm leading-relaxed text-stone-500">{post.excerpt}</p>
+            <p className="mb-4 text-sm leading-relaxed text-stone-500">
+              {post.excerpt}
+            </p>
             <div className={dateMetaClass}>
               <span className={dateRowClass}>
                 <Calendar className="h-3.5 w-3.5" />
