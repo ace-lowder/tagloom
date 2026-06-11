@@ -138,10 +138,10 @@ function BlogGuideSection() {
       whileInView="visible"
       viewport={{ once: true, margin: "-80px" }}
       variants={fadeInUp}
-      className="bg-[#ffead6] px-6 py-8 sm:py-10"
+      className="bg-[#ffead6] px-5 py-12"
     >
-      <div className="mx-auto max-w-5xl">
-        <div className="mx-auto max-w-3xl text-left lg:text-center">
+      <div className="mx-auto max-w-4xl">
+        <div className="text-left">
           <motion.h2
             variants={fadeInUp}
             className="text-2xl font-semibold tracking-tight text-stone-950 sm:text-3xl"
@@ -150,7 +150,7 @@ function BlogGuideSection() {
           </motion.h2>
         </div>
 
-        <div className="mx-auto mt-4 max-w-3xl text-left text-base leading-8 text-stone-700 sm:text-lg">
+        <div className="mt-4 max-w-2xl text-left text-base leading-8 text-stone-700 sm:text-lg">
           {BLOG_INDEX_GUIDE.body.map((paragraph) => (
             <motion.p key={paragraph} variants={fadeInUp} className="mt-4">
               {paragraph}
@@ -174,15 +174,6 @@ function BlogPostList({ posts }: BlogPostListProps) {
   return (
     <section className="px-5 py-16">
       <div className="mx-auto max-w-4xl">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-stone-900 sm:text-3xl">
-            Posts to help improve your Etsy listings
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-500 sm:text-base">
-            Pick one post, make the update in Etsy, then compare how the listing performs
-            before changing the next thing.
-          </p>
-        </div>
         <motion.div initial="hidden" animate="visible" variants={stagger} className="grid gap-6">
           {posts.map((post) => (
             <BlogPostCard key={post.slug} post={post} />
