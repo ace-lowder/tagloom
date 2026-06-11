@@ -21,6 +21,15 @@
   - re-verify webhook ingestion + billing status sync
 
 ## 3) Production Env Var Audit (no values)
+Run the executable audit before a production deploy:
+
+```sh
+npm run check:env
+```
+
+The audit fails when production-required variables are missing and reports
+recommended launch values separately. It does not print secret values.
+
 - Supabase:
   - `NEXT_PUBLIC_SUPABASE_URL`
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`

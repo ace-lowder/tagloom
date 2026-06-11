@@ -133,3 +133,11 @@ See `benchmarks/README.md` for setup, when to run it, and how to compare results
 Launch checklist and production verification steps are in:
 
 - `docs/deploy-readiness.md`
+
+Before a production deploy, run:
+
+```sh
+npm run check:env
+npm run test
+npm run build
+```
