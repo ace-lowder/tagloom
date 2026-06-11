@@ -14,7 +14,10 @@ import { useToast } from "@/components/toasts/toasts";
 import { toastMessages } from "@/components/toasts/toastMessages";
 import { buttonClassNames } from "@/components/ui/button";
 import SiteFooter from "@/components/shared/SiteFooter";
-import { consumePendingGeneratorCta, dispatchGeneratorCta } from "@/lib/generatorCta";
+import {
+  consumePendingGeneratorCta,
+  dispatchGeneratorCta,
+} from "@/lib/generatorCta";
 import { aboutSectionCopy, faqs, type FAQEntry } from "@/content/home";
 
 export type HomePricingState = {
@@ -38,8 +41,7 @@ export const heroCopy = {
   pill: "Etsy tag generator for sellers",
   headlineStart: "Generate Etsy tags that",
   headlineEmphasis: "help shoppers find your listings",
-  body:
-    "Etsy tags are keywords shoppers search for. Better tags can help your listings show up in more searches. Paste your listing, generate tags, and copy them into Etsy.",
+  body: "Etsy tags are keywords shoppers search for. Better tags can help your listings show up in more searches. Paste your listing, generate tags, and copy them into Etsy.",
   cta: "Generate tags for free",
 };
 
@@ -97,7 +99,12 @@ function HeroSection({ onGenerate }: HeroSectionProps) {
       </div>
 
       <div className="relative mx-auto max-w-4xl">
-        <motion.div initial="hidden" animate="visible" variants={stagger} className="text-center">
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={stagger}
+          className="text-center"
+        >
           <motion.div
             variants={fadeInUp}
             className="mb-6 inline-flex items-center gap-2 rounded-full bg-orange-100 px-4 py-1.5 text-sm font-medium text-orange-700"
@@ -114,14 +121,18 @@ function HeroSection({ onGenerate }: HeroSectionProps) {
               {heroCopy.headlineEmphasis}
             </span>
           </motion.h1>
-          <motion.p variants={fadeInUp} className="mx-auto mb-8 max-w-2xl text-lg leading-relaxed text-stone-600">
+          <motion.p
+            variants={fadeInUp}
+            className="mx-auto mb-8 max-w-2xl text-lg leading-relaxed text-stone-600"
+          >
             {heroCopy.body}
           </motion.p>
           <motion.div variants={fadeInUp} className="inline-flex">
             <button
               onClick={onGenerate}
               className={buttonClassNames({
-                className: "gap-2 px-6 shadow-[0_4px_20px_rgba(249,115,22,0.35)]",
+                className:
+                  "gap-2 px-6 shadow-[0_4px_20px_rgba(249,115,22,0.35)]",
               })}
               style={{ boxShadow: "0 4px 20px rgba(249,115,22,0.35)" }}
             >
@@ -147,7 +158,7 @@ function AboutSection() {
       whileInView="visible"
       viewport={{ once: true, margin: "-80px" }}
       variants={fadeInUp}
-      className="scroll-mt-24 bg-[#ffead6] px-6 py-10 sm:py-12"
+      className="scroll-mt-24 bg-[#ffead6] px-6 py-10 sm:pt-12 sm:pb-8"
     >
       <div className="mx-auto max-w-5xl">
         <div className="mx-auto max-w-2xl text-left lg:max-w-5xl lg:text-center">
@@ -219,19 +230,41 @@ function PricingSection({ pricingState }: PricingSectionProps) {
   return (
     <section id="pricing" className="bg-stone-50 px-5 py-24">
       <div className="mx-auto max-w-5xl">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={stagger} className="mb-14 text-center">
-          <motion.p variants={fadeInUp} className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-80px" }}
+          variants={stagger}
+          className="mb-14 text-center"
+        >
+          <motion.p
+            variants={fadeInUp}
+            className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600"
+          >
             Pricing
           </motion.p>
-          <motion.h2 variants={fadeInUp} className="mb-3 text-3xl font-bold text-stone-900 sm:text-4xl">
+          <motion.h2
+            variants={fadeInUp}
+            className="mb-3 text-3xl font-bold text-stone-900 sm:text-4xl"
+          >
             Choose the right plan for your Etsy listings
           </motion.h2>
-          <motion.p variants={fadeInUp} className="mx-auto max-w-2xl text-stone-500">
-            Start free, then upgrade when you want more tag generations, saved tag history, and room to test tags across more listings.
+          <motion.p
+            variants={fadeInUp}
+            className="mx-auto max-w-2xl text-stone-500"
+          >
+            Start free, then upgrade when you want more tag generations, saved
+            tag history, and room to test tags across more listings.
           </motion.p>
         </motion.div>
 
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={stagger} className="grid">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-80px" }}
+          variants={stagger}
+          className="grid"
+        >
           <PricingCards
             onSelectPlan={onSelectPlan}
             currentTier={isLoggedIn ? currentTier : null}
@@ -247,7 +280,9 @@ function PricingSection({ pricingState }: PricingSectionProps) {
             loadingPlanId={redirectingPlanId}
             renewingTier={isLoggedIn ? pendingRenewalTier : null}
             renewingLabel={renewingLabel}
-            allowStarterPurchaseWithSubscription={allowStarterPurchaseWithSubscription}
+            allowStarterPurchaseWithSubscription={
+              allowStarterPurchaseWithSubscription
+            }
           />
         </motion.div>
       </div>
@@ -268,15 +303,33 @@ function FaqSection({
   return (
     <section id="faq" className="bg-white px-5 py-24">
       <div className="mx-auto max-w-2xl">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={stagger} className="mb-14 text-center">
-          <motion.p variants={fadeInUp} className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-80px" }}
+          variants={stagger}
+          className="mb-14 text-center"
+        >
+          <motion.p
+            variants={fadeInUp}
+            className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600"
+          >
             FAQ
           </motion.p>
-          <motion.h2 variants={fadeInUp} className="text-3xl font-bold text-stone-900 sm:text-4xl">
+          <motion.h2
+            variants={fadeInUp}
+            className="text-3xl font-bold text-stone-900 sm:text-4xl"
+          >
             Frequently asked questions
           </motion.h2>
         </motion.div>
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={fadeInUp} className="rounded-2xl border border-stone-100 bg-stone-50 px-6">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-80px" }}
+          variants={fadeInUp}
+          className="rounded-2xl border border-stone-100 bg-stone-50 px-6"
+        >
           {faqs.map((faq, index) => (
             <FAQItem
               key={faq.question}
@@ -284,9 +337,7 @@ function FaqSection({
               answer={faq.answer}
               isOpen={openFaqIndex === index}
               onToggle={() =>
-                setOpenFaqIndex((current) =>
-                  current === index ? null : index,
-                )
+                setOpenFaqIndex((current) => (current === index ? null : index))
               }
               onGeneratorCta={onGeneratorCta}
             />
@@ -318,7 +369,12 @@ function BottomCtaSection({ onGenerate }: BottomCtaSectionProps) {
       </div>
 
       <div className="relative mx-auto max-w-2xl text-center">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={stagger}>
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-80px" }}
+          variants={stagger}
+        >
           <motion.div
             variants={fadeInUp}
             className="rounded-3xl px-8 py-14 sm:px-14"
@@ -331,11 +387,18 @@ function BottomCtaSection({ onGenerate }: BottomCtaSectionProps) {
                 "0 8px 44px rgba(249,115,22,0.1), 0 2px 22px rgba(251,191,36,0.08)",
             }}
           >
-            <motion.h2 variants={fadeInUp} className="mb-4 text-3xl font-bold text-stone-900 sm:text-4xl">
+            <motion.h2
+              variants={fadeInUp}
+              className="mb-4 text-3xl font-bold text-stone-900 sm:text-4xl"
+            >
               Help more Etsy shoppers find what you sell
             </motion.h2>
-            <motion.p variants={fadeInUp} className="mx-auto mb-8 max-w-lg leading-relaxed text-stone-600">
-              Paste your listing into Tagloom, generate search tags, and copy your favorites into Etsy.
+            <motion.p
+              variants={fadeInUp}
+              className="mx-auto mb-8 max-w-lg leading-relaxed text-stone-600"
+            >
+              Paste your listing into Tagloom, generate search tags, and copy
+              your favorites into Etsy.
             </motion.p>
             <motion.div variants={fadeInUp} className="inline-flex">
               <button
@@ -365,7 +428,13 @@ type FAQItemProps = {
   onGeneratorCta: () => void;
 };
 
-function FAQItem({ question, answer, isOpen, onToggle, onGeneratorCta }: FAQItemProps) {
+function FAQItem({
+  question,
+  answer,
+  isOpen,
+  onToggle,
+  onGeneratorCta,
+}: FAQItemProps) {
   return (
     <div className="last:border-0 border-b border-stone-200">
       <button
@@ -381,7 +450,11 @@ function FAQItem({ question, answer, isOpen, onToggle, onGeneratorCta }: FAQItem
           className={`h-5 w-5 flex-shrink-0 text-stone-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
-      <motion.div initial={false} animate={{ height: isOpen ? "auto" : 0, opacity: isOpen ? 1 : 0 }} className="overflow-hidden">
+      <motion.div
+        initial={false}
+        animate={{ height: isOpen ? "auto" : 0, opacity: isOpen ? 1 : 0 }}
+        className="overflow-hidden"
+      >
         <p className="pb-5 leading-relaxed text-stone-600">
           {answer.map((part, index) =>
             part.type === "text" ? (
