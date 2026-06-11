@@ -8,7 +8,13 @@ import { toastMessages } from "@/components/toasts/toastMessages";
 import { clearPendingContext, generateContextId, savePendingContext } from "./generatorStorage";
 import { requestGeneration } from "./generatorApi";
 import { DEFAULT_TITLE_PLACEHOLDER } from "./generatorConstants";
-import type { ClearPhase, DescriptionRevealMode, PaywallState } from "./generatorTypes";
+import type {
+  ClearPhase,
+  DescriptionRevealMode,
+  GenerateOkResponse,
+  GeneratePaywallResponse,
+  PaywallState,
+} from "./generatorTypes";
 import { useGenerationAccess } from "./useGenerationAccess";
 
 // === Hooks ===
@@ -53,33 +59,23 @@ export function useGeneratorGeneration({
     "unlock" | "generate" | null
   >(null);
 
-  const runGeneration = useCallback(
-    async (
-      inputTitle: string,
-      inputDescription: string,
-      contextId: string,
-      turnstileToken?: string | null,
-    ) => {
-      const data = await requestGeneration({
-        title: inputTitle,
-        description: inputDescription,
-        generationContextId: contextId,
-        turnstileToken: turnstileToken ?? null,
+  const applyPaywallState = useCallback(
+    (data: GeneratePaywallResponse) => {
+      setIsUnlockingFromPaywall(false);
+      setPaywall({
+        reason: data.reason,
+        message: data.message,
+        requestId: data.requestId,
       });
+      setCurrentGenerationId(null);
+      clearCurrentGenerationFeedback();
+      setResultTags(data.placeholders.target, data.placeholders.discovery);
+    },
+    [clearCurrentGenerationFeedback, setResultTags],
+  );
 
-      if (data.status === "paywall") {
-        setIsUnlockingFromPaywall(false);
-        setPaywall({
-          reason: data.reason,
-          message: data.message,
-          requestId: data.requestId,
-        });
-        setCurrentGenerationId(null);
-        clearCurrentGenerationFeedback();
-        setResultTags(data.placeholders.target, data.placeholders.discovery);
-        return;
-      }
-
+  const applySuccessfulGeneration = useCallback(
+    (data: GenerateOkResponse, contextId: string) => {
       setCurrentGenerationId(data.generationId);
       clearCurrentGenerationFeedback();
       removeSelectedDraftAfterGeneration();
@@ -91,22 +87,37 @@ export function useGeneratorGeneration({
       void loadHistory();
 
       clearPendingContext(contextId);
-
-      const url = new URL(window.location.href);
-      if (url.searchParams.has("gen_ctx") || url.searchParams.has("checkout")) {
-        url.searchParams.delete("gen_ctx");
-        url.searchParams.delete("checkout");
-        window.history.replaceState({}, "", url.toString());
-      }
+      clearResumeParams();
     },
     [
       clearCurrentGenerationFeedback,
-      setResultTags,
-      removeSelectedDraftAfterGeneration,
-      setSelectedHistoryId,
       refreshUsageLabel,
       loadHistory,
+      removeSelectedDraftAfterGeneration,
+      setResultTags,
+      setSelectedHistoryId,
     ],
+  );
+
+  const runGeneration = useCallback(
+    async (
+      inputTitle: string,
+      inputDescription: string,
+      contextId: string,
+      turnstileToken?: string | null,
+    ) => {
+      const data = await requestGeneration(
+        buildGenerationRequest(inputTitle, inputDescription, contextId, turnstileToken),
+      );
+
+      if (data.status === "paywall") {
+        applyPaywallState(data);
+        return;
+      }
+
+      applySuccessfulGeneration(data, contextId);
+    },
+    [applyPaywallState, applySuccessfulGeneration],
   );
 
   const {
@@ -156,10 +167,7 @@ export function useGeneratorGeneration({
     resetResultTags();
   }, [clearCurrentGenerationFeedback, resetResultTags, setUnlockReadyContext]);
 
-  const executeGenerate = useCallback(async () => {
-    markUserInteraction();
-    if (!title.trim()) return;
-
+  const resetBeforeGenerationRequest = useCallback(() => {
     clearRevealTimer();
     setIsGenerating(true);
     setCurrentGenerationId(null);
@@ -173,40 +181,42 @@ export function useGeneratorGeneration({
     setClearPhase("idle");
     setShellHeightTransitionMs(0);
     setShellHeightPx(null);
+  }, [
+    clearCurrentGenerationFeedback,
+    clearRevealTimer,
+    resetResultTags,
+    setClearPhase,
+    setShellHeightPx,
+    setShellHeightTransitionMs,
+    setTitlePlaceholder,
+    setUnlockReadyContext,
+  ]);
 
-    let turnstileToken: string | null = null;
-    if (turnstileEnabled) {
-      try {
-        turnstileToken = (await turnstileRef.current?.getToken()) ?? null;
-        if (!turnstileToken) {
-          showToast(toastMessages.botCheckFailed);
-          setIsGenerating(false);
-          return;
-        }
-      } catch (err) {
-        showToast({
-          ...toastMessages.botCheckFailed,
-          body:
-            err instanceof Error
-              ? err.message
-              : toastMessages.botCheckFailed.body,
-        });
-        setIsGenerating(false);
-        return;
-      }
+  const executeGenerate = useCallback(async () => {
+    markUserInteraction();
+    if (!title.trim()) return;
+
+    resetBeforeGenerationRequest();
+
+    const turnstile = await getTurnstileToken({
+      enabled: turnstileEnabled,
+      ref: turnstileRef,
+      showToast,
+    });
+    if (!turnstile.ok) {
+      setIsGenerating(false);
+      return;
     }
 
-    const contextId = generationContextId || generateContextId();
-    setGenerationContextId(contextId);
-
-    savePendingContext({
-      id: contextId,
+    const contextId = prepareGenerationContext({
+      currentContextId: generationContextId,
       title,
       description,
+      setGenerationContextId,
     });
 
     try {
-      await runGeneration(title, description, contextId, turnstileToken);
+      await runGeneration(title, description, contextId, turnstile.token);
     } catch (err) {
       showToast({
         ...toastMessages.generationFailed,
@@ -219,19 +229,12 @@ export function useGeneratorGeneration({
       setIsGenerating(false);
     }
   }, [
-    clearCurrentGenerationFeedback,
-    clearRevealTimer,
     description,
     generationContextId,
     markUserInteraction,
+    resetBeforeGenerationRequest,
     runGeneration,
-    resetResultTags,
-    setClearPhase,
     setGenerationContextId,
-    setShellHeightPx,
-    setShellHeightTransitionMs,
-    setTitlePlaceholder,
-    setUnlockReadyContext,
     showToast,
     title,
     turnstileEnabled,
@@ -239,12 +242,7 @@ export function useGeneratorGeneration({
   ]);
 
   const shouldConfirmFreeGeneration = useMemo(() => {
-    const normalized = usageLabel?.toLowerCase() ?? "";
-    return (
-      normalized.includes("1 free generation") &&
-      !paywall &&
-      !isUnlockingFromPaywall
-    );
+    return shouldConfirmFreeGenerationUsage(usageLabel, paywall, isUnlockingFromPaywall);
   }, [isUnlockingFromPaywall, paywall, usageLabel]);
 
   const handleGenerate = useCallback(async () => {
@@ -255,16 +253,10 @@ export function useGeneratorGeneration({
     await executeGenerate();
   }, [executeGenerate, shouldConfirmFreeGeneration]);
 
-  const confirmModalMessage = useMemo(() => {
-    if (confirmModalMode === "generate") {
-      return "You are about to use your one free generation. Would you like to use that now?";
-    }
-    const normalized = usageLabel?.toLowerCase() ?? "";
-    if (normalized.includes("1 free generation")) {
-      return "You are about to use your one free generation. Would you like to use that now?";
-    }
-    return "Would you like to use a generation to unlock the tags?";
-  }, [confirmModalMode, usageLabel]);
+  const confirmModalState = useMemo(
+    () => deriveConfirmModalState(confirmModalMode, usageLabel),
+    [confirmModalMode, usageLabel],
+  );
 
   const confirmModalAction = useCallback(() => {
     if (confirmModalMode === "generate") {
@@ -276,9 +268,6 @@ export function useGeneratorGeneration({
     if (!unlockReadyContext) return;
     beginUnlockFromContext(unlockReadyContext);
   }, [beginUnlockFromContext, confirmModalMode, executeGenerate, unlockReadyContext]);
-
-  const isFreeUsageHint = usageLabel?.toLowerCase().includes("free") ?? false;
-  const showFreeGenerationModalTitle = confirmModalMode === "generate";
 
   return {
     isGenerating,
@@ -293,11 +282,123 @@ export function useGeneratorGeneration({
     goToLogin,
     goToPricing,
     onUnlockTags,
-    confirmModalMessage,
+    confirmModalMessage: confirmModalState.message,
     confirmModalAction,
-    isFreeUsageHint,
-    showFreeGenerationModalTitle,
+    isFreeUsageHint: confirmModalState.isFreeUsageHint,
+    showFreeGenerationModalTitle: confirmModalState.showFreeGenerationModalTitle,
     resetGenerationState,
+  };
+}
+
+// === Helpers ===
+
+function buildGenerationRequest(
+  title: string,
+  description: string,
+  contextId: string,
+  turnstileToken?: string | null,
+) {
+  return {
+    title,
+    description,
+    generationContextId: contextId,
+    turnstileToken: turnstileToken ?? null,
+  };
+}
+
+function prepareGenerationContext({
+  currentContextId,
+  title,
+  description,
+  setGenerationContextId,
+}: {
+  currentContextId: string | null;
+  title: string;
+  description: string;
+  setGenerationContextId: Dispatch<SetStateAction<string | null>>;
+}) {
+  const contextId = currentContextId || generateContextId();
+  setGenerationContextId(contextId);
+
+  savePendingContext({
+    id: contextId,
+    title,
+    description,
+  });
+
+  return contextId;
+}
+
+async function getTurnstileToken({
+  enabled,
+  ref,
+  showToast,
+}: {
+  enabled: boolean;
+  ref: RefObject<TurnstileFieldHandle | null>;
+  showToast: (toast: ToastInput) => string;
+}): Promise<{ ok: true; token: string | null } | { ok: false }> {
+  if (!enabled) {
+    return { ok: true, token: null };
+  }
+
+  try {
+    const token = (await ref.current?.getToken()) ?? null;
+    if (!token) {
+      showToast(toastMessages.botCheckFailed);
+      return { ok: false };
+    }
+    return { ok: true, token };
+  } catch (err) {
+    showToast({
+      ...toastMessages.botCheckFailed,
+      body:
+        err instanceof Error
+          ? err.message
+          : toastMessages.botCheckFailed.body,
+    });
+    return { ok: false };
+  }
+}
+
+function clearResumeParams() {
+  const url = new URL(window.location.href);
+  if (url.searchParams.has("gen_ctx") || url.searchParams.has("checkout")) {
+    url.searchParams.delete("gen_ctx");
+    url.searchParams.delete("checkout");
+    window.history.replaceState({}, "", url.toString());
+  }
+}
+
+function shouldConfirmFreeGenerationUsage(
+  usageLabel: string | null,
+  paywall: PaywallState | null,
+  isUnlockingFromPaywall: boolean,
+) {
+  const normalized = usageLabel?.toLowerCase() ?? "";
+  return (
+    normalized.includes("1 free generation") &&
+    !paywall &&
+    !isUnlockingFromPaywall
+  );
+}
+
+function deriveConfirmModalState(
+  confirmModalMode: "unlock" | "generate" | null,
+  usageLabel: string | null,
+) {
+  const normalized = usageLabel?.toLowerCase() ?? "";
+  const freeGenerationMessage =
+    "You are about to use your one free generation. Would you like to use that now?";
+
+  return {
+    message:
+      confirmModalMode === "generate" ||
+      normalized.includes("1 free generation")
+        ? freeGenerationMessage
+        : "Would you like to use a generation to unlock the tags?",
+    isFreeUsageHint: normalized.includes("free"),
+    showFreeGenerationModalTitle: confirmModalMode === "generate",
   };
 }
 

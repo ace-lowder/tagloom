@@ -336,6 +336,22 @@ export default function Generator({ onFocus, glowRef, demoConfig }: GeneratorPro
     setCurrentGenerationFeedback(null);
   }, [draftDeletedVersion, historyUnavailableVersion, setCurrentGenerationFeedback]);
 
+  const loadHistoryItemIntoForm = useCallback(
+    (item: GenerationHistoryItem) => {
+      setTitle(item.title);
+      setDescription(item.description);
+      revealDescriptionWithoutAnimation();
+      setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
+    },
+    [revealDescriptionWithoutAnimation],
+  );
+
+  const resetDraftSelectionLayout = useCallback(() => {
+    setClearPhase("idle");
+    setShellHeightTransitionMs(0);
+    setShellHeightPx(null);
+  }, [setClearPhase, setShellHeightPx, setShellHeightTransitionMs]);
+
   const onSelectHistoryItem = useCallback(
     (item: GenerationHistoryItem) => {
       if (item.isDraft) {
@@ -344,14 +360,9 @@ export default function Generator({ onFocus, glowRef, demoConfig }: GeneratorPro
         clearDemoTimer();
         setSelectedHistoryId("draft");
         setSelectedDraftId(item.id);
-        setTitle(item.title);
-        setDescription(item.description);
-        revealDescriptionWithoutAnimation();
-        setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
+        loadHistoryItemIntoForm(item);
         resetGenerationState();
-        setClearPhase("idle");
-        setShellHeightTransitionMs(0);
-        setShellHeightPx(null);
+        resetDraftSelectionLayout();
         showToast(toastMessages.historyLoaded);
         return;
       }
@@ -359,10 +370,7 @@ export default function Generator({ onFocus, glowRef, demoConfig }: GeneratorPro
       markUserInteraction();
       setSelectedHistoryId(item.id);
       setSelectedDraftId(null);
-      setTitle(item.title);
-      setDescription(item.description);
-      revealDescriptionWithoutAnimation();
-      setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
+      loadHistoryItemIntoForm(item);
       resetGenerationState();
       setCurrentGenerationId(item.id);
       setCurrentGenerationFeedback(item.feedback ?? null);
@@ -372,17 +380,15 @@ export default function Generator({ onFocus, glowRef, demoConfig }: GeneratorPro
     [
       clearDemoTimer,
       clearRevealTimer,
+      loadHistoryItemIntoForm,
       markUserInteraction,
-      revealDescriptionWithoutAnimation,
+      resetDraftSelectionLayout,
       resetGenerationState,
-      setClearPhase,
       setCurrentGenerationFeedback,
       setCurrentGenerationId,
       setResultTagsImmediately,
       setSelectedDraftId,
       setSelectedHistoryId,
-      setShellHeightPx,
-      setShellHeightTransitionMs,
       showToast,
     ],
   );
@@ -505,6 +511,66 @@ export default function Generator({ onFocus, glowRef, demoConfig }: GeneratorPro
     onUnlockTags();
   }, [onUnlockTags]);
 
+  const handleGenerationFeedbackUp = useCallback(() => {
+    void onGenerationFeedbackUp();
+  }, [onGenerationFeedbackUp]);
+
+  const handleGenerationFeedbackDown = useCallback(() => {
+    void onGenerationFeedbackDown();
+  }, [onGenerationFeedbackDown]);
+
+  const handleGenerationDownvoteCloseWithoutNote = useCallback(() => {
+    setIsGenerationDownvoteModalOpen(false);
+    void submitGenerationDownvote("");
+  }, [setIsGenerationDownvoteModalOpen, submitGenerationDownvote]);
+
+  const handleGenerationDownvoteSubmit = useCallback(
+    (note: string) => {
+      setIsGenerationDownvoteModalOpen(false);
+      void submitGenerationDownvote(note);
+    },
+    [setIsGenerationDownvoteModalOpen, submitGenerationDownvote],
+  );
+
+  const cancelGenerationConfirm = useCallback(() => {
+    setConfirmModalMode(null);
+  }, [setConfirmModalMode]);
+
+  const confirmHistoryDialogAction = useCallback(() => {
+    void confirmHistoryAction();
+  }, [confirmHistoryAction]);
+
+  const cancelHistoryDialogAction = useCallback(() => {
+    setHistoryConfirmAction(null);
+  }, [setHistoryConfirmAction]);
+
+  const requestArchiveGeneration = useCallback(
+    (item: GenerationHistoryItem) => {
+      setHistoryConfirmAction({
+        type: "archive-generation",
+        item,
+      });
+    },
+    [setHistoryConfirmAction],
+  );
+
+  const requestRestoreGeneration = useCallback(
+    (item: GenerationHistoryItem) => {
+      setHistoryConfirmAction({
+        type: "restore-generation",
+        item,
+      });
+    },
+    [setHistoryConfirmAction],
+  );
+
+  const requestDeleteDraft = useCallback(
+    (item: GenerationHistoryItem) => {
+      setHistoryConfirmAction({ type: "delete-draft", item });
+    },
+    [setHistoryConfirmAction],
+  );
+
   return (
     <>
       <GeneratorShell
@@ -605,12 +671,8 @@ export default function Generator({ onFocus, glowRef, demoConfig }: GeneratorPro
                       currentGenerationFeedback={currentGenerationFeedback}
                       isGenerationFeedbackSaving={isGenerationFeedbackSaving}
                       onCopyAll={handleCopyAll}
-                      onFeedbackUp={() => {
-                        void onGenerationFeedbackUp();
-                      }}
-                      onFeedbackDown={() => {
-                        void onGenerationFeedbackDown();
-                      }}
+                      onFeedbackUp={handleGenerationFeedbackUp}
+                      onFeedbackDown={handleGenerationFeedbackDown}
                       onStartAuthUnlock={handleStartAuthUnlock}
                       onUnlockGeneratedTags={handleUnlockGeneratedTags}
                       onGoToPricing={goToPricing}
@@ -629,21 +691,9 @@ export default function Generator({ onFocus, glowRef, demoConfig }: GeneratorPro
                 }
                 showArchived={showArchivedHistory}
                 sortState={historySortState}
-                onArchiveGeneration={(item) =>
-                  setHistoryConfirmAction({
-                    type: "archive-generation",
-                    item,
-                  })
-                }
-                onRestoreGeneration={(item) =>
-                  setHistoryConfirmAction({
-                    type: "restore-generation",
-                    item,
-                  })
-                }
-                onDeleteDraft={(item) =>
-                  setHistoryConfirmAction({ type: "delete-draft", item })
-                }
+                onArchiveGeneration={requestArchiveGeneration}
+                onRestoreGeneration={requestRestoreGeneration}
+                onDeleteDraft={requestDeleteDraft}
                 onSelectItem={onSelectHistoryItem}
                 onSortHeaderClick={cycleHistorySort}
               />
@@ -657,7 +707,7 @@ export default function Generator({ onFocus, glowRef, demoConfig }: GeneratorPro
         showFreeGenerationTitle={showFreeGenerationModalTitle}
         message={confirmModalMessage}
         onConfirm={confirmModalAction}
-        onCancel={() => setConfirmModalMode(null)}
+        onCancel={cancelGenerationConfirm}
       />
 
       <FeedbackModal
@@ -670,20 +720,14 @@ export default function Generator({ onFocus, glowRef, demoConfig }: GeneratorPro
             : ""
         }
         isSubmitting={isGenerationFeedbackSaving}
-        onCloseWithoutNote={() => {
-          setIsGenerationDownvoteModalOpen(false);
-          void submitGenerationDownvote("");
-        }}
-        onSubmit={(note) => {
-          setIsGenerationDownvoteModalOpen(false);
-          void submitGenerationDownvote(note);
-        }}
+        onCloseWithoutNote={handleGenerationDownvoteCloseWithoutNote}
+        onSubmit={handleGenerationDownvoteSubmit}
       />
 
       <HistoryConfirmDialog
         action={historyConfirmAction}
-        onConfirm={() => void confirmHistoryAction()}
-        onCancel={() => setHistoryConfirmAction(null)}
+        onConfirm={confirmHistoryDialogAction}
+        onCancel={cancelHistoryDialogAction}
       />
     </>
   );
