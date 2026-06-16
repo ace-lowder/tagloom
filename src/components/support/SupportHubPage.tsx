@@ -226,7 +226,7 @@ export default function SupportHubPage({ topics, articles }: SupportHubPageProps
             <div>
               <h3 className="mb-1 font-semibold text-stone-900">Still need help?</h3>
               <p className="text-sm text-stone-500">
-                Our support team typically responds as soon as possible on weekdays.
+                We reply as soon as possible on weekdays.
               </p>
             </div>
           </div>
