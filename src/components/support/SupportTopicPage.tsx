@@ -59,7 +59,7 @@ export default function SupportTopicPage({ topic, articles }: SupportTopicPagePr
             </div>
             <div>
               <h3 className="mb-1 font-semibold text-stone-900">Didn&apos;t find your answer?</h3>
-              <p className="text-sm text-stone-500">We typically reply within a few hours on weekdays.</p>
+              <p className="text-sm text-stone-500">We typically reply as soon as possible on weekdays.</p>
             </div>
           </div>
           <ButtonLink

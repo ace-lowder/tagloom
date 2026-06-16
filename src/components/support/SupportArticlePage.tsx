@@ -279,7 +279,7 @@ export default function SupportArticlePage({
                 </div>
                 <p className="mb-1 text-sm font-semibold text-stone-800">Need more help?</p>
                 <p className="mb-3 text-xs leading-relaxed text-stone-500">
-                  Our team replies within a few hours.
+                  Our team replies as soon as possible.
                 </p>
                 <ButtonLink
                   href="/support/contact"
