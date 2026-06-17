@@ -43,7 +43,7 @@ export const BLOG_POSTS: BlogPost[] = [
     title: "How to Rank Higher on Etsy",
     excerpt:
       "If Etsy search feels confusing at first, you are not alone. Etsy first finds listings that match a shopper's words, then ranks those matches based on what seems most useful and most likely to convert.",
-    date: "Feb 28, 2026",
+    date: "Jun 12, 2026",
     category: "SEO",
     readTime: "7 min read",
     heroImage: "/blog-how-to-rank-higher-on-etsy-hero.png",
@@ -73,7 +73,7 @@ export const BLOG_POSTS: BlogPost[] = [
     title: "What We Know About the Etsy Algorithm",
     excerpt:
       "What we know about Etsy ranking, from tags and tag generation to conversion, reviews, and listing quality signals.",
-    date: "Feb 14, 2026",
+    date: "May 15, 2026",
     category: "Strategy",
     readTime: "9 min read",
     sections: [
@@ -112,7 +112,7 @@ export const BLOG_POSTS: BlogPost[] = [
     title: "7 Mistakes New Etsy Sellers Make",
     excerpt:
       "The most common beginner mistakes that quietly hurt Etsy clicks and sales, plus what to do instead this week.",
-    date: "Jan 30, 2026",
+    date: "Apr 17, 2026",
     category: "Tips",
     readTime: "6 min read",
     sections: [
@@ -166,7 +166,7 @@ export const BLOG_POSTS: BlogPost[] = [
     title: "Why Your Etsy Listings Get Clicked but Don’t Sell",
     excerpt:
       "If your Etsy listings get traffic but not enough orders, this breakdown shows where buyers get stuck and how to fix it.",
-    date: "Mar 20, 2026",
+    date: "Feb 20, 2026",
     category: "Strategy",
     readTime: "6 min read",
     sections: [
