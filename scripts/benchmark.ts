@@ -1,6 +1,9 @@
+import { loadEnvConfig } from "@next/env";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { GENERATION_LOGIC_VERSION, generateTags } from "../src/lib/generation";
+
+loadEnvConfig(process.cwd());
 
 type ListingRow = {
   id: string;
@@ -45,52 +48,6 @@ type BenchmarkOutput = {
   };
   results: RunResult[];
 };
-
-function parseEnvFile(contents: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const rawLine of contents.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith("#")) continue;
-
-    const eq = line.indexOf("=");
-    if (eq <= 0) continue;
-
-    const key = line.slice(0, eq).trim();
-    if (!key) continue;
-
-    let value = line.slice(eq + 1).trim();
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    }
-
-    out[key] = value;
-  }
-  return out;
-}
-
-function loadEnvIfMissingOpenAiKey() {
-  if (process.env.OPENAI_API_KEY) return;
-
-  const files = [".env.local", ".env"];
-  for (const file of files) {
-    const path = resolve(process.cwd(), file);
-    try {
-      const parsed = parseEnvFile(readFileSync(path, "utf8"));
-      for (const [key, value] of Object.entries(parsed)) {
-        if (process.env[key] === undefined) {
-          process.env[key] = value;
-        }
-      }
-    } catch {
-      // Ignore missing/unreadable env files.
-    }
-
-    if (process.env.OPENAI_API_KEY) return;
-  }
-}
 
 function parseCsv(contents: string): string[][] {
   const rows: string[][] = [];
@@ -258,8 +215,6 @@ function toCsv(results: RunResult[]): string {
 }
 
 async function run() {
-  loadEnvIfMissingOpenAiKey();
-
   if (!process.env.OPENAI_API_KEY) {
     console.error(
       "Generation benchmark requires OPENAI_API_KEY. This is a manual paid benchmark and is not part of tests/build.",

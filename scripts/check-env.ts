@@ -1,7 +1,10 @@
+import { loadEnvConfig } from "@next/env";
 import {
   auditProductionEnvironment,
   formatProductionEnvAudit,
 } from "../src/lib/envRequirements";
+
+loadEnvConfig(process.cwd());
 
 const audit = auditProductionEnvironment(process.env);
 

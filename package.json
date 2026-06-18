@@ -7,16 +7,21 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "check:env": "tsx scripts/check-env.ts",
     "check:stripe": "tsx scripts/check-stripe-prices.ts",
     "benchmark": "tsx scripts/benchmark.ts",
+    "validate": "npm run check:env && npm run check:stripe && npm run lint && npm run typecheck && npm run test && npm run build",
     "e2e": "playwright test",
     "e2e:headed": "playwright test --headed",
     "e2e:auth": "playwright test tests/e2e/auth.setup.ts",
     "e2e:install": "playwright install --with-deps",
     "benchmark:review": "tsx scripts/review-benchmark.ts"
+  },
+  "engines": {
+    "node": ">=22.0.0"
   },
   "keywords": [],
   "author": "",

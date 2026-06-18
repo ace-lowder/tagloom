@@ -1,4 +1,4 @@
--- Minimal Supabase auth bootstrap for Tagloom
+-- Tagloom fresh-project Supabase setup
 -- Run this in your Supabase SQL editor.
 
 create table if not exists public.profiles (
@@ -356,3 +356,9 @@ create policy "generations_insert_own"
   on public.generations
   for insert
   with check (auth.uid() = user_id);
+
+revoke execute on function public.consume_generation_entitlement(uuid) from public, anon;
+revoke execute on function public.refund_generation_entitlement(uuid, text) from public, anon;
+
+grant execute on function public.consume_generation_entitlement(uuid) to authenticated;
+grant execute on function public.refund_generation_entitlement(uuid, text) to authenticated;

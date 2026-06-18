@@ -25,6 +25,12 @@ type PriceSummary = {
   productActive: boolean | null;
 };
 
+type StripeProductLike = {
+  name?: string;
+  active?: boolean;
+  deleted?: boolean;
+};
+
 const EXPECTED_PRICES: ExpectedPrice[] = [
   {
     label: "Starter",
@@ -61,6 +67,16 @@ function requireEnv(name: string) {
     throw new Error(`Missing required environment variable: ${name}`);
   }
   return value;
+}
+
+function isStripeProduct(product: unknown): product is StripeProductLike {
+  return Boolean(
+    product &&
+      typeof product === "object" &&
+      !("deleted" in product) &&
+      "name" in product &&
+      "active" in product,
+  );
 }
 
 function formatAmount(amount: number | null, currency: string | null) {
@@ -111,7 +127,7 @@ async function main() {
   for (const expected of EXPECTED_PRICES) {
     const priceId = requireEnv(expected.envKey);
     const price = await stripe.prices.retrieve(priceId, { expand: ["product"] });
-    const product = typeof price.product === "object" ? price.product : null;
+    const product = isStripeProduct(price.product) ? price.product : null;
 
     const actual: PriceSummary = {
       id: price.id,
