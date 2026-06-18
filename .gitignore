@@ -8,6 +8,4 @@ playwright-report/
 supabase/.temp/
 .env*
 !.env.example
-
-plan.md
-notes/
+*.local
