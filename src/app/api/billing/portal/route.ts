@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { applyApiProtection, jsonFromBlockedResult } from "@/lib/apiProtection";
+import { isEmailVerified } from "@/lib/auth";
 import { logServerError } from "@/lib/errorLogging";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getStripeClient } from "@/lib/stripe";
@@ -25,7 +26,17 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: "You must be logged in." }, { status: 401 });
+    return NextResponse.json(
+      { error: "Confirm your email to continue.", code: "email_not_verified" },
+      { status: 403 },
+    );
+  }
+
+  if (!isEmailVerified(user)) {
+    return NextResponse.json(
+      { error: "Confirm your email to continue.", code: "email_not_verified" },
+      { status: 403 },
+    );
   }
 
   const protection = await applyApiProtection({

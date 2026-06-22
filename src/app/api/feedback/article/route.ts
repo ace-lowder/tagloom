@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isEmailVerified } from "@/lib/auth";
 import { logServerError } from "@/lib/errorLogging";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -51,7 +52,17 @@ export async function POST(req: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      { error: "Confirm your email to continue.", code: "email_not_verified" },
+      { status: 403 },
+    );
+  }
+
+  if (!isEmailVerified(user)) {
+    return NextResponse.json(
+      { error: "Confirm your email to continue.", code: "email_not_verified" },
+      { status: 403 },
+    );
   }
   const articleFeedback = articleFeedbackTable(admin);
 

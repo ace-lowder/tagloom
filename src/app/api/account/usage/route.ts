@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isEmailVerified } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   needsBillingProjectionRefresh,
@@ -67,7 +68,17 @@ export async function GET() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ usageLabel: null });
+    return NextResponse.json(
+      { error: "Confirm your email to continue.", code: "email_not_verified" },
+      { status: 403 },
+    );
+  }
+
+  if (!isEmailVerified(user)) {
+    return NextResponse.json(
+      { error: "Confirm your email to continue.", code: "email_not_verified" },
+      { status: 403 },
+    );
   }
 
   const { data: profile, error } = await supabase

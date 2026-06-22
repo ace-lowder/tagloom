@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { applyApiProtection, jsonFromBlockedResult } from "@/lib/apiProtection";
+import { isEmailVerified } from "@/lib/auth";
 import { logServerError } from "@/lib/errorLogging";
 import { getCanonicalSubscriptionForCustomer } from "@/lib/stripeBillingSync";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -51,7 +52,17 @@ export async function POST(req: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: "You must be logged in." }, { status: 401 });
+    return NextResponse.json(
+      { error: "Confirm your email to continue.", code: "email_not_verified" },
+      { status: 403 },
+    );
+  }
+
+  if (!isEmailVerified(user)) {
+    return NextResponse.json(
+      { error: "Confirm your email to continue.", code: "email_not_verified" },
+      { status: 403 },
+    );
   }
 
   const protection = await applyApiProtection({

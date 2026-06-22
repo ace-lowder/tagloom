@@ -89,7 +89,9 @@ function createFeedbackQuery(rows: unknown[]) {
 
 describe("generation history route", () => {
   beforeEach(() => {
-    getUserMock.mockResolvedValue({ data: { user: { id: "user_123" } } });
+    getUserMock.mockResolvedValue({
+      data: { user: { id: "user_123", email_confirmed_at: "2026-01-01T00:00:00.000Z" } },
+    });
     serverFromMock.mockReset();
     adminFromMock.mockReset();
     createAdminMock.mockReset();
@@ -335,6 +337,22 @@ describe("generation history route", () => {
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
       error: "Admin client is not configured.",
+    });
+  });
+
+  it("returns 403 for unverified users", async () => {
+    getUserMock.mockResolvedValueOnce({
+      data: { user: { id: "user_123", email_confirmed_at: null } },
+    });
+
+    const response = await GET(
+      makeGetRequest("https://tagloom.test/api/generations/history") as never,
+    );
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({
+      error: "Confirm your email to continue.",
+      code: "email_not_verified",
     });
   });
 });

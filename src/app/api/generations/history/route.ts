@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logServerError } from "@/lib/errorLogging";
+import { isEmailVerified } from "@/lib/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -54,7 +55,17 @@ export async function GET(req: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      { error: "Confirm your email to continue.", code: "email_not_verified" },
+      { status: 403 },
+    );
+  }
+
+  if (!isEmailVerified(user)) {
+    return NextResponse.json(
+      { error: "Confirm your email to continue.", code: "email_not_verified" },
+      { status: 403 },
+    );
   }
 
   const { searchParams } = new URL(req.url);
@@ -200,7 +211,17 @@ export async function PATCH(req: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      { error: "Confirm your email to continue.", code: "email_not_verified" },
+      { status: 403 },
+    );
+  }
+
+  if (!isEmailVerified(user)) {
+    return NextResponse.json(
+      { error: "Confirm your email to continue.", code: "email_not_verified" },
+      { status: 403 },
+    );
   }
 
   const body = (await req.json().catch(() => ({}))) as ArchiveGenerationRequest;

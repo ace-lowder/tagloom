@@ -34,17 +34,21 @@ describe("article feedback route", () => {
     getUserMock.mockReset();
     fromMock.mockReset();
     vi.mocked(logServerError).mockReset();
-    getUserMock.mockResolvedValue({ data: { user: { id: "user_123" } } });
+    getUserMock.mockResolvedValue({
+      data: { user: { id: "user_123", email_confirmed_at: "2026-01-01T00:00:00.000Z" } },
+    });
   });
 
-  it("returns 401 when unauthenticated", async () => {
-    getUserMock.mockResolvedValueOnce({ data: { user: null } });
+  it("returns 403 when unverified", async () => {
+    getUserMock.mockResolvedValueOnce({
+      data: { user: { id: "user_123", email_confirmed_at: null } },
+    });
 
     const response = await POST(
       makeRequest({ action: "set", articleSlug: "x", rating: "up" }) as never,
     );
 
-    expect(response.status).toBe(401);
+    expect(response.status).toBe(403);
   });
 
   it("upserts up feedback with null note", async () => {

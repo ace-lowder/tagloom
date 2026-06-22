@@ -1,5 +1,5 @@
 import AppShell from "@/components/auth/AppShell";
-import { toCurrentUser } from "@/lib/auth";
+import { isEmailVerified, toCurrentUser } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type ProfileSummary = {
@@ -22,9 +22,13 @@ export default async function SiteLayout({
       const {
         data: { user },
       } = await supabase.auth.getUser();
+      if (!user) {
+        currentUser = null;
+        return <AppShell currentUser={currentUser}>{children}</AppShell>;
+      }
 
       let profile: ProfileSummary | null = null;
-      if (user) {
+      if (isEmailVerified(user)) {
         const { data } = await supabase
           .from("profiles")
           .select("subscription_tier, subscription_active")

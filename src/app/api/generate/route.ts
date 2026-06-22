@@ -5,6 +5,7 @@ import {
   syncBillingProjectionForUser,
 } from "@/lib/stripeBillingSync";
 import { logServerError } from "@/lib/errorLogging";
+import { isEmailVerified } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { generateTags, getPlaceholderTags } from "@/lib/generation";
 
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
     error: userError,
   } = await supabase.auth.getUser();
 
-  if (userError || !user) {
+  if (userError || !user || !isEmailVerified(user)) {
     return paywall(
       "auth_required",
       "Create an account or log in to unlock this generation. New accounts get 1 free generation.",

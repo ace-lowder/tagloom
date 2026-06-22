@@ -5,6 +5,7 @@ import {
   syncBillingProjectionForUser,
 } from "@/lib/stripeBillingSync";
 import { getStripeClient } from "@/lib/stripe";
+import { isEmailVerified } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type BillingProfile = {
@@ -91,8 +92,11 @@ export default async function BillingPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
   if (!user) {
+    redirect("/login?next=/billing");
+  }
+
+  if (!isEmailVerified(user)) {
     redirect("/login?next=/billing");
   }
 

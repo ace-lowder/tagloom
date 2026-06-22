@@ -78,7 +78,7 @@ describe("generate route entitlement usage", () => {
   beforeEach(() => {
     vi.mocked(applyApiProtection).mockResolvedValue({});
     getUserMock.mockResolvedValue({
-      data: { user: { id: "user_123" } },
+      data: { user: { id: "user_123", email_confirmed_at: "2026-01-01T00:00:00.000Z" } },
       error: null,
     });
     fromMock.mockImplementation((table: string) => {
@@ -250,5 +250,23 @@ describe("generate route entitlement usage", () => {
     });
     expect(generateTags).not.toHaveBeenCalled();
     expect(generationInsertMock).not.toHaveBeenCalled();
+  });
+
+  it("returns the auth paywall for unverified users", async () => {
+    getUserMock.mockResolvedValueOnce({
+      data: { user: { id: "user_123", email_confirmed_at: null } },
+      error: null,
+    });
+
+    const response = await POST(makeRequest() as never);
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual(
+      expect.objectContaining({
+        status: "paywall",
+        reason: "auth_required",
+        requestId: "ctx_123",
+      }),
+    );
   });
 });
