@@ -1,10 +1,11 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import AuthForm from "@/components/auth/AuthForm";
+import { hasPendingEmailVerification } from "@/components/auth/verificationStorage";
 import {
   dispatchAuthSuccess,
   sanitizeNextPath,
@@ -28,38 +29,54 @@ type AuthControllerProviderProps = {
 
 export function AuthControllerProvider({ children }: AuthControllerProviderProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<AuthMode>("signup");
   const [next, setNext] = useState<string | undefined>(undefined);
+  const [verificationLocked, setVerificationLocked] = useState(false);
 
   const closeAuthModal = useCallback(() => {
+    if (verificationLocked) return;
     setIsOpen(false);
-  }, []);
+    setVerificationLocked(false);
+  }, [verificationLocked]);
 
   const openAuthModal = useCallback((options?: OpenAuthModalOptions) => {
     setMode(options?.mode ?? "signup");
     setNext(options?.next ? sanitizeNextPath(options.next) : undefined);
+    setVerificationLocked(false);
     setIsOpen(true);
   }, []);
 
   const onAuthSuccess = useCallback(() => {
     setIsOpen(false);
+    setVerificationLocked(false);
     dispatchAuthSuccess();
     router.refresh();
   }, [router]);
 
   useEffect(() => {
+    if (isOpen) return;
+    if (pathname.startsWith("/login") || pathname.startsWith("/verify") || pathname.startsWith("/auth")) {
+      return;
+    }
+    if (!hasPendingEmailVerification()) return;
+    setMode("signup");
+    setIsOpen(true);
+  }, [isOpen, pathname]);
+
+  useEffect(() => {
     if (!isOpen) return;
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && !verificationLocked) {
         setIsOpen(false);
       }
     };
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isOpen]);
+  }, [isOpen, verificationLocked]);
 
   const value = useMemo<AuthControllerContextValue>(
     () => ({
@@ -99,7 +116,8 @@ export function AuthControllerProvider({ children }: AuthControllerProviderProps
               type="button"
               onClick={closeAuthModal}
               aria-label="Close auth modal"
-              className="absolute right-3 top-3 rounded-md p-1.5 text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-700"
+              disabled={verificationLocked}
+              className="absolute right-3 top-3 rounded-md p-1.5 text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-700 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <X className="h-5 w-5" />
             </button>
@@ -109,6 +127,7 @@ export function AuthControllerProvider({ children }: AuthControllerProviderProps
               next={next}
               preferGooglePopup
               onAuthSuccess={onAuthSuccess}
+              onVerificationPendingChange={setVerificationLocked}
               showHeading={false}
               compact
             />

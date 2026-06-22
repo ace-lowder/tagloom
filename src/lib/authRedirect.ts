@@ -24,7 +24,10 @@ export function getPublicSiteUrl() {
   return rawUrl.replace(/\/+$/, "");
 }
 
-export function buildAuthCallbackUrl(next: string, flow?: "popup" | "redirect") {
+export function buildAuthCallbackUrl(
+  next: string,
+  flow?: "popup" | "redirect" | "email_verification",
+) {
   const callbackUrl = new URL("/auth/callback", getPublicSiteUrl());
   callbackUrl.searchParams.set("next", next);
   if (flow) {

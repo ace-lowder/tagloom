@@ -14,10 +14,16 @@ export type CurrentUser = {
   subscriptionActive: boolean;
 };
 
+export function isEmailVerified(user: User | null): boolean {
+  if (!user) return false;
+  return Boolean(user.email_confirmed_at ?? user.confirmed_at);
+}
+
 export function toCurrentUser(
   user: User | null,
   profile?: CurrentUserProfile | null,
 ): CurrentUser | null {
+  if (!isEmailVerified(user)) return null;
   if (!user) return null;
 
   const metadata = user.user_metadata ?? {};

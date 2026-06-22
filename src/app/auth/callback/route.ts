@@ -10,15 +10,18 @@ export async function GET(request: Request) {
   const safeNext = sanitizeNextPath(requestUrl.searchParams.get("next"));
 
   let popupCompleteUrl: URL;
+  let verificationCompleteUrl: URL;
   let finalRedirectUrl: string;
   try {
     popupCompleteUrl = new URL(buildPublicUrl("/auth/popup-complete"));
+    verificationCompleteUrl = new URL(buildPublicUrl("/verify"));
     finalRedirectUrl = buildPublicUrl(safeNext);
   } catch {
     return new Response(AUTH_CONFIG_ERROR, { status: 500 });
   }
 
   popupCompleteUrl.searchParams.set("next", safeNext);
+  verificationCompleteUrl.searchParams.set("next", safeNext);
 
   if (code) {
     const supabase = createSupabaseServerClient();
@@ -33,6 +36,15 @@ export async function GET(request: Request) {
         }
         return NextResponse.redirect(popupCompleteUrl.toString());
       }
+      if (flow === "email_verification") {
+        if (error) {
+          verificationCompleteUrl.searchParams.set("status", "error");
+          verificationCompleteUrl.searchParams.set("message", error.message);
+        } else {
+          verificationCompleteUrl.searchParams.set("status", "success");
+        }
+        return NextResponse.redirect(verificationCompleteUrl.toString());
+      }
     }
   }
 
@@ -45,6 +57,17 @@ export async function GET(request: Request) {
         "Google sign-in failed.",
     );
     return NextResponse.redirect(popupCompleteUrl.toString());
+  }
+
+  if (flow === "email_verification") {
+    verificationCompleteUrl.searchParams.set("status", "error");
+    verificationCompleteUrl.searchParams.set(
+      "message",
+      requestUrl.searchParams.get("error_description") ||
+        requestUrl.searchParams.get("error") ||
+        "Email verification failed.",
+    );
+    return NextResponse.redirect(verificationCompleteUrl.toString());
   }
 
   return NextResponse.redirect(finalRedirectUrl);

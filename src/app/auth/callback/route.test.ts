@@ -57,6 +57,46 @@ describe("auth callback route", () => {
     expect(response.headers.get("location")).toBe("http://localhost:3000/");
   });
 
+  it("rejects protocol-relative and backslash next values", async () => {
+    const response = await GET(
+      makeRequest(
+        "http://0.0.0.0:3000/auth/callback?code=abc&next=%2F%2Fevil.example%2Freset",
+      ),
+    );
+
+    expect(response.headers.get("location")).toBe("http://localhost:3000/");
+  });
+
+  it("redirects email verification callbacks to the verification page", async () => {
+    const response = await GET(
+      makeRequest(
+        "http://0.0.0.0:3000/auth/callback?code=abc&flow=email_verification&next=%2Fgenerator",
+      ),
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "http://localhost:3000/verify?next=%2Fgenerator&status=success",
+    );
+  });
+
+  it("redirects failed email verification callbacks to the verification page", async () => {
+    exchangeCodeForSessionMock.mockResolvedValueOnce({
+      error: new Error("verification failed"),
+    });
+
+    const response = await GET(
+      makeRequest(
+        "http://0.0.0.0:3000/auth/callback?code=abc&flow=email_verification&next=%2Fgenerator",
+      ),
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "http://localhost:3000/verify?next=%2Fgenerator&status=error&message=verification+failed",
+    );
+  });
+
   it("rejects 0.0.0.0 as the configured site URL", async () => {
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "http://0.0.0.0:3000");
 

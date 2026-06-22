@@ -11,6 +11,8 @@ export type OpenAuthModalOptions = {
 
 export function sanitizeNextPath(next: string | null | undefined): string {
   if (!next || !next.startsWith("/")) return "/";
+  if (next.startsWith("//")) return "/";
+  if (next.includes("\\")) return "/";
   return next;
 }
 

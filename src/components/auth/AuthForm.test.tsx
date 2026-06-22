@@ -13,6 +13,7 @@ const refreshMock = vi.fn();
 const signUpMock = vi.fn();
 const signInWithPasswordMock = vi.fn();
 const signInWithOAuthMock = vi.fn();
+const resendMock = vi.fn();
 const resetPasswordForEmailMock = vi.fn();
 const turnstileGetTokenMock = vi.fn();
 
@@ -29,6 +30,7 @@ vi.mock("@/lib/supabase/client", () => ({
       signUp: signUpMock,
       signInWithPassword: signInWithPasswordMock,
       signInWithOAuth: signInWithOAuthMock,
+      resend: resendMock,
       resetPasswordForEmail: resetPasswordForEmailMock,
     },
   }),
@@ -104,12 +106,14 @@ describe("AuthForm signup guard", () => {
     signUpMock.mockReset();
     signInWithPasswordMock.mockReset();
     signInWithOAuthMock.mockReset();
+    resendMock.mockReset();
     resetPasswordForEmailMock.mockReset();
     turnstileGetTokenMock.mockReset();
     turnstileGetTokenMock.mockResolvedValue("turnstile-token");
     signUpMock.mockResolvedValue({ data: {}, error: null });
     signInWithPasswordMock.mockResolvedValue({ error: null });
     signInWithOAuthMock.mockResolvedValue({ error: null, data: {} });
+    resendMock.mockResolvedValue({ error: null });
     resetPasswordForEmailMock.mockResolvedValue({ error: null });
   });
 
@@ -449,5 +453,88 @@ describe("AuthForm signup guard", () => {
     expect(await screen.findByText("Signup failed.")).toBeInTheDocument();
     expect(screen.queryByText("Login failed")).not.toBeInTheDocument();
     expect(window.localStorage.getItem("tagloom:signup-cooldown:v1")).toBeNull();
+  });
+
+  it("keeps a no-session signup in the verification flow and uses the email verification callback", async () => {
+    signUpMock.mockResolvedValue({
+      data: {},
+      error: null,
+    });
+
+    renderWithToasts(<AuthForm mode="signup" onModeChange={vi.fn()} />);
+
+    await moveSignupToPasswordStep();
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "hunter2-password" },
+    });
+    fireEvent.submit(screen.getByRole("button", { name: "Create account" }).closest("form")!);
+
+    expect(
+      await screen.findByText("Verify your email address"),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText(/We sent a verification link/i),
+    ).toBeInTheDocument();
+    expect(window.localStorage.getItem("tagloom:email-verification:v1")).toContain(
+      "person@example.com",
+    );
+    expect(signUpMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: "person@example.com",
+        options: expect.objectContaining({
+          emailRedirectTo: expect.stringContaining("flow=email_verification"),
+        }),
+      }),
+    );
+  });
+
+  it("switches to the verification flow when login says the email is not confirmed", async () => {
+    signInWithPasswordMock.mockResolvedValueOnce({
+      error: new Error("email_not_confirmed"),
+    });
+
+    renderWithToasts(<AuthForm mode="login" onModeChange={vi.fn()} />);
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "person@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "hunter2-password" },
+    });
+    fireEvent.submit(screen.getByRole("button", { name: "Log in" }).closest("form")!);
+
+    expect(await screen.findByText("Verify your email address")).toBeInTheDocument();
+    expect(signInWithPasswordMock).toHaveBeenCalledWith({
+      email: "person@example.com",
+      password: "hunter2-password",
+    });
+  });
+
+  it("resends a verification email from the verification view", async () => {
+    signUpMock.mockResolvedValueOnce({
+      data: {},
+      error: null,
+    });
+
+    renderWithToasts(<AuthForm mode="signup" onModeChange={vi.fn()} />);
+
+    await moveSignupToPasswordStep();
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "hunter2-password" },
+    });
+    fireEvent.submit(screen.getByRole("button", { name: "Create account" }).closest("form")!);
+
+    await screen.findByText("Verify your email address");
+    fireEvent.click(screen.getByRole("button", { name: "Resend verification email" }));
+
+    await waitFor(() => expect(resendMock).toHaveBeenCalledTimes(1));
+    expect(resendMock).toHaveBeenCalledWith({
+      type: "signup",
+      email: "person@example.com",
+      options: expect.objectContaining({
+        emailRedirectTo: expect.stringContaining("flow=email_verification"),
+      }),
+    });
+    expect(await screen.findByText("Verification email resent")).toBeInTheDocument();
   });
 });
