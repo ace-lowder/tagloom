@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   Dispatch,
   MutableRefObject,
@@ -11,14 +11,17 @@ import { toastMessages } from "@/components/toasts/toastMessages";
 import { AUTH_SUCCESS_EVENT } from "@/lib/authModal";
 import {
   generateContextId,
+  loadPendingGuestGeneration,
   loadPendingContext,
   savePendingContext,
+  savePendingGuestGeneration,
 } from "./generatorStorage";
 import { DEFAULT_TITLE_PLACEHOLDER } from "./generatorConstants";
 import type {
   DescriptionRevealMode,
   PaywallState,
   PendingContext,
+  PendingGuestGeneration,
 } from "./generatorTypes";
 
 // === Hooks ===
@@ -44,6 +47,7 @@ export function useGenerationAccess({
   shouldSkipDemoRef,
   refreshUsageLabel,
   loadHistory,
+  isHistoryAuthenticated,
   runGeneration,
   setPaywall,
   setIsUnlockingFromPaywall,
@@ -54,6 +58,49 @@ export function useGenerationAccess({
   );
   const [unlockReadyContext, setUnlockReadyContext] =
     useState<PendingContext | null>(null);
+  const restoredGuestGenerationIdRef = useRef<string | null>(null);
+
+  const restoreGuestGenerationContext = useCallback(
+    (context: PendingContext | PendingGuestGeneration) => {
+      restoredGuestGenerationIdRef.current = context.id;
+      shouldSkipDemoRef.current = true;
+      setIsDemoActive(false);
+      clearDemoTimer();
+      clearRevealTimer();
+      setGenerationContextId(context.id);
+      setTitle(context.title);
+      setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
+      setDescription(context.description);
+      setDescriptionRevealMode("none");
+      setShowDescription(Boolean(context.description));
+      setUnlockReadyContext({
+        id: context.id,
+        title: context.title,
+        description: context.description,
+      });
+      savePendingGuestGeneration({
+        kind: "guest_generation",
+        id: context.id,
+        title: context.title,
+        description: context.description,
+        createdAt:
+          "createdAt" in context && typeof context.createdAt === "number"
+            ? context.createdAt
+            : Date.now(),
+      });
+    },
+    [
+      clearDemoTimer,
+      clearRevealTimer,
+      setDescription,
+      setDescriptionRevealMode,
+      setIsDemoActive,
+      setShowDescription,
+      setTitle,
+      setTitlePlaceholder,
+      shouldSkipDemoRef,
+    ],
+  );
 
   const goToLogin = useCallback(() => {
     markUserInteraction();
@@ -69,6 +116,13 @@ export function useGenerationAccess({
       id: contextId,
       title,
       description,
+    });
+    savePendingGuestGeneration({
+      kind: "guest_generation",
+      id: contextId,
+      title,
+      description,
+      createdAt: Date.now(),
     });
 
     openAuthModal({
@@ -123,8 +177,7 @@ export function useGenerationAccess({
 
     const shouldResume =
       url.searchParams.get("checkout") === "success" ||
-      url.searchParams.get("checkout") === "cancel" ||
-      true;
+      url.searchParams.get("checkout") === "cancel";
 
     if (!shouldResume) return;
 
@@ -164,40 +217,39 @@ export function useGenerationAccess({
   }, [loadHistory, refreshUsageLabel]);
 
   useEffect(() => {
+    if (!isHistoryAuthenticated) return;
+
+    const guestGeneration = loadPendingGuestGeneration();
+    if (!guestGeneration) return;
+    if (restoredGuestGenerationIdRef.current === guestGeneration.id) return;
+
+    restoreGuestGenerationContext({
+      id: guestGeneration.id,
+      title: guestGeneration.title,
+      description: guestGeneration.description,
+      createdAt: guestGeneration.createdAt,
+    });
+  }, [
+    isHistoryAuthenticated,
+    restoreGuestGenerationContext,
+  ]);
+
+  useEffect(() => {
     const onAuthSuccess = () => {
       if (!paywall || paywall.reason !== "auth_required") return;
-      if (!generationContextId) return;
       if (!getVisibleTagsLength()) return;
 
-      const context = loadPendingContext(generationContextId);
+      const context = resolvePendingGuestContext(generationContextId);
       if (!context) return;
 
-      setUnlockReadyContext(null);
-      setConfirmModalMode(null);
-
-      refreshUsageLabel().then(({ usageLabel: nextUsageLabel, resolved }) => {
-        const shouldAutoUnlock = resolved && !nextUsageLabel;
-        if (shouldAutoUnlock) {
-          setPaywall(null);
-          setIsUnlockingFromPaywall(true);
-          resetResultTags();
-          runGeneration(context.title, context.description, context.id).catch(
-            (err) => {
-              setIsUnlockingFromPaywall(false);
-              showToast({
-                ...toastMessages.generationResumeFailed,
-                body:
-                  err instanceof Error
-                    ? err.message
-                    : toastMessages.generationResumeFailed.body,
-              });
-            },
-          );
-          return;
-        }
-
-        setUnlockReadyContext(context);
+      restoreGuestGenerationContext({
+        id: context.id,
+        title: context.title,
+        description: context.description,
+        createdAt: Date.now(),
       });
+      setConfirmModalMode(null);
+      setUnlockReadyContext(context);
     };
 
     window.addEventListener(AUTH_SUCCESS_EVENT, onAuthSuccess);
@@ -206,46 +258,13 @@ export function useGenerationAccess({
     generationContextId,
     getVisibleTagsLength,
     paywall,
-    refreshUsageLabel,
-    resetResultTags,
-    runGeneration,
     setConfirmModalMode,
-    setIsUnlockingFromPaywall,
-    setPaywall,
-    showToast,
+    restoreGuestGenerationContext,
   ]);
-
-  const beginUnlockFromContext = useCallback(
-    (context: PendingContext) => {
-      setPaywall(null);
-      setIsUnlockingFromPaywall(true);
-      setUnlockReadyContext(null);
-      setConfirmModalMode(null);
-      resetResultTags();
-      runGeneration(context.title, context.description, context.id).catch((err) => {
-        setIsUnlockingFromPaywall(false);
-        showToast({
-          ...toastMessages.generationResumeFailed,
-          body:
-            err instanceof Error
-              ? err.message
-              : toastMessages.generationResumeFailed.body,
-        });
-      });
-    },
-    [
-      resetResultTags,
-      runGeneration,
-      setConfirmModalMode,
-      setIsUnlockingFromPaywall,
-      setPaywall,
-      showToast,
-    ],
-  );
 
   const onUnlockTags = useCallback(() => {
     if (!unlockReadyContext) return;
-    setConfirmModalMode("unlock");
+    setConfirmModalMode("generate");
   }, [setConfirmModalMode, unlockReadyContext]);
 
   return {
@@ -256,7 +275,24 @@ export function useGenerationAccess({
     goToLogin,
     goToPricing,
     onUnlockTags,
-    beginUnlockFromContext,
+  };
+}
+
+function resolvePendingGuestContext(
+  generationContextId: string | null,
+): PendingContext | null {
+  if (generationContextId) {
+    const sessionContext = loadPendingContext(generationContextId);
+    if (sessionContext) return sessionContext;
+  }
+
+  const guestGeneration = loadPendingGuestGeneration();
+  if (!guestGeneration) return null;
+
+  return {
+    id: guestGeneration.id,
+    title: guestGeneration.title,
+    description: guestGeneration.description,
   };
 }
 
@@ -285,6 +321,7 @@ type UseGenerationAccessParams = {
   shouldSkipDemoRef: MutableRefObject<boolean>;
   refreshUsageLabel: () => Promise<{ usageLabel: string | null; resolved: boolean }>;
   loadHistory: () => Promise<void>;
+  isHistoryAuthenticated: boolean;
   runGeneration: (
     title: string,
     description: string,

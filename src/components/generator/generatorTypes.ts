@@ -97,6 +97,14 @@ export type PendingContext = {
   description: string;
 };
 
+export type PendingGuestGeneration = {
+  kind: "guest_generation";
+  id: string;
+  title: string;
+  description: string;
+  createdAt: number;
+};
+
 export type HistoryConfirmAction =
   | { type: "delete-draft"; item: GenerationHistoryItem }
   | { type: "archive-generation"; item: GenerationHistoryItem }

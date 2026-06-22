@@ -65,58 +65,65 @@ export function GeneratorResults({
           </div>
           <p className="text-sm font-semibold text-stone-700">Unlocking tags</p>
         </div>
-      ) : paywall?.reason === "auth_required" && unlockReadyContext ? (
-        <div className="mt-3 flex w-full flex-col items-center justify-center gap-3 rounded-xl border border-stone-200 bg-white/70 py-8">
-          <div className="relative h-12 w-12">
-            <div className="absolute inset-0 flex items-center justify-center rounded-full border border-orange-300 bg-white text-orange-600">
-              <LockOpen className="h-5 w-5" />
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onUnlockGeneratedTags}
-            className="rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700"
-          >
-            Unlock generated tags
-          </button>
-        </div>
       ) : (
-        <div className={`flex flex-wrap items-center gap-2 ${paywall ? "blur-sm select-none" : ""}`}>
-          {visibleTags.map((tag, i) =>
-            shouldRevealTagChips ? (
-              <motion.span
-                key={`${tag}-${i}`}
-                data-testid="generated-tag-chip"
-                data-animation="reveal"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.04, type: "spring", stiffness: 300, damping: 20 }}
-                className={GENERATED_TAG_CHIP_CLASSNAME}
+        <>
+          {paywall?.reason === "auth_required" && unlockReadyContext ? (
+            <div className="mt-3 flex w-full flex-col items-center justify-center gap-3 rounded-xl border border-stone-200 bg-white/70 py-8">
+              <div className="relative h-12 w-12">
+                <div className="absolute inset-0 flex items-center justify-center rounded-full border border-orange-300 bg-white text-orange-600">
+                  <LockOpen className="h-5 w-5" />
+                </div>
+              </div>
+              <p className="max-w-sm text-center text-sm font-semibold text-stone-700">
+                Your listing is ready. Review it, then use your free generation.
+              </p>
+              <button
+                type="button"
+                onClick={onUnlockGeneratedTags}
+                className="rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700"
               >
-                {tag}
-              </motion.span>
-            ) : (
-              <span
-                key={`${tag}-${i}`}
-                data-testid="generated-tag-chip"
-                data-animation="none"
-                className={GENERATED_TAG_CHIP_CLASSNAME}
-              >
-                {tag}
-              </span>
-            ),
-          )}
-          {showGenerationFeedbackControls ? (
-            <div className="ml-auto flex items-center justify-end">
-              <FeedbackButtons
-                rating={currentGenerationFeedback?.rating ?? null}
-                disabled={isGenerationFeedbackSaving}
-                onUp={onFeedbackUp}
-                onDown={onFeedbackDown}
-              />
+                Use my free generation
+              </button>
             </div>
           ) : null}
-        </div>
+
+          <div className={`flex flex-wrap items-center gap-2 ${paywall ? "blur-sm select-none" : ""}`}>
+            {visibleTags.map((tag, i) =>
+              shouldRevealTagChips ? (
+                <motion.span
+                  key={`${tag}-${i}`}
+                  data-testid="generated-tag-chip"
+                  data-animation="reveal"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: i * 0.04, type: "spring", stiffness: 300, damping: 20 }}
+                  className={GENERATED_TAG_CHIP_CLASSNAME}
+                >
+                  {tag}
+                </motion.span>
+              ) : (
+                <span
+                  key={`${tag}-${i}`}
+                  data-testid="generated-tag-chip"
+                  data-animation="none"
+                  className={GENERATED_TAG_CHIP_CLASSNAME}
+                >
+                  {tag}
+                </span>
+              ),
+            )}
+            {showGenerationFeedbackControls ? (
+              <div className="ml-auto flex items-center justify-end">
+                <FeedbackButtons
+                  rating={currentGenerationFeedback?.rating ?? null}
+                  disabled={isGenerationFeedbackSaving}
+                  onUp={onFeedbackUp}
+                  onDown={onFeedbackDown}
+                />
+              </div>
+            ) : null}
+          </div>
+        </>
       )}
 
       {paywall && !(paywall.reason === "auth_required" && unlockReadyContext) ? (

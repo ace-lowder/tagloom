@@ -5,7 +5,13 @@ import type { Dispatch, MutableRefObject, RefObject, SetStateAction } from "reac
 import type { TurnstileFieldHandle } from "@/components/security/TurnstileField";
 import type { ToastInput } from "@/components/toasts/toasts";
 import { toastMessages } from "@/components/toasts/toastMessages";
-import { clearPendingContext, generateContextId, savePendingContext } from "./generatorStorage";
+import {
+  clearPendingContext,
+  clearPendingGuestGeneration,
+  generateContextId,
+  savePendingContext,
+  savePendingGuestGeneration,
+} from "./generatorStorage";
 import { requestGeneration } from "./generatorApi";
 import { DEFAULT_TITLE_PLACEHOLDER } from "./generatorConstants";
 import type {
@@ -87,6 +93,7 @@ export function useGeneratorGeneration({
       void loadHistory();
 
       clearPendingContext(contextId);
+      clearPendingGuestGeneration();
       clearResumeParams();
     },
     [
@@ -131,7 +138,6 @@ export function useGeneratorGeneration({
     goToLogin,
     goToPricing,
     onUnlockTags,
-    beginUnlockFromContext,
   } = useGenerationAccess({
     title,
     description,
@@ -153,6 +159,7 @@ export function useGeneratorGeneration({
     shouldSkipDemoRef,
     refreshUsageLabel,
     loadHistory,
+    isHistoryAuthenticated: history.isHistoryAuthenticated,
     runGeneration,
     setPaywall,
     setIsUnlockingFromPaywall,
@@ -271,10 +278,7 @@ export function useGeneratorGeneration({
       void executeGenerate();
       return;
     }
-
-    if (!unlockReadyContext) return;
-    beginUnlockFromContext(unlockReadyContext);
-  }, [beginUnlockFromContext, confirmModalMode, executeGenerate, unlockReadyContext]);
+  }, [confirmModalMode, executeGenerate, setConfirmModalMode]);
 
   return {
     isGenerating,
@@ -317,6 +321,13 @@ function prepareGenerationContext({
     id: contextId,
     title,
     description,
+  });
+  savePendingGuestGeneration({
+    kind: "guest_generation",
+    id: contextId,
+    title,
+    description,
+    createdAt: Date.now(),
   });
 
   return contextId;
@@ -437,6 +448,7 @@ type GenerationHistoryController = {
   loadHistory: () => Promise<void>;
   removeSelectedDraftAfterGeneration: () => void;
   setSelectedHistoryId: Dispatch<SetStateAction<string | null>>;
+  isHistoryAuthenticated: boolean;
 };
 
 type GenerationFeedbackController = {

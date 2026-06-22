@@ -9,6 +9,9 @@ import type {
   PendingContext,
 } from "./generatorTypes";
 
+const PENDING_GUEST_GENERATION_KEY = "tagloom:guest-generation:v1";
+const PENDING_GUEST_GENERATION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
 // === Helpers ===
 
 export function getContextStorageKey(id: string) {
@@ -44,6 +47,65 @@ export function loadPendingContext(id: string): PendingContext | null {
 
 export function clearPendingContext(id: string) {
   sessionStorage.removeItem(getContextStorageKey(id));
+}
+
+export type PendingGuestGeneration = {
+  kind: "guest_generation";
+  id: string;
+  title: string;
+  description: string;
+  createdAt: number;
+};
+
+export function savePendingGuestGeneration(record: PendingGuestGeneration) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(
+    PENDING_GUEST_GENERATION_KEY,
+    JSON.stringify(record),
+  );
+}
+
+export function loadPendingGuestGeneration(): PendingGuestGeneration | null {
+  if (typeof window === "undefined") return null;
+
+  const raw = window.localStorage.getItem(PENDING_GUEST_GENERATION_KEY);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<PendingGuestGeneration> | null;
+    if (
+      !parsed ||
+      parsed.kind !== "guest_generation" ||
+      typeof parsed.id !== "string" ||
+      !parsed.id ||
+      typeof parsed.title !== "string" ||
+      typeof parsed.description !== "string" ||
+      typeof parsed.createdAt !== "number" ||
+      !Number.isFinite(parsed.createdAt)
+    ) {
+      return null;
+    }
+
+    if (Date.now() - parsed.createdAt > PENDING_GUEST_GENERATION_MAX_AGE_MS) {
+      clearPendingGuestGeneration();
+      return null;
+    }
+
+    return {
+      kind: "guest_generation",
+      id: parsed.id,
+      title: parsed.title,
+      description: parsed.description,
+      createdAt: parsed.createdAt,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function clearPendingGuestGeneration() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(PENDING_GUEST_GENERATION_KEY);
 }
 
 export function readHistoryCache(): HistoryCache | null {

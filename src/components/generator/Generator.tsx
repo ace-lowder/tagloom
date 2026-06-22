@@ -264,6 +264,7 @@ export default function Generator({ onFocus, glowRef, demoConfig }: GeneratorPro
       loadHistory,
       removeSelectedDraftAfterGeneration,
       setSelectedHistoryId,
+      isHistoryAuthenticated,
     },
     feedback: {
       clearCurrentGenerationFeedback,

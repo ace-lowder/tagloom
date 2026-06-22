@@ -102,11 +102,16 @@ describe("Generator auth unlock flow", () => {
     await waitFor(() =>
       expect(screen.queryByText("Create an account or log in to unlock this generation for FREE")).not.toBeInTheDocument(),
     );
-    await screen.findByText("Unlocking tags");
-    expect(screen.queryByText("hidden keyword")).not.toBeInTheDocument();
+    await screen.findByText("Your listing is ready. Review it, then use your free generation.");
+    expect(screen.getByText("hidden keyword")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Use my free generation" }));
+    await screen.findByText(
+      "You are about to use your one free generation. Would you like to use that now?",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Yes" }));
 
     await waitFor(() => expect(screen.getByText(realTags[0])).toBeInTheDocument());
-    await waitFor(() => expect(screen.queryByText("Unlocking tags")).not.toBeInTheDocument());
     await waitFor(() => expect(screen.queryByText("hidden keyword")).not.toBeInTheDocument());
 
     expect(screen.getAllByTestId("generated-tag-chip")[0]).toHaveAttribute(
@@ -175,8 +180,14 @@ describe("Generator auth unlock flow", () => {
       window.dispatchEvent(new CustomEvent("tagloom:auth-success"));
     });
 
+    await screen.findByText("Your listing is ready. Review it, then use your free generation.");
+    fireEvent.click(screen.getByRole("button", { name: "Use my free generation" }));
+    await screen.findByText(
+      "You are about to use your one free generation. Would you like to use that now?",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Yes" }));
+
     await screen.findByText("Could not generate tags.");
-    expect(screen.queryByText("Unlocking tags")).not.toBeInTheDocument();
     expect(screen.queryByText("hidden keyword")).not.toBeInTheDocument();
     expect(countGenerateCalls(fetchMock)).toBe(2);
   });
@@ -310,14 +321,16 @@ describe("Generator auth unlock flow", () => {
     });
 
     const unlockButton = await screen.findByRole("button", {
-      name: "Unlock generated tags",
+      name: "Use my free generation",
     });
     expect(
       screen.queryByRole("button", { name: "Create account / log in" }),
     ).not.toBeInTheDocument();
 
     fireEvent.click(unlockButton);
-    await screen.findByText("Would you like to use a generation to unlock the tags?");
+    await screen.findByText(
+      "You are about to use your one free generation. Would you like to use that now?",
+    );
     fireEvent.click(screen.getByRole("button", { name: "Yes" }));
 
     await waitFor(() => expect(screen.getByText(realTags[0])).toBeInTheDocument());

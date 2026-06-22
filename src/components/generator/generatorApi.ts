@@ -49,7 +49,7 @@ export async function fetchGenerationHistory(): Promise<
       { method: "GET" },
     );
 
-    if (response.status === 401) {
+    if (response.status === 401 || response.status === 403) {
       return { status: "unauthenticated" };
     }
     if (!response.ok) {
