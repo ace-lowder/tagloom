@@ -51,6 +51,19 @@ describe("article feedback route", () => {
     expect(response.status).toBe(403);
   });
 
+  it("returns 401 when anonymous", async () => {
+    getUserMock.mockResolvedValueOnce({
+      data: { user: null },
+    });
+
+    const response = await POST(
+      makeRequest({ action: "set", articleSlug: "x", rating: "up" }) as never,
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ error: "Unauthorized" });
+  });
+
   it("upserts up feedback with null note", async () => {
     const single = vi.fn(async () => ({ data: { rating: "up", note: null }, error: null }));
     const select = vi.fn(() => ({ single }));

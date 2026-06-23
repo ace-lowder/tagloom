@@ -60,5 +60,21 @@ describe("billing switch plan route", () => {
       code: "email_not_verified",
     });
   });
-});
 
+  it("returns 401 for anonymous users", async () => {
+    getUserMock.mockResolvedValueOnce({
+      data: { user: null },
+    });
+
+    const response = await POST(
+      new Request("https://tagloom.test/api/billing/switch-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetTier: "yearly" }),
+      }) as never,
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ error: "You must be logged in." });
+  });
+});

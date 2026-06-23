@@ -355,4 +355,17 @@ describe("generation history route", () => {
       code: "email_not_verified",
     });
   });
+
+  it("returns 401 for anonymous users", async () => {
+    getUserMock.mockResolvedValueOnce({
+      data: { user: null },
+    });
+
+    const response = await GET(
+      makeGetRequest("https://tagloom.test/api/generations/history") as never,
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ error: "Unauthorized" });
+  });
 });

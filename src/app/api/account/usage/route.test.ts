@@ -40,5 +40,15 @@ describe("account usage route", () => {
       code: "email_not_verified",
     });
   });
-});
 
+  it("returns the anonymous usage response", async () => {
+    getUserMock.mockResolvedValueOnce({
+      data: { user: null },
+    });
+
+    const response = await GET();
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ usageLabel: null });
+  });
+});

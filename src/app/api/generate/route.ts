@@ -44,11 +44,18 @@ export async function POST(req: NextRequest) {
     error: userError,
   } = await supabase.auth.getUser();
 
-  if (userError || !user || !isEmailVerified(user)) {
+  if (userError || !user) {
     return paywall(
       "auth_required",
       "Create an account or log in to unlock this generation. New accounts get 1 free generation.",
       input.generationContextId,
+    );
+  }
+
+  if (!isEmailVerified(user)) {
+    return NextResponse.json(
+      { error: "Confirm your email to continue.", code: "email_not_verified" },
+      { status: 403 },
     );
   }
 

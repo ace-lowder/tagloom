@@ -61,6 +61,19 @@ describe("generation feedback route", () => {
     expect(response.status).toBe(403);
   });
 
+  it("returns 401 when anonymous", async () => {
+    getUserMock.mockResolvedValueOnce({
+      data: { user: null },
+    });
+
+    const response = await POST(
+      makeRequest({ action: "set", generationId: generationRow().id, rating: "up" }) as never,
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ error: "Unauthorized" });
+  });
+
   it("returns 404 when generation is missing", async () => {
     const maybeSingle = vi.fn(async () => ({ data: null, error: null }));
     const eqUser = vi.fn(() => ({ maybeSingle }));

@@ -52,5 +52,15 @@ describe("billing portal route", () => {
       code: "email_not_verified",
     });
   });
-});
 
+  it("returns 401 for anonymous users", async () => {
+    getUserMock.mockResolvedValueOnce({
+      data: { user: null },
+    });
+
+    const response = await POST(new Request("https://tagloom.test/api/billing/portal", { method: "POST" }));
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ error: "You must be logged in." });
+  });
+});

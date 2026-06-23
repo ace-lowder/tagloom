@@ -252,9 +252,9 @@ describe("generate route entitlement usage", () => {
     expect(generationInsertMock).not.toHaveBeenCalled();
   });
 
-  it("returns the auth paywall for unverified users", async () => {
+  it("returns the auth paywall for anonymous users", async () => {
     getUserMock.mockResolvedValueOnce({
-      data: { user: { id: "user_123", email_confirmed_at: null } },
+      data: { user: null },
       error: null,
     });
 
@@ -266,6 +266,23 @@ describe("generate route entitlement usage", () => {
         status: "paywall",
         reason: "auth_required",
         requestId: "ctx_123",
+      }),
+    );
+  });
+
+  it("returns 403 for unverified users", async () => {
+    getUserMock.mockResolvedValueOnce({
+      data: { user: { id: "user_123", email_confirmed_at: null } },
+      error: null,
+    });
+
+    const response = await POST(makeRequest() as never);
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual(
+      expect.objectContaining({
+        error: "Confirm your email to continue.",
+        code: "email_not_verified",
       }),
     );
   });

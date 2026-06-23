@@ -35,10 +35,7 @@ export async function POST(req: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json(
-      { error: "Confirm your email to continue.", code: "email_not_verified" },
-      { status: 403 },
-    );
+    return NextResponse.json({ error: "You must be logged in." }, { status: 401 });
   }
   if (!isEmailVerified(user)) {
     return NextResponse.json(

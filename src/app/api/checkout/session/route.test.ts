@@ -71,5 +71,22 @@ describe("checkout session route", () => {
     });
     expect(stripeMock.checkout.sessions.create).not.toHaveBeenCalled();
   });
-});
 
+  it("returns 401 for anonymous users", async () => {
+    getUserMock.mockResolvedValueOnce({
+      data: { user: null },
+    });
+
+    const response = await POST(
+      new Request("https://tagloom.test/api/checkout/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ purchaseType: "single_use" }),
+      }) as never,
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ error: "You must be logged in." });
+    expect(stripeMock.checkout.sessions.create).not.toHaveBeenCalled();
+  });
+});
