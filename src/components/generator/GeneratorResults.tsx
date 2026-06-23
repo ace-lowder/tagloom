@@ -29,6 +29,9 @@ export function GeneratorResults({
 }: GeneratorResultsProps) {
   if (!showResults) return null;
 
+  const showUnlockReadyState =
+    Boolean(unlockReadyContext) && (!paywall || paywall.reason === "auth_required");
+
   return (
     <>
       {!isUnlockingFromPaywall ? (
@@ -67,7 +70,7 @@ export function GeneratorResults({
         </div>
       ) : (
         <>
-          {paywall?.reason === "auth_required" && unlockReadyContext ? (
+          {showUnlockReadyState ? (
             <div className="mt-3 flex w-full flex-col items-center justify-center gap-3 rounded-xl border border-stone-200 bg-white/70 py-8">
               <div className="relative h-12 w-12">
                 <div className="absolute inset-0 flex items-center justify-center rounded-full border border-orange-300 bg-white text-orange-600">
@@ -126,7 +129,7 @@ export function GeneratorResults({
         </>
       )}
 
-      {paywall && !(paywall.reason === "auth_required" && unlockReadyContext) ? (
+      {paywall && !showUnlockReadyState ? (
         <div className="mt-4 rounded-xl border border-orange-200 bg-orange-50 p-4">
           {paywall.reason === "auth_required" ? (
             <div className="space-y-3 text-center">

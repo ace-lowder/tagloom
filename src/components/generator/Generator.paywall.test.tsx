@@ -19,6 +19,58 @@ describe("Generator auth unlock flow", () => {
     vi.restoreAllMocks();
   });
 
+  it("restores the unlock-ready state even when no placeholder tags were shown", async () => {
+    const fetchMock = createFetchMockForGenerator(
+      () =>
+        mockGenerateResponse({
+          status: "paywall",
+          reason: "auth_required",
+          requestId: "ctx-empty",
+          message: "Create account or login.",
+          placeholders: { target: [], discovery: [] },
+        }),
+      () =>
+        mockGenerateResponse({
+          status: "ok",
+          requestId: "ctx-empty",
+          tags: { target: ["handmade gift"], discovery: [] },
+          source: "model",
+          entitlementUsed: "free_credit",
+          generationId: "gen-empty",
+        }),
+    );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
+
+    const titleInput = screen.getByPlaceholderText(
+      "e.g. Handmade ceramic coffee mug with minimalist design",
+    );
+    fireEvent.change(titleInput, {
+      target: {
+        value: "Personalized Dad V-Neck T-Shirt - 100% Cotton Custom Name Shirt",
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Generate tags" }));
+
+    await screen.findByText("Create an account or log in to unlock this generation for FREE");
+
+    act(() => {
+      window.dispatchEvent(new CustomEvent("tagloom:auth-success"));
+    });
+
+    await screen.findByText("Your listing is ready. Review it, then use your free generation.");
+    fireEvent.click(screen.getByRole("button", { name: "Use my free generation" }));
+    await screen.findByText(
+      "You are about to use your one free generation. Would you like to use that now?",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Yes" }));
+
+    await waitFor(() => expect(screen.getByText("handmade gift")).toBeInTheDocument());
+    expect(countGenerateCalls(fetchMock)).toBe(2);
+  });
+
   it("replaces placeholder state with unlocking indicator, then shows real tags after auth success", async () => {
     const placeholders = [
       "hidden keyword",

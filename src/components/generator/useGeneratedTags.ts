@@ -9,6 +9,7 @@ import type { PaywallState } from "./generatorTypes";
 export function useGeneratedTags({
   paywall,
   isUnlockingFromPaywall,
+  unlockReadyContext,
   skipGeneratorReturnAnimations,
   revealStepMs,
   markUserInteraction,
@@ -94,7 +95,10 @@ export function useGeneratedTags({
 
   const totalTags = visibleTags.length;
   const showResults =
-    totalTags > 0 || isUnlockingFromPaywall || Boolean(paywall);
+    totalTags > 0 ||
+    isUnlockingFromPaywall ||
+    Boolean(paywall) ||
+    Boolean(unlockReadyContext);
   const areAllTagsVisible =
     apiTags.length > 0 && visibleTags.length === apiTags.length;
   const shouldRevealTagChips =
@@ -123,6 +127,7 @@ export function useGeneratedTags({
 type UseGeneratedTagsParams = {
   paywall: PaywallState | null;
   isUnlockingFromPaywall: boolean;
+  unlockReadyContext: { id: string; title: string; description: string } | null;
   skipGeneratorReturnAnimations: boolean;
   revealStepMs: number;
   markUserInteraction: () => void;

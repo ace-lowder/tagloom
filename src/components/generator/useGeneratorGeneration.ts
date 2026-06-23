@@ -40,8 +40,7 @@ export function useGeneratorGeneration({
   const { clearCurrentGenerationFeedback } = feedback;
   const { removeSelectedDraftAfterGeneration, setSelectedHistoryId, loadHistory } =
     history;
-  const { setResultTags, resetResultTags, clearRevealTimer, getVisibleTagsLength } =
-    result;
+  const { setResultTags, resetResultTags, clearRevealTimer } = result;
   const { refreshUsageLabel, usageLabel } = usage;
   const { openAuthModal, showToast } = auth;
   const { markUserInteraction, playSheen, clearDemoTimer, setIsDemoActive, shouldSkipDemoRef } =
@@ -141,15 +140,12 @@ export function useGeneratorGeneration({
   } = useGenerationAccess({
     title,
     description,
-    paywall,
-    getVisibleTagsLength,
     openAuthModal,
     showToast,
     markUserInteraction,
     playSheen,
     clearDemoTimer,
     clearRevealTimer,
-    resetResultTags,
     setTitle,
     setDescription,
     setShowDescription,
@@ -160,9 +156,6 @@ export function useGeneratorGeneration({
     refreshUsageLabel,
     loadHistory,
     isHistoryAuthenticated: history.isHistoryAuthenticated,
-    runGeneration,
-    setPaywall,
-    setIsUnlockingFromPaywall,
     setConfirmModalMode,
   });
 
@@ -367,8 +360,13 @@ async function getTurnstileToken({
 
 function clearResumeParams() {
   const url = new URL(window.location.href);
-  if (url.searchParams.has("gen_ctx") || url.searchParams.has("checkout")) {
+  if (
+    url.searchParams.has("gen_ctx") ||
+    url.searchParams.has("guest_generation") ||
+    url.searchParams.has("checkout")
+  ) {
     url.searchParams.delete("gen_ctx");
+    url.searchParams.delete("guest_generation");
     url.searchParams.delete("checkout");
     window.history.replaceState({}, "", url.toString());
   }
@@ -419,7 +417,6 @@ type GenerationFormController = {
 };
 
 type GenerationResultController = {
-  getVisibleTagsLength: () => number;
   clearRevealTimer: () => void;
   resetResultTags: () => void;
   setResultTags: (target: string[], discovery: string[]) => void;

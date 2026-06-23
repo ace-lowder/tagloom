@@ -19,7 +19,6 @@ import {
 import { DEFAULT_TITLE_PLACEHOLDER } from "./generatorConstants";
 import type {
   DescriptionRevealMode,
-  PaywallState,
   PendingContext,
   PendingGuestGeneration,
 } from "./generatorTypes";
@@ -29,15 +28,12 @@ import type {
 export function useGenerationAccess({
   title,
   description,
-  paywall,
-  getVisibleTagsLength,
   openAuthModal,
   showToast,
   markUserInteraction,
   playSheen,
   clearDemoTimer,
   clearRevealTimer,
-  resetResultTags,
   setTitle,
   setDescription,
   setShowDescription,
@@ -48,9 +44,6 @@ export function useGenerationAccess({
   refreshUsageLabel,
   loadHistory,
   isHistoryAuthenticated,
-  runGeneration,
-  setPaywall,
-  setIsUnlockingFromPaywall,
   setConfirmModalMode,
 }: UseGenerationAccessParams) {
   const [generationContextId, setGenerationContextId] = useState<string | null>(
@@ -102,6 +95,20 @@ export function useGenerationAccess({
     ],
   );
 
+  const loadVerifiedGuestGenerationContext = useCallback(() => {
+    if (typeof window === "undefined") return null;
+
+    const url = new URL(window.location.href);
+    const guestGenerationId = url.searchParams.get("guest_generation");
+    const guestGeneration = loadPendingGuestGeneration();
+    if (!guestGeneration) return null;
+    if (guestGenerationId && guestGeneration.id !== guestGenerationId) {
+      return null;
+    }
+
+    return guestGeneration;
+  }, []);
+
   const goToLogin = useCallback(() => {
     markUserInteraction();
     if (!title.trim()) {
@@ -128,7 +135,7 @@ export function useGenerationAccess({
     openAuthModal({
       mode: "signup",
       source: "generator_paywall",
-      next: `/?gen_ctx=${encodeURIComponent(contextId)}`,
+      next: `/?guest_generation=${encodeURIComponent(contextId)}`,
     });
   }, [
     description,
@@ -157,7 +164,7 @@ export function useGenerationAccess({
 
   useEffect(() => {
     const url = new URL(window.location.href);
-    const contextId = url.searchParams.get("gen_ctx");
+    const contextId = url.searchParams.get("guest_generation");
 
     if (!contextId) return;
     shouldSkipDemoRef.current = true;
@@ -165,7 +172,7 @@ export function useGenerationAccess({
     clearDemoTimer();
     clearRevealTimer();
 
-    const context = loadPendingContext(contextId);
+    const context = resolvePendingGuestContext(contextId);
     if (!context) return;
 
     setGenerationContextId(context.id);
@@ -174,34 +181,21 @@ export function useGenerationAccess({
     setDescription(context.description);
     setDescriptionRevealMode("none");
     setShowDescription(Boolean(context.description));
-
-    const shouldResume =
-      url.searchParams.get("checkout") === "success" ||
-      url.searchParams.get("checkout") === "cancel";
-
-    if (!shouldResume) return;
-
-    window.setTimeout(() => {
-      runGeneration(context.title, context.description, context.id).catch((err) => {
-        showToast({
-          ...toastMessages.generationResumeFailed,
-          body:
-            err instanceof Error
-              ? err.message
-              : toastMessages.generationResumeFailed.body,
-        });
-      });
-    }, 120);
+    setUnlockReadyContext({
+      id: context.id,
+      title: context.title,
+      description: context.description,
+    });
   }, [
     clearDemoTimer,
     clearRevealTimer,
-    runGeneration,
     setDescription,
     setDescriptionRevealMode,
     setIsDemoActive,
     setShowDescription,
     setTitle,
     setTitlePlaceholder,
+    setUnlockReadyContext,
     shouldSkipDemoRef,
     showToast,
   ]);
@@ -219,7 +213,7 @@ export function useGenerationAccess({
   useEffect(() => {
     if (!isHistoryAuthenticated) return;
 
-    const guestGeneration = loadPendingGuestGeneration();
+    const guestGeneration = loadVerifiedGuestGenerationContext();
     if (!guestGeneration) return;
     if (restoredGuestGenerationIdRef.current === guestGeneration.id) return;
 
@@ -231,14 +225,12 @@ export function useGenerationAccess({
     });
   }, [
     isHistoryAuthenticated,
+    loadVerifiedGuestGenerationContext,
     restoreGuestGenerationContext,
   ]);
 
   useEffect(() => {
     const onAuthSuccess = () => {
-      if (!paywall || paywall.reason !== "auth_required") return;
-      if (!getVisibleTagsLength()) return;
-
       const context = resolvePendingGuestContext(generationContextId);
       if (!context) return;
 
@@ -256,10 +248,9 @@ export function useGenerationAccess({
     return () => window.removeEventListener(AUTH_SUCCESS_EVENT, onAuthSuccess);
   }, [
     generationContextId,
-    getVisibleTagsLength,
-    paywall,
     setConfirmModalMode,
     restoreGuestGenerationContext,
+    setUnlockReadyContext,
   ]);
 
   const onUnlockTags = useCallback(() => {
@@ -281,6 +272,21 @@ export function useGenerationAccess({
 function resolvePendingGuestContext(
   generationContextId: string | null,
 ): PendingContext | null {
+  if (typeof window !== "undefined") {
+    const url = new URL(window.location.href);
+    const guestGenerationId = url.searchParams.get("guest_generation");
+    if (guestGenerationId) {
+      const guestGeneration = loadPendingGuestGeneration();
+      if (guestGeneration && guestGeneration.id === guestGenerationId) {
+        return {
+          id: guestGeneration.id,
+          title: guestGeneration.title,
+          description: guestGeneration.description,
+        };
+      }
+    }
+  }
+
   if (generationContextId) {
     const sessionContext = loadPendingContext(generationContextId);
     if (sessionContext) return sessionContext;
@@ -299,8 +305,6 @@ function resolvePendingGuestContext(
 type UseGenerationAccessParams = {
   title: string;
   description: string;
-  paywall: PaywallState | null;
-  getVisibleTagsLength: () => number;
   openAuthModal: (options: {
     mode?: "login" | "signup";
     source?: string;
@@ -311,7 +315,6 @@ type UseGenerationAccessParams = {
   playSheen: () => void;
   clearDemoTimer: () => void;
   clearRevealTimer: () => void;
-  resetResultTags: () => void;
   setTitle: Dispatch<SetStateAction<string>>;
   setDescription: Dispatch<SetStateAction<string>>;
   setShowDescription: Dispatch<SetStateAction<boolean>>;
@@ -322,13 +325,5 @@ type UseGenerationAccessParams = {
   refreshUsageLabel: () => Promise<{ usageLabel: string | null; resolved: boolean }>;
   loadHistory: () => Promise<void>;
   isHistoryAuthenticated: boolean;
-  runGeneration: (
-    title: string,
-    description: string,
-    contextId: string,
-    turnstileToken?: string | null,
-  ) => Promise<void>;
-  setPaywall: Dispatch<SetStateAction<PaywallState | null>>;
-  setIsUnlockingFromPaywall: Dispatch<SetStateAction<boolean>>;
   setConfirmModalMode: Dispatch<SetStateAction<"unlock" | "generate" | null>>;
 };

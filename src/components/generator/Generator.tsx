@@ -74,7 +74,6 @@ export default function Generator({ onFocus, glowRef, demoConfig }: GeneratorPro
     clearVisibleResultsRef.current();
   }, []);
 
-  const visibleTagsLengthRef = useRef(0);
   const clearCurrentGenerationFeedbackRef = useRef<() => void>(() => {});
   const generatedActionsRef = useRef<{
     setResultTags: (target: string[], discovery: string[]) => void;
@@ -239,7 +238,6 @@ export default function Generator({ onFocus, glowRef, demoConfig }: GeneratorPro
       setTitlePlaceholder,
     },
     result: {
-      getVisibleTagsLength: () => visibleTagsLengthRef.current,
       clearRevealTimer,
       resetResultTags: stableResetResultTags,
       setResultTags: stableSetResultTags,
@@ -297,6 +295,7 @@ export default function Generator({ onFocus, glowRef, demoConfig }: GeneratorPro
   } = useGeneratedTags({
     paywall,
     isUnlockingFromPaywall,
+    unlockReadyContext,
     skipGeneratorReturnAnimations,
     revealStepMs,
     markUserInteraction,
@@ -326,8 +325,6 @@ export default function Generator({ onFocus, glowRef, demoConfig }: GeneratorPro
   clearCurrentGenerationFeedbackRef.current = () => {
     setCurrentGenerationFeedback(null);
   };
-
-  visibleTagsLengthRef.current = visibleTags.length;
 
   useEffect(() => {
     void refreshUsageLabel();
