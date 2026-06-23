@@ -37,12 +37,7 @@ export async function GET(request: Request) {
         return NextResponse.redirect(popupCompleteUrl.toString());
       }
       if (flow === "email_verification") {
-        if (error) {
-          verificationCompleteUrl.searchParams.set("status", "error");
-          verificationCompleteUrl.searchParams.set("message", error.message);
-        } else {
-          verificationCompleteUrl.searchParams.set("status", "success");
-        }
+        verificationCompleteUrl.searchParams.set("status", error ? "error" : "success");
         return NextResponse.redirect(verificationCompleteUrl.toString());
       }
     }
@@ -61,12 +56,6 @@ export async function GET(request: Request) {
 
   if (flow === "email_verification") {
     verificationCompleteUrl.searchParams.set("status", "error");
-    verificationCompleteUrl.searchParams.set(
-      "message",
-      requestUrl.searchParams.get("error_description") ||
-        requestUrl.searchParams.get("error") ||
-        "Email verification failed.",
-    );
     return NextResponse.redirect(verificationCompleteUrl.toString());
   }
 

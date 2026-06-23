@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AuthForm from "@/components/auth/AuthForm";
+import { hasPendingEmailVerification } from "@/components/auth/emailVerificationStorage";
 import { sanitizeNextPath, type AuthMode } from "@/lib/authModal";
 
 function resolveSafeNext(rawNext: string | null) {
@@ -18,10 +19,25 @@ export default function LoginPage() {
   const router = useRouter();
   const [next, setNext] = useState("/");
   const [mode, setMode] = useState<AuthMode>("signup");
+  const [verificationPending, setVerificationPending] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setNext(resolveSafeNext(params.get("next")));
+  }, []);
+
+  useEffect(() => {
+    const updatePending = () => {
+      setVerificationPending(hasPendingEmailVerification());
+    };
+
+    updatePending();
+    window.addEventListener("storage", updatePending);
+    window.addEventListener("focus", updatePending);
+    return () => {
+      window.removeEventListener("storage", updatePending);
+      window.removeEventListener("focus", updatePending);
+    };
   }, []);
 
   return (
@@ -29,7 +45,8 @@ export default function LoginPage() {
       <button
         type="button"
         onClick={() => router.push(next)}
-        className="absolute left-5 top-6 inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm font-medium text-stone-700 shadow-sm transition-colors hover:bg-stone-50 hover:text-stone-900"
+        disabled={verificationPending}
+        className="absolute left-5 top-6 inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm font-medium text-stone-700 shadow-sm transition-colors hover:bg-stone-50 hover:text-stone-900 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-stone-700"
       >
         <ArrowLeft className="h-4 w-4" />
         Back

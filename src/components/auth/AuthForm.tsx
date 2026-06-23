@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { dispatchAuthSuccess } from "@/lib/authModal";
 import { buildAuthCallbackUrl } from "@/lib/authRedirect";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { writeSignupCooldown } from "./authFormHelpers";
 import type { TurnstileFieldHandle } from "@/components/security/TurnstileField";
 import { toastMessages } from "@/components/toasts/toastMessages";
 import { useToast, type ToastInput } from "@/components/toasts/toasts";
@@ -25,15 +26,9 @@ import {
   hasRecentSignupCooldown,
   isValidEmail,
   normalizeEmail,
-  writeSignupCooldown,
 } from "./authFormHelpers";
-import {
-  clearPendingEmailVerification,
-  loadPendingEmailVerification,
-  savePendingEmailVerification,
-  type PendingEmailVerification,
-} from "./verificationStorage";
 import { isEmailVerified } from "@/lib/auth";
+import { useEmailVerification } from "./useEmailVerification";
 
 type AuthFormMode = "login" | "signup";
 
@@ -68,14 +63,6 @@ export default function AuthForm({
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
-  const [verificationStatus, setVerificationStatus] = useState<
-    "idle" | "sending" | "sent" | "error"
-  >("idle");
-  const [verificationMessage, setVerificationMessage] = useState<string | null>(
-    null,
-  );
-  const [verificationRecord, setVerificationRecord] =
-    useState<PendingEmailVerification | null>(null);
   const [error, setError] = useState("");
   const [view, setView] = useState<
     "auth" | "reset_password" | "reset_password_sent" | "verify_email"
@@ -83,6 +70,15 @@ export default function AuthForm({
 
   const emailExistsCacheRef = useRef<Map<string, boolean>>(new Map());
   const turnstileRef = useRef<TurnstileFieldHandle | null>(null);
+  const isVerificationLocked = view === "verify_email";
+
+  const verification = useEmailVerification({
+    supabase,
+    onVerified: () => {
+      completeSuccess();
+    },
+    onPendingChange: onVerificationPendingChange,
+  });
 
   useEffect(() => {
     if (mode === "login") {
@@ -96,23 +92,17 @@ export default function AuthForm({
   }, [mode, password]);
 
   useEffect(() => {
-    const pendingVerification = loadPendingEmailVerification();
-    if (pendingVerification) {
-      setVerificationRecord(pendingVerification);
-      setEmail(pendingVerification.email);
-      setVerificationStatus("idle");
-      setVerificationMessage(null);
+    if (verification.record) {
+      setEmail(verification.record.email);
       setView("verify_email");
-      onVerificationPendingChange?.(true);
       return;
     }
 
-    setVerificationRecord(null);
-    onVerificationPendingChange?.(false);
     if (view === "verify_email") {
       setView("auth");
+      setError("");
     }
-  }, [mode, next, onVerificationPendingChange, view]);
+  }, [verification.record, view]);
 
   const heading = mode === "signup" ? "Create your account" : "Log in";
 
@@ -124,12 +114,6 @@ export default function AuthForm({
   const emailIsValid = isValidEmail(normalizedEmail);
 
   const completeSuccess = () => {
-    clearPendingEmailVerification();
-    setVerificationRecord(null);
-    setVerificationStatus("idle");
-    setVerificationMessage(null);
-    onVerificationPendingChange?.(false);
-
     if (onAuthSuccess) {
       onAuthSuccess();
       return;
@@ -146,30 +130,6 @@ export default function AuthForm({
       body: authError instanceof Error ? authError.message : baseToast.body,
     });
   };
-
-  const setVerificationPending = useCallback(
-    (record: PendingEmailVerification) => {
-      savePendingEmailVerification(record);
-      setVerificationRecord(record);
-      setEmail(record.email);
-      setVerificationStatus("idle");
-      setVerificationMessage(null);
-      setView("verify_email");
-      onVerificationPendingChange?.(true);
-    },
-    [onVerificationPendingChange],
-  );
-
-  const clearVerificationPending = useCallback(() => {
-    clearPendingEmailVerification();
-    setVerificationRecord(null);
-    setVerificationStatus("idle");
-    setVerificationMessage(null);
-    onVerificationPendingChange?.(false);
-    if (view === "verify_email") {
-      setView("auth");
-    }
-  }, [onVerificationPendingChange, view]);
 
   const getGoogleAuthErrorToast = (authError: unknown): ToastInput => {
     const message = authError instanceof Error ? authError.message : "";
@@ -267,21 +227,21 @@ export default function AuthForm({
 
         if (signUpError) throw signUpError;
 
-        if (data.session) {
+        if (data.session && isEmailVerified(data.session.user)) {
           writeSignupCooldown();
           completeSuccess();
           return;
         }
 
-        writeSignupCooldown();
-      setVerificationPending({
-        email: normalizedEmail,
-        next,
-        createdAt: Date.now(),
-      });
-      setVerificationStatus("idle");
-      showToast(toastMessages.accountCreated);
-      return;
+        verification.startVerification({
+          email: normalizedEmail,
+          next,
+          emailSentAt: Date.now(),
+        });
+        setEmail(normalizedEmail);
+        setView("verify_email");
+        showToast(toastMessages.accountCreated);
+        return;
       }
 
       const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -290,16 +250,14 @@ export default function AuthForm({
       });
 
       if (isVerificationRequiredError(signInError)) {
-        setVerificationPending({
+        verification.startVerification({
           email: normalizedEmail,
           next,
-          createdAt: Date.now(),
+          emailSentAt: Date.now(),
         });
+        setEmail(normalizedEmail);
+        setView("verify_email");
         setError("Confirm your email to continue.");
-        setVerificationStatus("error");
-        setVerificationMessage(
-          "We found a pending verification for this account. Open the email link or resend it below.",
-        );
         return;
       }
 
@@ -434,16 +392,27 @@ export default function AuthForm({
   if (view === "verify_email") {
     return (
       <EmailVerificationPanel
-        email={verificationRecord?.email || normalizedEmail}
-        next={verificationRecord?.next || next}
-        resendState={verificationStatus}
-        resendMessage={verificationMessage}
-        isLocked={verificationStatus === "sending"}
+        email={verification.record?.email || normalizedEmail}
+        next={verification.record?.next || next}
+        resendCooldownSeconds={verification.resendCooldownSeconds}
+        resendState={verification.resendStatus}
+        resendMessage={verification.resendMessage}
+        troubleshootingChecked={verification.troubleshootingChecked}
+        onTroubleshootingCheckedChange={verification.setTroubleshootingChecked}
+        isLocked={isSubmitting}
         onResend={() => {
-          void resendVerificationEmail();
+          void verification.resendConfirmationEmail();
         }}
         onVerified={() => {
-          void confirmVerificationComplete();
+          void verification.requestManualVerificationCheck();
+        }}
+        onUseDifferentEmail={() => {
+          verification.clearVerification();
+          setView("auth");
+          setPassword("");
+          setError("");
+          setSignupStep(mode === "signup" ? "email" : "password");
+          onModeChange(mode);
         }}
       />
     );
@@ -521,80 +490,6 @@ export default function AuthForm({
       </div>
     </div>
   );
-
-  async function resendVerificationEmail() {
-    setVerificationStatus("sending");
-    setVerificationMessage(null);
-
-    try {
-      if (!supabase) {
-        showToast(toastMessages.authNotConfigured);
-        setVerificationStatus("idle");
-        return;
-      }
-
-      const emailToUse = verificationRecord?.email || normalizedEmail;
-      if (!isValidEmail(emailToUse)) {
-        setVerificationStatus("error");
-        setVerificationMessage("Enter a valid email address first.");
-        return;
-      }
-
-      const { error: resendError } = await supabase.auth.resend({
-        type: "signup",
-        email: emailToUse,
-        options: {
-          emailRedirectTo: buildAuthCallbackUrl(
-            verificationRecord?.next || next,
-            "email_verification",
-          ),
-        },
-      });
-
-      if (resendError) throw resendError;
-
-      setVerificationStatus("sent");
-      setVerificationMessage(null);
-      showToast({
-        title: "Verification email resent",
-        body: "Check your inbox for the newest link.",
-        type: "success",
-      });
-    } catch (authError) {
-      setVerificationStatus("error");
-      setVerificationMessage(
-        authError instanceof Error ? authError.message : "Could not resend the verification email.",
-      );
-    }
-  }
-
-  async function confirmVerificationComplete() {
-    try {
-      if (!supabase) {
-        showToast(toastMessages.authNotConfigured);
-        return;
-      }
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (isEmailVerified(user)) {
-        clearVerificationPending();
-        completeSuccess();
-        return;
-      }
-
-      setVerificationStatus("error");
-      setVerificationMessage(
-        "The email link has not been confirmed yet. Open it in your inbox, then try again.",
-      );
-    } catch (authError) {
-      setVerificationMessage(
-        authError instanceof Error ? authError.message : "Could not confirm verification status.",
-      );
-    }
-  }
 }
 
 function isVerificationRequiredError(error: unknown) {

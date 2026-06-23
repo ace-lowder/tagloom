@@ -1,12 +1,14 @@
 "use client";
 
+import { sanitizeNextPath } from "@/lib/authModal";
+
 const EMAIL_VERIFICATION_STORAGE_KEY = "tagloom:email-verification:v1";
 const EMAIL_VERIFICATION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type PendingEmailVerification = {
   email: string;
   next: string;
-  createdAt: number;
+  emailSentAt: number;
 };
 
 type StoredEmailVerification = PendingEmailVerification;
@@ -32,14 +34,14 @@ export function loadPendingEmailVerification(): PendingEmailVerification | null 
       typeof parsed.email !== "string" ||
       !parsed.email ||
       typeof parsed.next !== "string" ||
-      !parsed.next.startsWith("/") ||
-      typeof parsed.createdAt !== "number" ||
-      !Number.isFinite(parsed.createdAt)
+      sanitizeNextPath(parsed.next) !== parsed.next ||
+      typeof parsed.emailSentAt !== "number" ||
+      !Number.isFinite(parsed.emailSentAt)
     ) {
       return null;
     }
 
-    if (Date.now() - parsed.createdAt > EMAIL_VERIFICATION_MAX_AGE_MS) {
+    if (Date.now() - parsed.emailSentAt > EMAIL_VERIFICATION_MAX_AGE_MS) {
       clearPendingEmailVerification();
       return null;
     }
@@ -47,7 +49,7 @@ export function loadPendingEmailVerification(): PendingEmailVerification | null 
     return {
       email: parsed.email,
       next: parsed.next,
-      createdAt: parsed.createdAt,
+      emailSentAt: parsed.emailSentAt,
     };
   } catch {
     return null;
@@ -62,4 +64,3 @@ export function clearPendingEmailVerification() {
 export function hasPendingEmailVerification() {
   return Boolean(loadPendingEmailVerification());
 }
-

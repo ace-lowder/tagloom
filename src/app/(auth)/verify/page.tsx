@@ -5,42 +5,64 @@ import { useRouter, useSearchParams } from "next/navigation";
 import EmailVerificationResult from "@/components/auth/EmailVerificationResult";
 import { dispatchAuthSuccess, sanitizeNextPath } from "@/lib/authModal";
 
+const VERIFIED_BROADCAST_CHANNEL = "tagloom-auth";
+const VERIFIED_BROADCAST_MESSAGE = "email_verified";
+const AUTO_REDIRECT_SECONDS = 5;
+
 export default function VerifyPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [didRedirect, setDidRedirect] = useState(false);
-
   const status = searchParams.get("status");
-  const next = useMemo(
-    () => sanitizeNextPath(searchParams.get("next")),
-    [searchParams],
-  );
-  const message = searchParams.get("message");
+  const rawNext = searchParams.get("next");
+  const next = useMemo(() => sanitizeNextPath(rawNext), [rawNext]);
+  const [secondsRemaining, setSecondsRemaining] = useState(AUTO_REDIRECT_SECONDS);
+  const loginUrl = `/login?next=${encodeURIComponent(next)}`;
 
   useEffect(() => {
-    if (status !== "success" || didRedirect) return;
+    if (status !== "success") return;
 
     dispatchAuthSuccess();
-    const timeout = window.setTimeout(() => {
-      setDidRedirect(true);
-      router.replace(next);
-    }, 800);
 
-    return () => window.clearTimeout(timeout);
-  }, [didRedirect, next, router, status]);
+    if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+      const channel = new BroadcastChannel(VERIFIED_BROADCAST_CHANNEL);
+      channel.postMessage({ type: VERIFIED_BROADCAST_MESSAGE });
+      channel.close();
+    }
+  }, [status]);
+
+  useEffect(() => {
+    if (status !== "success") return;
+
+    setSecondsRemaining(AUTO_REDIRECT_SECONDS);
+    const intervalId = window.setInterval(() => {
+      setSecondsRemaining((current) => {
+        if (current <= 1) {
+          window.clearInterval(intervalId);
+          router.replace(next);
+          return 0;
+        }
+        return current - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [next, router, status]);
 
   if (status === "success") {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-stone-50 px-5 py-10">
-        <div className="w-full max-w-sm">
+      <main className="flex min-h-screen items-center justify-center px-5 py-10">
+        <div className="w-full max-w-md">
           <EmailVerificationResult
-            status="success"
             title="Email verified"
-            message="Your account is ready. We are taking you back to the listing now."
-            actionLabel="Continue now"
+            message="Your account is ready. We're returning you to your listing so you can review it and use your free generation."
+            status="success"
+            actionLabel="Continue to my listing"
             onAction={() => router.replace(next)}
-            secondaryLabel="Go to home"
-            onSecondary={() => router.replace("/")}
+            footer={
+              <p className="text-center text-sm font-medium text-stone-600" aria-live="polite">
+                Continuing automatically in {secondsRemaining}s
+              </p>
+            }
           />
         </div>
       </main>
@@ -49,18 +71,14 @@ export default function VerifyPage() {
 
   if (status === "error") {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-stone-50 px-5 py-10">
-        <div className="w-full max-w-sm">
+      <main className="flex min-h-screen items-center justify-center px-5 py-10">
+        <div className="w-full max-w-md">
           <EmailVerificationResult
+            title="This verification link is no longer valid"
+            message="The link may have expired or may already have been used. Return to Log in and request a new confirmation email."
             status="error"
-            title="Could not verify your email"
-            message={
-              message || "Please open the newest verification link from your inbox."
-            }
-            actionLabel="Back to log in"
-            onAction={() => router.replace(`/login?next=${encodeURIComponent(next)}`)}
-            secondaryLabel="Go home"
-            onSecondary={() => router.replace("/")}
+            actionLabel="Return to Log in"
+            onAction={() => router.replace(loginUrl)}
           />
         </div>
       </main>
@@ -68,19 +86,16 @@ export default function VerifyPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-stone-50 px-5 py-10">
-      <div className="w-full max-w-sm">
+    <main className="flex min-h-screen items-center justify-center px-5 py-10">
+      <div className="w-full max-w-md">
         <EmailVerificationResult
-          status="pending"
           title="Check your inbox"
-          message="Open the verification email we sent, then return here if you need to finish the sign-in flow."
-          actionLabel="Back to log in"
-          onAction={() => router.replace(`/login?next=${encodeURIComponent(next)}`)}
-          secondaryLabel="Go home"
-          onSecondary={() => router.replace("/")}
+          message="Open the email confirmation link to finish creating your account."
+          status="pending"
+          actionLabel="Return to Log in"
+          onAction={() => router.replace(loginUrl)}
         />
       </div>
     </main>
   );
 }
-

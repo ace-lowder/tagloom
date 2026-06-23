@@ -93,7 +93,7 @@ describe("auth callback route", () => {
 
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe(
-      "http://localhost:3000/verify?next=%2Fgenerator&status=error&message=verification+failed",
+      "http://localhost:3000/verify?next=%2Fgenerator&status=error",
     );
   });
 

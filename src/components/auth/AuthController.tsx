@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import AuthForm from "@/components/auth/AuthForm";
-import { hasPendingEmailVerification } from "@/components/auth/verificationStorage";
+import { hasPendingEmailVerification } from "@/components/auth/emailVerificationStorage";
 import {
   dispatchAuthSuccess,
   sanitizeNextPath,
