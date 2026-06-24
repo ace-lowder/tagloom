@@ -133,6 +133,76 @@ describe("Generator auth unlock flow", () => {
     expect(countGenerateCalls(fetchMock)).toBe(2);
   });
 
+  it("restores a verified guest generation after a fresh unmount and remount without replaying the paywall request", async () => {
+    const { fetchMock, setHistoryAuthenticated } = createAuthAwareFetchMock(
+      () =>
+        mockGenerateResponse({
+          status: "paywall",
+          reason: "auth_required",
+          requestId: "ctx-remount",
+          message: "Create account or login.",
+          placeholders: {
+            target: ["hidden keyword", "trend phrase"],
+            discovery: [],
+          },
+        }),
+      () =>
+        mockGenerateResponse({
+          status: "ok",
+          requestId: "ctx-remount",
+          tags: { target: ["personalized dad shirt"], discovery: [] },
+          source: "model",
+          entitlementUsed: "free_credit",
+          generationId: "gen-remount",
+        }),
+    );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const firstRender = renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
+
+    const titleInput = screen.getByPlaceholderText(
+      "e.g. Handmade ceramic coffee mug with minimalist design",
+    );
+    fireEvent.change(titleInput, {
+      target: {
+        value: "Personalized Dad V-Neck T-Shirt - 100% Cotton Custom Name Shirt",
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Generate tags" }));
+
+    await screen.findByText("Create an account or log in to unlock this generation for FREE");
+    const guestGenerationId = getStoredGuestGenerationId();
+    expect(guestGenerationId).toBeTruthy();
+    window.history.replaceState({}, "", `/?guest_generation=${guestGenerationId}`);
+    expect(countGenerateCalls(fetchMock)).toBe(1);
+
+    firstRender.unmount();
+    act(() => {
+      setHistoryAuthenticated(true);
+      window.dispatchEvent(new CustomEvent("tagloom:auth-success"));
+    });
+
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
+
+    await screen.findByText("Your listing is ready. Review it, then use your free generation.");
+    expect(screen.queryByText("hidden keyword")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("generated-tag-count")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Copy all" })).not.toBeInTheDocument();
+    expect(countGenerateCalls(fetchMock)).toBe(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Use my free generation" }));
+    await screen.findByText(
+      "You are about to use your one free generation. Would you like to use that now?",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Yes" }));
+
+    await waitFor(() => expect(screen.getByText("personalized dad shirt")).toBeInTheDocument());
+    expect(screen.getByTestId("generated-tag-count")).toHaveTextContent("1 tags generated");
+    expect(screen.getByRole("button", { name: "Copy all" })).toBeEnabled();
+    expect(countGenerateCalls(fetchMock)).toBe(2);
+  });
+
   it("replaces placeholder state with unlocking indicator, then shows real tags after auth success", async () => {
     const placeholders = [
       "hidden keyword",
