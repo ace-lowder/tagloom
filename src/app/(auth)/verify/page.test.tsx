@@ -1,6 +1,6 @@
 import React from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import VerifyPage from "./page";
 
 const { replaceMock, dispatchAuthSuccessMock, postMessageMock, closeMock } = vi.hoisted(
@@ -11,6 +11,8 @@ const { replaceMock, dispatchAuthSuccessMock, postMessageMock, closeMock } = vi.
     closeMock: vi.fn(),
   }),
 );
+
+let currentSearchParams = new URLSearchParams("status=success&next=%2Fgenerator");
 
 class MockBroadcastChannel {
   onmessage: ((event: MessageEvent) => void) | null = null;
@@ -32,7 +34,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({
     replace: replaceMock,
   }),
-  useSearchParams: () => new URLSearchParams("status=success&next=%2Fgenerator"),
+  useSearchParams: () => currentSearchParams,
 }));
 
 vi.mock("@/lib/authModal", () => ({
@@ -42,8 +44,8 @@ vi.mock("@/lib/authModal", () => ({
 
 describe("/verify page", () => {
   beforeEach(() => {
-    vi.useFakeTimers();
     vi.restoreAllMocks();
+    currentSearchParams = new URLSearchParams("status=success&next=%2Fgenerator");
     replaceMock.mockReset();
     dispatchAuthSuccessMock.mockReset();
     postMessageMock.mockReset();
@@ -51,24 +53,51 @@ describe("/verify page", () => {
     vi.stubGlobal("BroadcastChannel", MockBroadcastChannel as unknown as typeof BroadcastChannel);
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it("broadcasts once, shows the countdown, and redirects after five seconds", () => {
+  it("broadcasts once and shows the countdown copy", () => {
     render(<VerifyPage />);
 
     expect(dispatchAuthSuccessMock).toHaveBeenCalledTimes(1);
     expect(postMessageMock).toHaveBeenCalledTimes(1);
     expect(postMessageMock).toHaveBeenCalledWith({ type: "email_verified" });
-    fireEvent.click(screen.getByRole("button", { name: "Continue to my listing" }));
-    expect(replaceMock).toHaveBeenCalledWith("/generator");
+    expect(closeMock).toHaveBeenCalledTimes(1);
     expect(screen.getByText("Continuing automatically in 5s")).toBeInTheDocument();
+  });
 
-    act(() => {
-      vi.advanceTimersByTime(5000);
-    });
+  it("redirects only once when Continue is clicked immediately", () => {
+    render(<VerifyPage />);
 
-    expect(replaceMock).toHaveBeenLastCalledWith("/generator");
+    fireEvent.click(screen.getByRole("button", { name: "Continue to my listing" }));
+
+    expect(replaceMock).toHaveBeenCalledTimes(1);
+    expect(replaceMock).toHaveBeenCalledWith("/generator");
+
+    expect(replaceMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders the generic error state", () => {
+    currentSearchParams = new URLSearchParams("status=error&next=%2Fgenerator");
+
+    render(<VerifyPage />);
+
+    expect(screen.getByText("This verification link is no longer valid")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "The link may have expired or may already have been used. Return to Log in and request a new confirmation email.",
+      ),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Return to Log in" }));
+    expect(replaceMock).toHaveBeenCalledWith("/login?next=%2Fgenerator");
+  });
+
+  it("shows the pending state when no verification result is present", () => {
+    currentSearchParams = new URLSearchParams("next=%2Fgenerator");
+
+    render(<VerifyPage />);
+
+    expect(screen.getAllByText("Check your inbox")[0]).toBeInTheDocument();
+    expect(
+      screen.getByText("Open the email confirmation link to finish creating your account."),
+    ).toBeInTheDocument();
   });
 });

@@ -232,6 +232,42 @@ describe("AuthForm signup guard", () => {
     expect(signUpMock).not.toHaveBeenCalled();
   });
 
+  it("shows the busy confirmation copy for a rate-limited signup and keeps guest generation intact", async () => {
+    window.localStorage.setItem(
+      "tagloom:guest-generation:v1",
+      JSON.stringify({
+        kind: "guest_generation",
+        id: "guest-123",
+        title: "Guest title",
+        description: "Guest description",
+        createdAt: Date.now(),
+      }),
+    );
+    signUpMock.mockResolvedValueOnce({
+      data: null,
+      error: Object.assign(new Error("Too many requests."), {
+        status: 429,
+      }),
+    });
+
+    renderWithToasts(<AuthForm mode="signup" onModeChange={vi.fn()} />);
+
+    await moveSignupToPasswordStep();
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "hunter2-password" },
+    });
+    fireEvent.submit(screen.getByRole("button", { name: "Create account" }).closest("form")!);
+
+    expect(
+      await screen.findByText(
+        "We couldn't send your confirmation email right now. Email delivery is temporarily busy. Your listing has been saved. Please try again shortly.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Verify your email address")).not.toBeInTheDocument();
+    expect(window.localStorage.getItem("tagloom:signup-cooldown:v1")).toBeNull();
+    expect(window.localStorage.getItem("tagloom:guest-generation:v1")).toContain("guest-123");
+  });
+
   it("does not call signup eligibility during login", async () => {
     const fetchMock = setupFetchMock();
     vi.stubGlobal("fetch", fetchMock);
@@ -524,7 +560,9 @@ describe("AuthForm signup guard", () => {
 
   it("switches to the verification flow when login says the email is not confirmed", async () => {
     signInWithPasswordMock.mockResolvedValueOnce({
-      error: new Error("email_not_confirmed"),
+      error: Object.assign(new Error("email_not_confirmed"), {
+        code: "email_not_confirmed",
+      }),
     });
 
     renderWithToasts(<AuthForm mode="login" onModeChange={vi.fn()} />);
@@ -561,9 +599,33 @@ describe("AuthForm signup guard", () => {
     expect(Number.isFinite(storedRecord.createdAt)).toBe(true);
   });
 
+  it("does not switch to verification when the login error code is unrelated", async () => {
+    signInWithPasswordMock.mockResolvedValueOnce({
+      error: Object.assign(new Error("email_not_confirmed"), {
+        code: "rate_limited",
+      }),
+    });
+
+    renderWithToasts(<AuthForm mode="login" onModeChange={vi.fn()} />);
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "person@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "hunter2-password" },
+    });
+    fireEvent.submit(screen.getByRole("button", { name: "Log in" }).closest("form")!);
+
+    expect(await screen.findByText("Login failed")).toBeInTheDocument();
+    expect(await screen.findByText("email_not_confirmed")).toBeInTheDocument();
+    expect(screen.queryByText("Verify your email address")).not.toBeInTheDocument();
+  });
+
   it("resends a verification email from the verification view", async () => {
     signInWithPasswordMock.mockResolvedValueOnce({
-      error: new Error("email_not_confirmed"),
+      error: Object.assign(new Error("email_not_confirmed"), {
+        code: "email_not_confirmed",
+      }),
     });
 
     renderWithToasts(<AuthForm mode="login" onModeChange={vi.fn()} />);

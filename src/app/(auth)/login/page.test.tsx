@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import LoginPage from "./page";
 
@@ -13,7 +13,22 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/components/auth/AuthForm", () => ({
   __esModule: true,
-  default: () => <div data-testid="auth-form" />,
+  default: function MockAuthForm({
+    onVerificationPendingChange,
+  }: {
+    onVerificationPendingChange?: (pending: boolean) => void;
+  }) {
+    return (
+      <div data-testid="auth-form">
+        <button
+          type="button"
+          onClick={() => onVerificationPendingChange?.(true)}
+        >
+          Trigger verification pending
+        </button>
+      </div>
+    );
+  },
 }));
 
 describe("login page", () => {
@@ -23,18 +38,13 @@ describe("login page", () => {
     pushMock.mockReset();
   });
 
-  it("locks the back button while verification is pending", () => {
-    window.localStorage.setItem(
-      "tagloom:email-verification:v2",
-      JSON.stringify({
-        email: "person@example.com",
-        next: "/",
-        createdAt: Date.now(),
-        emailSentAt: Date.now(),
-      }),
-    );
-
+  it("locks the back button when AuthForm reports that verification is pending", () => {
     render(<LoginPage />);
+
+    const backButton = screen.getByRole("button", { name: "Back" });
+    expect(backButton).toBeEnabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Trigger verification pending" }));
 
     expect(screen.getByRole("button", { name: "Back" })).toBeDisabled();
   });
