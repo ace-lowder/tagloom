@@ -17,9 +17,13 @@ export default function VerifyPage() {
   const next = useMemo(() => sanitizeNextPath(rawNext), [rawNext]);
   const [secondsRemaining, setSecondsRemaining] = useState(AUTO_REDIRECT_SECONDS);
   const autoRedirectTimerRef = useRef<number | null>(null);
+  const didAnnounceSuccessRef = useRef(false);
+  const didRedirectRef = useRef(false);
   const loginUrl = `/login?next=${encodeURIComponent(next)}`;
 
   const completeRedirect = useCallback(() => {
+    if (didRedirectRef.current) return;
+    didRedirectRef.current = true;
     if (autoRedirectTimerRef.current !== null) {
       window.clearInterval(autoRedirectTimerRef.current);
       autoRedirectTimerRef.current = null;
@@ -27,9 +31,9 @@ export default function VerifyPage() {
     router.replace(next);
   }, [next, router]);
 
-  useEffect(() => {
-    if (status !== "success") return;
-
+  const announceSuccess = useCallback(() => {
+    if (didAnnounceSuccessRef.current) return;
+    didAnnounceSuccessRef.current = true;
     dispatchAuthSuccess();
 
     if (typeof window !== "undefined" && "BroadcastChannel" in window) {
@@ -37,7 +41,13 @@ export default function VerifyPage() {
       channel.postMessage({ type: VERIFIED_BROADCAST_MESSAGE });
       channel.close();
     }
-  }, [status]);
+  }, []);
+
+  useEffect(() => {
+    if (status !== "success") return;
+
+    announceSuccess();
+  }, [announceSuccess, status]);
 
   useEffect(() => {
     if (status !== "success") return;

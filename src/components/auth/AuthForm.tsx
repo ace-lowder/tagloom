@@ -119,7 +119,6 @@ export default function AuthForm({
   const completeSuccess = (destination = verificationNext) => {
     if (didCompleteSuccessRef.current) return;
     didCompleteSuccessRef.current = true;
-    verification.clearVerification();
     dispatchAuthSuccess();
     router.push(destination);
     router.refresh();

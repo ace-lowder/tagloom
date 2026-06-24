@@ -1,7 +1,8 @@
 import React from "react";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ToastProvider } from "@/components/toasts/ToastProvider";
+import * as authModal from "@/lib/authModal";
 import AuthForm from "./AuthForm";
 
 function renderWithToasts(ui: React.ReactElement) {
@@ -18,6 +19,26 @@ const resetPasswordForEmailMock = vi.fn();
 const getUserMock = vi.fn();
 const onAuthStateChangeMock = vi.fn();
 const turnstileGetTokenMock = vi.fn();
+type AuthStateCallback = (event: string, session: { user: unknown } | null) => void;
+
+const broadcastInstances: MockBroadcastChannel[] = [];
+let authStateCallback: AuthStateCallback | null = null;
+
+class MockBroadcastChannel {
+  onmessage: ((event: MessageEvent) => void) | null = null;
+
+  constructor(public name: string) {
+    broadcastInstances.push(this);
+  }
+
+  postMessage() {
+    return undefined;
+  }
+
+  close() {
+    return undefined;
+  }
+}
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -103,8 +124,14 @@ describe("AuthForm signup guard", () => {
     vi.restoreAllMocks();
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "http://localhost:3000");
     vi.stubGlobal("fetch", setupFetchMock());
+    vi.stubGlobal(
+      "BroadcastChannel",
+      MockBroadcastChannel as unknown as typeof BroadcastChannel,
+    );
     window.localStorage.clear();
     window.sessionStorage.clear();
+    broadcastInstances.length = 0;
+    authStateCallback = null;
     pushMock.mockReset();
     refreshMock.mockReset();
     signUpMock.mockReset();
@@ -122,9 +149,62 @@ describe("AuthForm signup guard", () => {
     signInWithOAuthMock.mockResolvedValue({ error: null, data: {} });
     resendMock.mockResolvedValue({ error: null });
     resetPasswordForEmailMock.mockResolvedValue({ error: null });
-    onAuthStateChangeMock.mockReturnValue({
-      data: { subscription: { unsubscribe: vi.fn() } },
+    onAuthStateChangeMock.mockImplementation((callback: AuthStateCallback) => {
+      authStateCallback = callback;
+      return {
+        data: { subscription: { unsubscribe: vi.fn() } },
+      };
     });
+  });
+
+  it("dispatches auth success only once when verification completes twice before cleanup", async () => {
+    signInWithPasswordMock.mockResolvedValueOnce({
+      error: Object.assign(new Error("email_not_confirmed"), {
+        code: "email_not_confirmed",
+      }),
+    });
+
+    const dispatchAuthSuccessSpy = vi.spyOn(authModal, "dispatchAuthSuccess");
+    const onAuthSuccess = vi.fn();
+    renderWithToasts(
+      <AuthForm
+        mode="login"
+        onModeChange={vi.fn()}
+        onAuthSuccess={onAuthSuccess}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "person@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "hunter2-password" },
+    });
+    fireEvent.submit(screen.getByRole("button", { name: "Log in" }).closest("form")!);
+
+    await screen.findByText("Verify your email address");
+    await waitFor(() => expect(authStateCallback).not.toBeNull());
+    await waitFor(() => expect(broadcastInstances.length).toBeGreaterThan(0));
+
+    getUserMock.mockResolvedValue({ data: { user: { email_confirmed_at: new Date().toISOString() } }, error: null });
+    const broadcastChannel = broadcastInstances.at(-1);
+    expect(broadcastChannel).toBeDefined();
+
+    await act(async () => {
+      authStateCallback?.("SIGNED_IN", {
+        user: {
+          email_confirmed_at: new Date().toISOString(),
+        },
+      });
+      broadcastChannel?.onmessage?.({
+        data: { type: "email_verified" },
+      } as MessageEvent);
+    });
+
+    await waitFor(() => expect(dispatchAuthSuccessSpy).toHaveBeenCalledTimes(1));
+    expect(pushMock).toHaveBeenCalledTimes(1);
+    expect(refreshMock).toHaveBeenCalledTimes(1);
+    expect(onAuthSuccess).toHaveBeenCalledTimes(1);
   });
 
   it("blocks final signup submit from localStorage cooldown", async () => {

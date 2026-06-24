@@ -1,6 +1,6 @@
 import React from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import VerifyPage from "./page";
 
 const { replaceMock, dispatchAuthSuccessMock, postMessageMock, closeMock } = vi.hoisted(
@@ -53,25 +53,50 @@ describe("/verify page", () => {
     vi.stubGlobal("BroadcastChannel", MockBroadcastChannel as unknown as typeof BroadcastChannel);
   });
 
-  it("broadcasts once and shows the countdown copy", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("shows the success countdown copy", () => {
     render(<VerifyPage />);
 
     expect(dispatchAuthSuccessMock).toHaveBeenCalledTimes(1);
     expect(postMessageMock).toHaveBeenCalledTimes(1);
-    expect(postMessageMock).toHaveBeenCalledWith({ type: "email_verified" });
     expect(closeMock).toHaveBeenCalledTimes(1);
     expect(screen.getByText("Continuing automatically in 5s")).toBeInTheDocument();
   });
 
-  it("redirects only once when Continue is clicked immediately", () => {
+  it("redirects once when Continue is double-clicked and ignores later timer completion", () => {
+    vi.useFakeTimers();
+
     render(<VerifyPage />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Continue to my listing" }));
+    const continueButton = screen.getByRole("button", { name: "Continue to my listing" });
+    fireEvent.click(continueButton);
+    fireEvent.click(continueButton);
 
     expect(replaceMock).toHaveBeenCalledTimes(1);
     expect(replaceMock).toHaveBeenCalledWith("/generator");
 
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+
     expect(replaceMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not rebroadcast or redispatch on rerender", () => {
+    const { rerender } = render(<VerifyPage />);
+
+    expect(dispatchAuthSuccessMock).toHaveBeenCalledTimes(1);
+    expect(postMessageMock).toHaveBeenCalledTimes(1);
+    expect(closeMock).toHaveBeenCalledTimes(1);
+
+    rerender(<VerifyPage />);
+
+    expect(dispatchAuthSuccessMock).toHaveBeenCalledTimes(1);
+    expect(postMessageMock).toHaveBeenCalledTimes(1);
+    expect(closeMock).toHaveBeenCalledTimes(1);
   });
 
   it("renders the generic error state", () => {

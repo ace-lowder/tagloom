@@ -258,6 +258,75 @@ describe("useEmailVerification", () => {
     expect(result.current.record).toBeNull();
   });
 
+  it("completes once across overlapping signals and re-arms after a new verification starts", async () => {
+    const onVerified = vi.fn();
+    const onPendingChange = vi.fn();
+    const { result } = renderVerification(onVerified, onPendingChange);
+    const firstNow = Date.now();
+
+    act(() => {
+      result.current.startVerification({
+        email: "person@example.com",
+        next: "/?guest_generation=abc123",
+        createdAt: firstNow,
+        emailSentAt: null,
+      });
+    });
+
+    await waitFor(() => expect(authStateCallback).not.toBeNull());
+    await waitFor(() => expect(broadcastInstances).toHaveLength(1));
+
+    getUserMock.mockResolvedValue({ data: { user: makeVerifiedUser() }, error: null });
+
+    await act(async () => {
+      const manualVerified = await result.current.requestManualVerificationCheck();
+      expect(manualVerified).toBe(true);
+    });
+
+    expect(onVerified).toHaveBeenCalledTimes(1);
+    expect(postMessageMock).toHaveBeenCalledTimes(1);
+    expect(loadPendingEmailVerification()).toBeNull();
+    expect(window.localStorage.getItem("tagloom:signup-cooldown:v1")).toMatch(/^\d+$/);
+
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      value: "visible",
+    });
+
+    await act(async () => {
+      authStateCallback?.("SIGNED_IN", { user: makeVerifiedUser() });
+      broadcastInstances[0].onmessage?.({
+        data: { type: "email_verified" },
+      } as MessageEvent);
+      window.dispatchEvent(new Event("focus"));
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+
+    expect(onVerified).toHaveBeenCalledTimes(1);
+    expect(postMessageMock).toHaveBeenCalledTimes(1);
+    expect(getUserMock).toHaveBeenCalledTimes(2);
+
+    getUserMock.mockResolvedValueOnce({ data: { user: null }, error: null });
+    act(() => {
+      result.current.startVerification({
+        email: "other@example.com",
+        next: "/?guest_generation=xyz789",
+        createdAt: Date.now(),
+        emailSentAt: null,
+      });
+    });
+
+    expect(result.current.record?.email).toBe("other@example.com");
+    getUserMock.mockResolvedValueOnce({ data: { user: makeVerifiedUser() }, error: null });
+
+    await act(async () => {
+      const manualVerified = await result.current.requestManualVerificationCheck();
+      expect(manualVerified).toBe(true);
+    });
+
+    expect(onVerified).toHaveBeenCalledTimes(2);
+  });
+
   it("checks verification after a broadcast message", async () => {
     const onVerified = vi.fn();
     const { result } = renderVerification(onVerified);
