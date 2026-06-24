@@ -31,10 +31,11 @@ export function GeneratorResults({
 
   const showUnlockReadyState =
     Boolean(unlockReadyContext) && (!paywall || paywall.reason === "auth_required");
+  const showTopBar = !isUnlockingFromPaywall && !(showUnlockReadyState && visibleTags.length === 0);
 
   return (
     <>
-      {!isUnlockingFromPaywall ? (
+      {showTopBar ? (
         <div className="mb-3 flex items-center justify-between">
           <span data-testid="generated-tag-count" className="text-sm font-medium text-stone-700">
             {visibleTags.length} tags generated

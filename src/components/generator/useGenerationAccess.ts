@@ -12,8 +12,6 @@ import { AUTH_SUCCESS_EVENT } from "@/lib/authModal";
 import {
   generateContextId,
   loadPendingGuestGeneration,
-  loadPendingContext,
-  savePendingContext,
   savePendingGuestGeneration,
 } from "./generatorStorage";
 import { DEFAULT_TITLE_PLACEHOLDER } from "./generatorConstants";
@@ -71,16 +69,7 @@ export function useGenerationAccess({
         title: context.title,
         description: context.description,
       });
-      savePendingGuestGeneration({
-        kind: "guest_generation",
-        id: context.id,
-        title: context.title,
-        description: context.description,
-        createdAt:
-          "createdAt" in context && typeof context.createdAt === "number"
-            ? context.createdAt
-            : Date.now(),
-      });
+      setConfirmModalMode(null);
     },
     [
       clearDemoTimer,
@@ -92,6 +81,7 @@ export function useGenerationAccess({
       setTitle,
       setTitlePlaceholder,
       shouldSkipDemoRef,
+      setConfirmModalMode,
     ],
   );
 
@@ -102,12 +92,30 @@ export function useGenerationAccess({
     const guestGenerationId = url.searchParams.get("guest_generation");
     const guestGeneration = loadPendingGuestGeneration();
     if (!guestGeneration) return null;
-    if (guestGenerationId && guestGeneration.id !== guestGenerationId) {
+    const expectedId = guestGenerationId || generationContextId;
+    if (expectedId && guestGeneration.id !== expectedId) {
       return null;
     }
 
-    return guestGeneration;
-  }, []);
+    return {
+      id: guestGeneration.id,
+      title: guestGeneration.title,
+      description: guestGeneration.description,
+    };
+  }, [generationContextId]);
+
+  const restoreVerifiedGuestGeneration = useCallback(() => {
+    const guestGeneration = loadVerifiedGuestGenerationContext();
+    if (!guestGeneration) return false;
+    if (restoredGuestGenerationIdRef.current === guestGeneration.id) return true;
+
+    restoreGuestGenerationContext({
+      id: guestGeneration.id,
+      title: guestGeneration.title,
+      description: guestGeneration.description,
+    });
+    return true;
+  }, [loadVerifiedGuestGenerationContext, restoreGuestGenerationContext]);
 
   const goToLogin = useCallback(() => {
     markUserInteraction();
@@ -119,17 +127,16 @@ export function useGenerationAccess({
     const contextId = generationContextId || generateContextId();
     setGenerationContextId(contextId);
 
-    savePendingContext({
-      id: contextId,
-      title,
-      description,
-    });
+    const existingGuestGeneration = loadPendingGuestGeneration();
     savePendingGuestGeneration({
       kind: "guest_generation",
       id: contextId,
       title,
       description,
-      createdAt: Date.now(),
+      createdAt:
+        existingGuestGeneration?.id === contextId
+          ? existingGuestGeneration.createdAt
+          : Date.now(),
     });
 
     openAuthModal({
@@ -172,86 +179,29 @@ export function useGenerationAccess({
     clearDemoTimer();
     clearRevealTimer();
 
-    const context = resolvePendingGuestContext(contextId);
-    if (!context) return;
-
-    setGenerationContextId(context.id);
-    setTitle(context.title);
-    setTitlePlaceholder(DEFAULT_TITLE_PLACEHOLDER);
-    setDescription(context.description);
-    setDescriptionRevealMode("none");
-    setShowDescription(Boolean(context.description));
-    setUnlockReadyContext({
-      id: context.id,
-      title: context.title,
-      description: context.description,
-    });
+    setGenerationContextId(contextId);
   }, [
     clearDemoTimer,
     clearRevealTimer,
-    setDescription,
-    setDescriptionRevealMode,
     setIsDemoActive,
-    setShowDescription,
-    setTitle,
-    setTitlePlaceholder,
-    setUnlockReadyContext,
     shouldSkipDemoRef,
-    showToast,
   ]);
 
   useEffect(() => {
     const onAuthSuccess = () => {
+      restoreVerifiedGuestGeneration();
       void refreshUsageLabel();
       void loadHistory();
     };
 
     window.addEventListener(AUTH_SUCCESS_EVENT, onAuthSuccess);
     return () => window.removeEventListener(AUTH_SUCCESS_EVENT, onAuthSuccess);
-  }, [loadHistory, refreshUsageLabel]);
+  }, [loadHistory, refreshUsageLabel, restoreVerifiedGuestGeneration]);
 
   useEffect(() => {
     if (!isHistoryAuthenticated) return;
-
-    const guestGeneration = loadVerifiedGuestGenerationContext();
-    if (!guestGeneration) return;
-    if (restoredGuestGenerationIdRef.current === guestGeneration.id) return;
-
-    restoreGuestGenerationContext({
-      id: guestGeneration.id,
-      title: guestGeneration.title,
-      description: guestGeneration.description,
-      createdAt: guestGeneration.createdAt,
-    });
-  }, [
-    isHistoryAuthenticated,
-    loadVerifiedGuestGenerationContext,
-    restoreGuestGenerationContext,
-  ]);
-
-  useEffect(() => {
-    const onAuthSuccess = () => {
-      const context = resolvePendingGuestContext(generationContextId);
-      if (!context) return;
-
-      restoreGuestGenerationContext({
-        id: context.id,
-        title: context.title,
-        description: context.description,
-        createdAt: Date.now(),
-      });
-      setConfirmModalMode(null);
-      setUnlockReadyContext(context);
-    };
-
-    window.addEventListener(AUTH_SUCCESS_EVENT, onAuthSuccess);
-    return () => window.removeEventListener(AUTH_SUCCESS_EVENT, onAuthSuccess);
-  }, [
-    generationContextId,
-    setConfirmModalMode,
-    restoreGuestGenerationContext,
-    setUnlockReadyContext,
-  ]);
+    restoreVerifiedGuestGeneration();
+  }, [isHistoryAuthenticated, restoreVerifiedGuestGeneration]);
 
   const onUnlockTags = useCallback(() => {
     if (!unlockReadyContext) return;
@@ -266,39 +216,6 @@ export function useGenerationAccess({
     goToLogin,
     goToPricing,
     onUnlockTags,
-  };
-}
-
-function resolvePendingGuestContext(
-  generationContextId: string | null,
-): PendingContext | null {
-  if (typeof window !== "undefined") {
-    const url = new URL(window.location.href);
-    const guestGenerationId = url.searchParams.get("guest_generation");
-    if (guestGenerationId) {
-      const guestGeneration = loadPendingGuestGeneration();
-      if (guestGeneration && guestGeneration.id === guestGenerationId) {
-        return {
-          id: guestGeneration.id,
-          title: guestGeneration.title,
-          description: guestGeneration.description,
-        };
-      }
-    }
-  }
-
-  if (generationContextId) {
-    const sessionContext = loadPendingContext(generationContextId);
-    if (sessionContext) return sessionContext;
-  }
-
-  const guestGeneration = loadPendingGuestGeneration();
-  if (!guestGeneration) return null;
-
-  return {
-    id: guestGeneration.id,
-    title: guestGeneration.title,
-    description: guestGeneration.description,
   };
 }
 

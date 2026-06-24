@@ -9,6 +9,7 @@ import {
   TEST_TIMINGS,
 } from "./Generator.testUtils";
 import Generator from "./Generator";
+import { getContextStorageKey } from "./generatorStorage";
 
 beforeEach(() => {
   resetGeneratorTestStorage();
@@ -19,8 +20,62 @@ describe("Generator auth unlock flow", () => {
     vi.restoreAllMocks();
   });
 
+  function createAuthAwareFetchMock(
+    ...generateResponses: Array<Promise<Response> | (() => Promise<Response>)>
+  ) {
+    let generateIndex = 0;
+    let historyAuthenticated = false;
+
+    return {
+      fetchMock: vi.fn().mockImplementation((input: unknown) => {
+        const url = typeof input === "string" ? input : String(input);
+
+        if (url.includes("/api/account/usage")) {
+          return mockGenerateResponse({ usageLabel: null });
+        }
+
+        if (url.includes("/api/generations/history")) {
+          return historyAuthenticated
+            ? mockGenerateResponse({
+                items: [],
+                page: 0,
+                hasPrev: false,
+                hasNext: false,
+              })
+            : mockGenerateResponse({
+                status: "unauthenticated",
+              });
+        }
+
+        const next = generateResponses[generateIndex];
+        generateIndex += 1;
+        if (!next) {
+          return mockGenerateResponse({ error: "Unexpected fetch call." }, false);
+        }
+        if (typeof next === "function") {
+          return next();
+        }
+        return next;
+      }),
+      setHistoryAuthenticated(value: boolean) {
+        historyAuthenticated = value;
+      },
+    };
+  }
+
+  function getStoredGuestGenerationId() {
+    const raw = window.localStorage.getItem("tagloom:guest-generation:v1");
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw) as { id?: string } | null;
+      return typeof parsed?.id === "string" ? parsed.id : null;
+    } catch {
+      return null;
+    }
+  }
+
   it("restores the unlock-ready state even when no placeholder tags were shown", async () => {
-    const fetchMock = createFetchMockForGenerator(
+    const { fetchMock, setHistoryAuthenticated } = createAuthAwareFetchMock(
       () =>
         mockGenerateResponse({
           status: "paywall",
@@ -55,12 +110,19 @@ describe("Generator auth unlock flow", () => {
     fireEvent.click(screen.getByRole("button", { name: "Generate tags" }));
 
     await screen.findByText("Create an account or log in to unlock this generation for FREE");
+    fireEvent.click(screen.getByRole("button", { name: "Create account / log in" }));
+    const guestGenerationId = getStoredGuestGenerationId();
+    expect(guestGenerationId).toBeTruthy();
+    window.history.replaceState({}, "", `/?guest_generation=${guestGenerationId}`);
 
     act(() => {
+      setHistoryAuthenticated(true);
       window.dispatchEvent(new CustomEvent("tagloom:auth-success"));
     });
 
     await screen.findByText("Your listing is ready. Review it, then use your free generation.");
+    expect(screen.queryByTestId("generated-tag-count")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Copy all" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Use my free generation" }));
     await screen.findByText(
       "You are about to use your one free generation. Would you like to use that now?",
@@ -103,7 +165,7 @@ describe("Generator auth unlock flow", () => {
       "custom printed tee",
     ];
 
-    const fetchMock = createFetchMockForGenerator(
+    const { fetchMock, setHistoryAuthenticated } = createAuthAwareFetchMock(
       () =>
         mockGenerateResponse({
           status: "paywall",
@@ -146,8 +208,13 @@ describe("Generator auth unlock flow", () => {
     await screen.findByText("Create an account or log in to unlock this generation for FREE");
     await screen.findByText("hidden keyword");
     expect(screen.getAllByTestId("generated-tag-chip").length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("button", { name: "Create account / log in" }));
+    const guestGenerationId = getStoredGuestGenerationId();
+    expect(guestGenerationId).toBeTruthy();
+    window.history.replaceState({}, "", `/?guest_generation=${guestGenerationId}`);
 
     act(() => {
+      setHistoryAuthenticated(true);
       window.dispatchEvent(new CustomEvent("tagloom:auth-success"));
     });
 
@@ -193,7 +260,7 @@ describe("Generator auth unlock flow", () => {
       "etsy target",
     ];
 
-    const fetchMock = createFetchMockForGenerator(
+    const { fetchMock, setHistoryAuthenticated } = createAuthAwareFetchMock(
       () =>
         mockGenerateResponse({
           status: "paywall",
@@ -227,8 +294,13 @@ describe("Generator auth unlock flow", () => {
 
     await screen.findByText("Create an account or log in to unlock this generation for FREE");
     expect(screen.getByText("hidden keyword")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Create account / log in" }));
+    const guestGenerationId = getStoredGuestGenerationId();
+    expect(guestGenerationId).toBeTruthy();
+    window.history.replaceState({}, "", `/?guest_generation=${guestGenerationId}`);
 
     act(() => {
+      setHistoryAuthenticated(true);
       window.dispatchEvent(new CustomEvent("tagloom:auth-success"));
     });
 
@@ -313,6 +385,7 @@ describe("Generator auth unlock flow", () => {
       "timeless wedding look",
     ];
 
+    let historyAuthenticated = false;
     const fetchMock = vi.fn().mockImplementation((input: unknown) => {
       const url = typeof input === "string" ? input : String(input);
 
@@ -321,12 +394,16 @@ describe("Generator auth unlock flow", () => {
       }
 
       if (url.includes("/api/generations/history")) {
-        return mockGenerateResponse({
-          items: [],
-          page: 0,
-          hasPrev: false,
-          hasNext: false,
-        });
+        return historyAuthenticated
+          ? mockGenerateResponse({
+              items: [],
+              page: 0,
+              hasPrev: false,
+              hasNext: false,
+            })
+          : mockGenerateResponse({
+              status: "unauthenticated",
+            });
       }
 
       const generateCalls = fetchMock.mock.calls.filter(([callInput]) =>
@@ -369,6 +446,7 @@ describe("Generator auth unlock flow", () => {
 
     await screen.findByText("Create an account or log in to unlock this generation for FREE");
     act(() => {
+      historyAuthenticated = true;
       window.dispatchEvent(new CustomEvent("tagloom:auth-success"));
     });
 
@@ -387,5 +465,91 @@ describe("Generator auth unlock flow", () => {
 
     await waitFor(() => expect(screen.getByText(realTags[0])).toBeInTheDocument());
     expect(countGenerateCalls(fetchMock)).toBe(2);
+    expect(window.localStorage.getItem("tagloom:guest-generation:v1")).toBeNull();
+    expect(window.location.search).not.toContain("guest_generation");
+  });
+
+  it("does not restore from a stale session-context fallback", async () => {
+    window.sessionStorage.setItem(
+      getContextStorageKey("ctx-session"),
+      JSON.stringify({
+        id: "ctx-session",
+        title: "Session title",
+        description: "Session description",
+      }),
+    );
+
+    let historyAuthenticated = false;
+    const fetchMock = vi.fn().mockImplementation((input: unknown) => {
+      const url = typeof input === "string" ? input : String(input);
+
+      if (url.includes("/api/account/usage")) {
+        return mockGenerateResponse({ usageLabel: null });
+      }
+
+      if (url.includes("/api/generations/history")) {
+        return historyAuthenticated
+          ? mockGenerateResponse({
+              items: [],
+              page: 0,
+              hasPrev: false,
+              hasNext: false,
+            })
+          : mockGenerateResponse({
+              status: "unauthenticated",
+            });
+      }
+
+      const generateCalls = fetchMock.mock.calls.filter(([callInput]) =>
+        String(callInput).includes("/api/generate"),
+      ).length;
+
+      if (generateCalls === 1) {
+        return mockGenerateResponse({
+          status: "paywall",
+          reason: "auth_required",
+          requestId: "ctx-session",
+          message: "Create account or login.",
+          placeholders: { target: ["hidden keyword"], discovery: [] },
+        });
+      }
+
+      return mockGenerateResponse({
+        error: "Unexpected fetch call.",
+      }, false);
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
+
+    fireEvent.change(
+      screen.getByPlaceholderText("e.g. Handmade ceramic coffee mug with minimalist design"),
+      {
+        target: {
+          value: "Custom pendant necklace gift",
+        },
+      },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Generate tags" }));
+
+    await screen.findByText("Create an account or log in to unlock this generation for FREE");
+    fireEvent.click(screen.getByRole("button", { name: "Create account / log in" }));
+    const guestGenerationId = getStoredGuestGenerationId();
+    expect(guestGenerationId).toBeTruthy();
+    window.history.replaceState({}, "", `/?guest_generation=${guestGenerationId}`);
+
+    act(() => {
+      historyAuthenticated = true;
+      window.dispatchEvent(new CustomEvent("tagloom:auth-success"));
+    });
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+
+    expect(screen.queryByText("Session title")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Use my free generation" })).toBeInTheDocument();
+    expect(countGenerateCalls(fetchMock)).toBe(1);
   });
 });

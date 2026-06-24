@@ -6,10 +6,9 @@ import type { TurnstileFieldHandle } from "@/components/security/TurnstileField"
 import type { ToastInput } from "@/components/toasts/toasts";
 import { toastMessages } from "@/components/toasts/toastMessages";
 import {
-  clearPendingContext,
   clearPendingGuestGeneration,
   generateContextId,
-  savePendingContext,
+  loadPendingGuestGeneration,
   savePendingGuestGeneration,
 } from "./generatorStorage";
 import { requestGeneration } from "./generatorApi";
@@ -65,7 +64,7 @@ export function useGeneratorGeneration({
   >(null);
 
   const applyPaywallState = useCallback(
-    (data: GeneratePaywallResponse) => {
+    (data: GeneratePaywallResponse, contextId: string) => {
       setIsUnlockingFromPaywall(false);
       setPaywall({
         reason: data.reason,
@@ -75,8 +74,11 @@ export function useGeneratorGeneration({
       setCurrentGenerationId(null);
       clearCurrentGenerationFeedback();
       setResultTags(data.placeholders.target, data.placeholders.discovery);
+      if (data.reason === "auth_required") {
+        persistGuestGenerationRecord(contextId, title, description);
+      }
     },
-    [clearCurrentGenerationFeedback, setResultTags],
+    [clearCurrentGenerationFeedback, description, setResultTags, title],
   );
 
   const applySuccessfulGeneration = useCallback(
@@ -91,7 +93,6 @@ export function useGeneratorGeneration({
       void refreshUsageLabel();
       void loadHistory();
 
-      clearPendingContext(contextId);
       clearPendingGuestGeneration();
       clearResumeParams();
     },
@@ -120,7 +121,7 @@ export function useGeneratorGeneration({
       });
 
       if (data.status === "paywall") {
-        applyPaywallState(data);
+        applyPaywallState(data, contextId);
         return;
       }
 
@@ -213,8 +214,6 @@ export function useGeneratorGeneration({
 
     const contextId = prepareGenerationContext({
       currentContextId: generationContextId,
-      title,
-      description,
       setGenerationContextId,
     });
 
@@ -298,32 +297,30 @@ export function useGeneratorGeneration({
 
 function prepareGenerationContext({
   currentContextId,
-  title,
-  description,
   setGenerationContextId,
 }: {
   currentContextId: string | null;
-  title: string;
-  description: string;
   setGenerationContextId: Dispatch<SetStateAction<string | null>>;
 }) {
   const contextId = currentContextId || generateContextId();
   setGenerationContextId(contextId);
 
-  savePendingContext({
-    id: contextId,
-    title,
-    description,
-  });
+  return contextId;
+}
+
+function persistGuestGenerationRecord(
+  id: string,
+  title: string,
+  description: string,
+) {
+  const existing = loadPendingGuestGeneration();
   savePendingGuestGeneration({
     kind: "guest_generation",
-    id: contextId,
+    id,
     title,
     description,
-    createdAt: Date.now(),
+    createdAt: existing?.id === id ? existing.createdAt : Date.now(),
   });
-
-  return contextId;
 }
 
 async function getTurnstileToken({
