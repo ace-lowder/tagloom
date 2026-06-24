@@ -227,7 +227,18 @@ export default function AuthForm({
           },
         });
 
-        if (signUpError) throw signUpError;
+        if (signUpError) {
+          if (isSignupDeliveryBusyError(signUpError)) {
+            showToast({
+              title: "Verification email busy",
+              body: "We couldn't send your confirmation email right now. Email delivery is temporarily busy. Your listing has been saved. Please try again shortly.",
+              type: "danger",
+            });
+            return;
+          }
+
+          throw signUpError;
+        }
 
         if (data.session && isEmailVerified(data.session.user)) {
           verification.clearVerification();
@@ -253,7 +264,7 @@ export default function AuthForm({
         password,
       });
 
-      if (isVerificationRequiredError(signInError)) {
+      if (isEmailNotConfirmedError(signInError)) {
         const createdAt =
           verification.record?.email === normalizedEmail &&
           verification.record?.next === next
@@ -503,13 +514,10 @@ export default function AuthForm({
   );
 }
 
-function isVerificationRequiredError(error: unknown) {
-  const message =
-    error instanceof Error ? error.message.toLowerCase() : String(error ?? "").toLowerCase();
-  return (
-    message.includes("email not confirmed") ||
-    message.includes("email_not_confirmed") ||
-    message.includes("email not verified") ||
-    message.includes("confirm your email")
-  );
+function isEmailNotConfirmedError(error: unknown) {
+  return (error as { code?: string } | null)?.code === "email_not_confirmed";
+}
+
+function isSignupDeliveryBusyError(error: unknown) {
+  return (error as { status?: number } | null)?.status === 429;
 }

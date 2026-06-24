@@ -263,7 +263,5 @@ export function useEmailVerification({
 
 function isBusy429(error: AuthError) {
   const status = (error as { status?: number | string } | null)?.status;
-  if (status === 429 || status === "429") return true;
-  const message = error.message.toLowerCase();
-  return message.includes("429") || message.includes("too many requests");
+  return status === 429;
 }

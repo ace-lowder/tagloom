@@ -58,6 +58,7 @@ export default function LoginPage() {
           onModeChange={setMode}
           next={next}
           preferGooglePopup
+          onVerificationPendingChange={setVerificationPending}
           showHeading={false}
           compact
         />

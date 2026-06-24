@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import EmailVerificationResult from "@/components/auth/EmailVerificationResult";
 import { dispatchAuthSuccess, sanitizeNextPath } from "@/lib/authModal";
@@ -16,7 +16,16 @@ export default function VerifyPage() {
   const rawNext = searchParams.get("next");
   const next = useMemo(() => sanitizeNextPath(rawNext), [rawNext]);
   const [secondsRemaining, setSecondsRemaining] = useState(AUTO_REDIRECT_SECONDS);
+  const autoRedirectTimerRef = useRef<number | null>(null);
   const loginUrl = `/login?next=${encodeURIComponent(next)}`;
+
+  const completeRedirect = useCallback(() => {
+    if (autoRedirectTimerRef.current !== null) {
+      window.clearInterval(autoRedirectTimerRef.current);
+      autoRedirectTimerRef.current = null;
+    }
+    router.replace(next);
+  }, [next, router]);
 
   useEffect(() => {
     if (status !== "success") return;
@@ -34,19 +43,23 @@ export default function VerifyPage() {
     if (status !== "success") return;
 
     setSecondsRemaining(AUTO_REDIRECT_SECONDS);
-    const intervalId = window.setInterval(() => {
+    autoRedirectTimerRef.current = window.setInterval(() => {
       setSecondsRemaining((current) => {
         if (current <= 1) {
-          window.clearInterval(intervalId);
-          router.replace(next);
+          completeRedirect();
           return 0;
         }
         return current - 1;
       });
     }, 1000);
 
-    return () => window.clearInterval(intervalId);
-  }, [next, router, status]);
+    return () => {
+      if (autoRedirectTimerRef.current !== null) {
+        window.clearInterval(autoRedirectTimerRef.current);
+        autoRedirectTimerRef.current = null;
+      }
+    };
+  }, [completeRedirect, status]);
 
   if (status === "success") {
     return (
@@ -57,7 +70,7 @@ export default function VerifyPage() {
             message="Your account is ready. We're returning you to your listing so you can review it and use your free generation."
             status="success"
             actionLabel="Continue to my listing"
-            onAction={() => router.replace(next)}
+            onAction={completeRedirect}
             footer={
               <p className="text-center text-sm font-medium text-stone-600" aria-live="polite">
                 Continuing automatically in {secondsRemaining}s
