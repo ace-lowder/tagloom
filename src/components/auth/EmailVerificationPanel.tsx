@@ -37,19 +37,25 @@ export default function EmailVerificationPanel({
     return "Verify your email address";
   }, [resendState]);
 
+  const nextPrompt = useMemo(() => {
+    return next.includes("guest_generation")
+      ? "Confirm your account to claim your free tag generation."
+      : "Confirm your account to continue.";
+  }, [next]);
+
   const message = useMemo(() => {
     const target = email || "your inbox";
     if (resendState === "sent") {
-      return `We just resent the verification link to ${target}. Click it, then return here to continue with ${next}.`;
+      return `We just resent the verification link to ${target}. ${nextPrompt}`;
     }
     if (resendState === "error") {
       return (
         resendMessage ||
-        `We could not resend the link to ${target}. Check the address and try again.`
+        `We could not resend the verification link to ${target}. Please try again in a moment.`
       );
     }
-    return `We sent a verification link to ${target}. Open it to finish creating your account, then come back to continue with ${next}.`;
-  }, [email, next, resendMessage, resendState]);
+    return `We sent a verification link to ${target}. ${nextPrompt}`;
+  }, [email, nextPrompt, resendMessage, resendState]);
 
   const showCooldown = resendCooldownSeconds > 0;
 

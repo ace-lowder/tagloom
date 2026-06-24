@@ -34,7 +34,7 @@ type UseEmailVerificationParams = {
       };
     };
   } | null;
-  onVerified: () => void;
+  onVerified: (record: PendingEmailVerification) => void;
   onPendingChange?: (pending: boolean) => void;
 };
 
@@ -58,6 +58,7 @@ export function useEmailVerification({
   const pending = Boolean(record);
   const resendCooldownSeconds = useMemo(() => {
     if (!record) return 0;
+    if (record.emailSentAt === null) return 0;
     const remainingMs = record.emailSentAt + RESEND_COOLDOWN_MS - now;
     return Math.max(0, Math.ceil(remainingMs / 1000));
   }, [now, record]);
@@ -67,7 +68,7 @@ export function useEmailVerification({
     broadcastRef.current = null;
   }, []);
 
-  const finishVerification = useCallback(() => {
+  const finishVerification = useCallback((verificationRecord: PendingEmailVerification) => {
     if (didCompleteRef.current) return;
     didCompleteRef.current = true;
     clearPendingEmailVerification();
@@ -78,7 +79,7 @@ export function useEmailVerification({
     closeBroadcastChannel();
     writeSignupCooldown();
     onPendingChange?.(false);
-    onVerified();
+    onVerified(verificationRecord);
     if (typeof window !== "undefined" && "BroadcastChannel" in window) {
       const channel = new BroadcastChannel(EMAIL_VERIFIED_BROADCAST_MESSAGE);
       channel.postMessage({ type: EMAIL_VERIFIED_MESSAGE_TYPE });
@@ -88,9 +89,10 @@ export function useEmailVerification({
 
   const checkVerification = useCallback(async () => {
     if (!supabase || didCompleteRef.current || !record) return;
+    if (typeof supabase.auth.getUser !== "function") return;
     const { data } = await supabase.auth.getUser();
     if (isEmailVerified(data.user)) {
-      finishVerification();
+      finishVerification(record);
     }
   }, [finishVerification, record, supabase]);
 
@@ -99,6 +101,7 @@ export function useEmailVerification({
       const safeRecord = {
         email: nextRecord.email,
         next: sanitizeNextPath(nextRecord.next),
+        createdAt: nextRecord.createdAt,
         emailSentAt: nextRecord.emailSentAt,
       };
       savePendingEmailVerification(safeRecord);
@@ -125,12 +128,8 @@ export function useEmailVerification({
   }, [closeBroadcastChannel, onPendingChange]);
 
   const startVerification = useCallback(
-    (nextRecord: Omit<PendingEmailVerification, "emailSentAt"> & { emailSentAt?: number }) => {
-      ensureRecord({
-        email: nextRecord.email,
-        next: nextRecord.next,
-        emailSentAt: nextRecord.emailSentAt ?? Date.now(),
-      });
+    (nextRecord: PendingEmailVerification) => {
+      ensureRecord(nextRecord);
     },
     [ensureRecord],
   );
@@ -178,9 +177,7 @@ export function useEmailVerification({
       setNow(Date.now());
     } catch (err) {
       setResendStatus("error");
-      setResendMessage(
-        err instanceof Error ? err.message : "Could not resend the verification email.",
-      );
+      setResendMessage("We couldn't resend the verification email right now. Please try again in a moment.");
     }
   }, [record, supabase]);
 
@@ -215,7 +212,7 @@ export function useEmailVerification({
 
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       if (isEmailVerified(session?.user ?? null)) {
-        finishVerification();
+        finishVerification(record);
       }
     });
     const subscription = data.subscription;

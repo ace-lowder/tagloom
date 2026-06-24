@@ -69,16 +69,18 @@ export default function AuthForm({
   >("auth");
 
   const emailExistsCacheRef = useRef<Map<string, boolean>>(new Map());
+  const didCompleteSuccessRef = useRef(false);
   const turnstileRef = useRef<TurnstileFieldHandle | null>(null);
   const isVerificationLocked = view === "verify_email";
 
   const verification = useEmailVerification({
     supabase,
-    onVerified: () => {
-      completeSuccess();
+    onVerified: (record) => {
+      completeSuccess(record.next);
     },
     onPendingChange: onVerificationPendingChange,
   });
+  const verificationNext = verification.record?.next ?? next;
 
   useEffect(() => {
     if (mode === "login") {
@@ -95,6 +97,7 @@ export default function AuthForm({
     if (verification.record) {
       setEmail(verification.record.email);
       setView("verify_email");
+      setError("");
       return;
     }
 
@@ -113,15 +116,14 @@ export default function AuthForm({
   const normalizedEmail = normalizeEmail(email);
   const emailIsValid = isValidEmail(normalizedEmail);
 
-  const completeSuccess = () => {
-    if (onAuthSuccess) {
-      onAuthSuccess();
-      return;
-    }
-
+  const completeSuccess = (destination = verificationNext) => {
+    if (didCompleteSuccessRef.current) return;
+    didCompleteSuccessRef.current = true;
+    verification.clearVerification();
     dispatchAuthSuccess();
-    router.push(next);
+    router.push(destination);
     router.refresh();
+    onAuthSuccess?.();
   };
 
   const showAuthFailure = (baseToast: ToastInput, authError: unknown) => {
@@ -228,6 +230,7 @@ export default function AuthForm({
         if (signUpError) throw signUpError;
 
         if (data.session && isEmailVerified(data.session.user)) {
+          verification.clearVerification();
           writeSignupCooldown();
           completeSuccess();
           return;
@@ -236,6 +239,7 @@ export default function AuthForm({
         verification.startVerification({
           email: normalizedEmail,
           next,
+          createdAt: Date.now(),
           emailSentAt: Date.now(),
         });
         setEmail(normalizedEmail);
@@ -250,10 +254,16 @@ export default function AuthForm({
       });
 
       if (isVerificationRequiredError(signInError)) {
+        const createdAt =
+          verification.record?.email === normalizedEmail &&
+          verification.record?.next === next
+            ? verification.record.createdAt
+            : Date.now();
         verification.startVerification({
           email: normalizedEmail,
           next,
-          emailSentAt: Date.now(),
+          createdAt,
+          emailSentAt: null,
         });
         setEmail(normalizedEmail);
         setView("verify_email");
@@ -262,6 +272,7 @@ export default function AuthForm({
       }
 
       if (signInError) throw signInError;
+      verification.clearVerification();
       completeSuccess();
     } catch (authError) {
       showAuthFailure(
@@ -393,7 +404,7 @@ export default function AuthForm({
     return (
       <EmailVerificationPanel
         email={verification.record?.email || normalizedEmail}
-        next={verification.record?.next || next}
+        next={verificationNext}
         resendCooldownSeconds={verification.resendCooldownSeconds}
         resendState={verification.resendStatus}
         resendMessage={verification.resendMessage}

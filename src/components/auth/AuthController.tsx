@@ -1,13 +1,12 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import AuthForm from "@/components/auth/AuthForm";
 import { hasPendingEmailVerification } from "@/components/auth/emailVerificationStorage";
 import {
-  dispatchAuthSuccess,
   sanitizeNextPath,
   type AuthMode,
   type OpenAuthModalOptions,
@@ -28,7 +27,6 @@ type AuthControllerProviderProps = {
 };
 
 export function AuthControllerProvider({ children }: AuthControllerProviderProps) {
-  const router = useRouter();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<AuthMode>("signup");
@@ -51,9 +49,7 @@ export function AuthControllerProvider({ children }: AuthControllerProviderProps
   const onAuthSuccess = useCallback(() => {
     setIsOpen(false);
     setVerificationLocked(false);
-    dispatchAuthSuccess();
-    router.refresh();
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     if (isOpen) return;
