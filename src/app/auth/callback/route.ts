@@ -3,6 +3,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { sanitizeNextPath } from "@/lib/authModal";
 import { AUTH_CONFIG_ERROR, buildPublicUrl } from "@/lib/authRedirect";
 
+const POPUP_AUTH_ERROR_MESSAGE = "Could not finish sign-in. Please try again.";
+
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
@@ -30,7 +32,7 @@ export async function GET(request: Request) {
       if (flow === "popup") {
         if (error) {
           popupCompleteUrl.searchParams.set("status", "error");
-          popupCompleteUrl.searchParams.set("message", error.message);
+          popupCompleteUrl.searchParams.set("message", POPUP_AUTH_ERROR_MESSAGE);
         } else {
           popupCompleteUrl.searchParams.set("status", "success");
         }
@@ -45,12 +47,7 @@ export async function GET(request: Request) {
 
   if (flow === "popup") {
     popupCompleteUrl.searchParams.set("status", "error");
-    popupCompleteUrl.searchParams.set(
-      "message",
-      requestUrl.searchParams.get("error_description") ||
-        requestUrl.searchParams.get("error") ||
-        "Google sign-in failed.",
-    );
+    popupCompleteUrl.searchParams.set("message", POPUP_AUTH_ERROR_MESSAGE);
     return NextResponse.redirect(popupCompleteUrl.toString());
   }
 

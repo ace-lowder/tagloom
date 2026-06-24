@@ -97,6 +97,23 @@ describe("auth callback route", () => {
     );
   });
 
+  it("uses a generic popup error message instead of raw provider details", async () => {
+    exchangeCodeForSessionMock.mockResolvedValueOnce({
+      error: new Error("Provider said no"),
+    });
+
+    const response = await GET(
+      makeRequest(
+        "http://0.0.0.0:3000/auth/callback?code=abc&flow=popup&next=%2Flogin",
+      ),
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toContain(
+      "http://localhost:3000/auth/popup-complete?next=%2Flogin&status=error&message=Could+not+finish+sign-in.",
+    );
+  });
+
   it("rejects 0.0.0.0 as the configured site URL", async () => {
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "http://0.0.0.0:3000");
 
