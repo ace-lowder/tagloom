@@ -157,6 +157,21 @@ describe("AuthForm signup guard", () => {
     });
   });
 
+  it("uses a clearer login password placeholder", () => {
+    renderWithToasts(<AuthForm mode="login" onModeChange={vi.fn()} />);
+
+    expect(screen.getByPlaceholderText("Enter your password")).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("At least 6 characters")).not.toBeInTheDocument();
+  });
+
+  it("keeps the signup password placeholder unchanged", async () => {
+    renderWithToasts(<AuthForm mode="signup" onModeChange={vi.fn()} />);
+
+    await moveSignupToPasswordStep();
+
+    expect(screen.getByPlaceholderText("At least 6 characters")).toBeInTheDocument();
+  });
+
   it("dispatches auth success only once when verification completes twice before cleanup", async () => {
     signInWithPasswordMock.mockResolvedValueOnce({
       error: Object.assign(new Error("email_not_confirmed"), {
@@ -411,6 +426,36 @@ describe("AuthForm signup guard", () => {
       await screen.findByText("Reset service is temporarily unavailable."),
     ).toBeInTheDocument();
     expect(screen.queryByText("Login failed")).not.toBeInTheDocument();
+  });
+
+  it("shows the password reset success copy with the updated left-aligned styling", async () => {
+    renderWithToasts(<AuthForm mode="login" onModeChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Reset password" }));
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "person@example.com" },
+    });
+    fireEvent.submit(
+      screen.getByRole("button", { name: "Reset password" }).closest("form")!,
+    );
+
+    const message = await screen.findByText(
+      "If an account exists for person@example.com, you will get an email with instructions on resetting your password. If it doesn't arrive, be sure to check your spam folder.",
+    );
+
+    expect(message).toBeInTheDocument();
+    expect(message.tagName).toBe("P");
+    expect(message).toHaveClass(
+      "mx-auto",
+      "w-72",
+      "text-left",
+      "text-sm",
+      "font-normal",
+      "leading-relaxed",
+      "text-stone-700",
+    );
+    expect(message).not.toHaveClass("text-center", "font-semibold", "text-stone-900");
+    expect(screen.getByRole("button", { name: "Back to Log in" })).toBeInTheDocument();
   });
 
   it("does not send forgot-password emails when site URL config is missing", async () => {

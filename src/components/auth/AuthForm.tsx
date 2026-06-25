@@ -386,7 +386,7 @@ export default function AuthForm({
   if (view === "reset_password_sent") {
     return (
       <div>
-        <p className="text-center text-sm font-semibold leading-relaxed text-stone-900 w-72 mx-auto">
+        <p className="mx-auto w-72 text-left text-sm font-normal leading-relaxed text-stone-700">
           If an account exists for
           {" " + (email.trim() || "your email")}, you will get an email with
           instructions on resetting your password. If it doesn&apos;t arrive, be

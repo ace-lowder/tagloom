@@ -109,7 +109,7 @@ export function LoginFields({
           minLength={6}
           value={password}
           onChange={(event) => onPasswordChange(event.target.value)}
-          placeholder="At least 6 characters"
+          placeholder="Enter your password"
         />
       </div>
     </>
