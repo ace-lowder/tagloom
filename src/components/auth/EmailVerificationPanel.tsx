@@ -1,7 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
-import EmailVerificationResult from "./EmailVerificationResult";
+import { useEffect, useMemo, useState } from "react";
 
 type EmailVerificationPanelProps = {
   email: string;
@@ -14,6 +13,7 @@ type EmailVerificationPanelProps = {
   onResend: () => void;
   onVerified: () => void;
   onUseDifferentEmail?: () => void;
+  onCancel?: () => void;
   isLocked?: boolean;
 };
 
@@ -28,13 +28,15 @@ export default function EmailVerificationPanel({
   onResend,
   onVerified,
   onUseDifferentEmail,
+  onCancel,
   isLocked = false,
 }: EmailVerificationPanelProps) {
-  const title = useMemo(() => {
+  const [showResendView, setShowResendView] = useState(false);
+
+  useEffect(() => {
     if (resendState === "sent") {
-      return "We sent a fresh verification email.";
+      setShowResendView(false);
     }
-    return "Verify your email address";
   }, [resendState]);
 
   const nextPrompt = useMemo(() => {
@@ -43,78 +45,133 @@ export default function EmailVerificationPanel({
       : "Confirm your account to continue.";
   }, [next]);
 
-  const message = useMemo(() => {
-    const target = email || "your inbox";
-    if (resendState === "sent") {
-      return `We just resent the verification link to ${target}. ${nextPrompt}`;
-    }
-    if (resendState === "error") {
-      return (
-        resendMessage ||
-        `We could not resend the verification link to ${target}. Please try again in a moment.`
-      );
-    }
-    return `We sent a verification link to ${target}. ${nextPrompt}`;
-  }, [email, nextPrompt, resendMessage, resendState]);
-
-  const showCooldown = resendCooldownSeconds > 0;
+  const displayEmail = email || "your email";
+  const resendLabel =
+    resendState === "sending"
+      ? "Sending..."
+      : resendCooldownSeconds > 0
+        ? `Resend in ${resendCooldownSeconds}s`
+        : "Resend confirmation email";
+  const resendDisabled =
+    resendCooldownSeconds > 0 || !troubleshootingChecked || isLocked || resendState === "sending";
 
   return (
-    <EmailVerificationResult
-      status={resendState === "error" ? "error" : "pending"}
-      title={title}
-      message={message}
-      actionLabel="I've confirmed my email"
-      onAction={isLocked ? undefined : onVerified}
-      isActionLoading={isLocked}
-      footer={
-        <div className="space-y-4 text-left">
-          <div className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm leading-6 text-stone-700">
-            <p className="font-semibold text-stone-900">Need a resend?</p>
-            <p className="mt-1">
-              Double-check that {email || "your email"} is spelled correctly and check your spam or
-              junk folder before trying again.
-            </p>
-          </div>
+    <div className="space-y-6 text-center">
+      <h2 className="text-2xl font-semibold text-stone-900">
+        {showResendView ? "Didn't get the email?" : "Verify your email address"}
+      </h2>
 
-          {showCooldown ? (
-            <p className="text-center text-sm font-medium text-stone-700">
-              Resend in {resendCooldownSeconds}s
+      {showResendView ? (
+        <div className="space-y-5">
+          {resendState === "error" ? (
+            <p className="text-sm leading-6 text-rose-600">
+              {resendMessage ||
+                `We could not resend the verification link to ${displayEmail}. Please try again in a moment.`}
             </p>
-          ) : (
-            <div className="space-y-3 rounded-xl border border-stone-200 bg-white px-4 py-4">
-              <label className="flex items-start gap-3 text-sm leading-6 text-stone-700">
-                <input
-                  type="checkbox"
-                  checked={troubleshootingChecked}
-                  onChange={(event) => onTroubleshootingCheckedChange(event.target.checked)}
-                  className="mt-1 h-4 w-4 rounded border-stone-300 text-orange-600 focus:ring-orange-500"
-                />
-                <span>I confirmed my email address and checked my spam folder</span>
-              </label>
+          ) : null}
 
+          <p className="text-sm leading-6 text-stone-700">
+            Double-check that{" "}
+            <strong className="font-semibold text-stone-900">{displayEmail}</strong> is spelled
+            correctly and check your spam or junk folder before trying again.
+          </p>
+
+          <label className="flex items-start gap-3 text-left text-sm leading-6 text-stone-700">
+            <input
+              type="checkbox"
+              checked={troubleshootingChecked}
+              onChange={(event) => onTroubleshootingCheckedChange(event.target.checked)}
+              className="mt-1 h-4 w-4 rounded border-stone-300 text-orange-600 focus:ring-orange-500"
+            />
+            <span>I confirmed my email address and checked my spam folder</span>
+          </label>
+
+          <button
+            type="button"
+            onClick={onResend}
+            disabled={resendDisabled}
+            className="w-full rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {resendLabel}
+          </button>
+
+          <div className="flex flex-col items-center gap-3 pt-1 text-xs font-medium">
+            {onUseDifferentEmail ? (
               <button
                 type="button"
-                onClick={onResend}
-                disabled={!troubleshootingChecked || isLocked || resendState === "sending"}
-                className="w-full rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
+                onClick={onUseDifferentEmail}
+                className="text-orange-600 transition-colors hover:text-orange-700"
               >
-                Resend confirmation email
+                Use a different email
               </button>
-            </div>
-          )}
+            ) : null}
 
-          {onUseDifferentEmail ? (
+            {onCancel ? (
+              <button
+                type="button"
+                onClick={onCancel}
+                className="text-stone-500 transition-colors hover:text-stone-700"
+              >
+                Cancel
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <p className="text-sm leading-6 text-stone-700">
+            We sent a verification link to{" "}
+            <strong className="font-semibold text-stone-900">{displayEmail}</strong>. {nextPrompt}
+          </p>
+
+          {resendState === "sent" ? (
+            <p className="text-sm font-medium leading-6 text-orange-600">
+              We sent a fresh verification link to{" "}
+              <strong className="font-semibold text-stone-900">{displayEmail}</strong>.{" "}
+              {nextPrompt}
+            </p>
+          ) : null}
+
+          <button
+            type="button"
+            onClick={onVerified}
+            disabled={isLocked}
+            className="w-full rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            I&apos;ve confirmed my email
+          </button>
+
+          <div className="flex flex-col items-center gap-3 pt-1 text-xs font-medium">
             <button
               type="button"
-              onClick={onUseDifferentEmail}
-              className="mx-auto block text-xs font-medium text-orange-600 transition-colors hover:text-orange-700"
+              onClick={() => setShowResendView(true)}
+              className="text-orange-600 transition-colors hover:text-orange-700"
             >
-              Use a different email
+              Resend confirmation email
             </button>
-          ) : null}
+
+            {onUseDifferentEmail ? (
+              <button
+                type="button"
+                onClick={onUseDifferentEmail}
+                className="text-orange-600 transition-colors hover:text-orange-700"
+              >
+                Use a different email
+              </button>
+            ) : null}
+
+            {onCancel ? (
+              <button
+                type="button"
+                onClick={onCancel}
+                className="text-stone-500 transition-colors hover:text-stone-700"
+              >
+                Cancel
+              </button>
+            ) : null}
+          </div>
         </div>
-      }
-    />
+      )}
+    </div>
   );
 }

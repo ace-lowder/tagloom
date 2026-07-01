@@ -6,7 +6,9 @@ export function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
-export async function checkEmailExists(email: string) {
+export type EmailAccountStatus = "missing" | "unverified" | "verified";
+
+export async function getEmailAccountStatus(email: string) {
   const response = await fetch("/api/auth/email-exists", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -14,7 +16,7 @@ export async function checkEmailExists(email: string) {
   });
 
   const data = (await response.json().catch(() => ({}))) as {
-    exists?: boolean;
+    status?: EmailAccountStatus;
     error?: string;
   };
 
@@ -22,7 +24,11 @@ export async function checkEmailExists(email: string) {
     throw new Error(data.error || "Could not check account.");
   }
 
-  return data.exists === true;
+  if (data.status === "missing" || data.status === "unverified" || data.status === "verified") {
+    return data.status;
+  }
+
+  throw new Error("Could not check account.");
 }
 
 export const SIGNUP_COOLDOWN_KEY = "tagloom:signup-cooldown:v1";

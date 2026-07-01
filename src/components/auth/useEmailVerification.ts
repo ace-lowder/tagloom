@@ -181,8 +181,8 @@ export function useEmailVerification({
     }
   }, [record, supabase]);
 
-  const acknowledgeTroubleshooting = useCallback(() => {
-    setTroubleshootingChecked(true);
+  const acknowledgeTroubleshooting = useCallback((checked: boolean) => {
+    setTroubleshootingChecked(checked);
   }, []);
 
   const useDifferentEmail = useCallback(() => {

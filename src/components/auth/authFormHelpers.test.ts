@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  getEmailAccountStatus,
   SIGNUP_COOLDOWN_KEY,
   SIGNUP_COOLDOWN_WINDOW_MS,
   hasRecentSignupCooldown,
@@ -45,5 +46,49 @@ describe("authFormHelpers", () => {
     const raw = window.localStorage.getItem(SIGNUP_COOLDOWN_KEY);
     expect(raw).not.toBeNull();
     expect(Number.isFinite(Number(raw))).toBe(true);
+  });
+
+  it("getEmailAccountStatus returns the API status", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ status: "unverified" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(getEmailAccountStatus("person@example.com")).resolves.toBe("unverified");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/auth/email-exists",
+      expect.objectContaining({
+        method: "POST",
+      }),
+    );
+  });
+
+  it("getEmailAccountStatus rejects missing or invalid contract responses", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ status: "unexpected" }),
+      }),
+    );
+
+    await expect(getEmailAccountStatus("person@example.com")).rejects.toThrow(
+      "Could not check account.",
+    );
+  });
+
+  it("getEmailAccountStatus throws on lookup failure", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({ error: "Could not check account status." }),
+      }),
+    );
+
+    await expect(getEmailAccountStatus("person@example.com")).rejects.toThrow(
+      "Could not check account status.",
+    );
   });
 });

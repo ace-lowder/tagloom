@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { dispatchAuthSuccess } from "@/lib/authModal";
+import { dispatchAuthSuccess, sanitizeNextPath } from "@/lib/authModal";
 import { buildAuthCallbackUrl } from "@/lib/authRedirect";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { writeSignupCooldown } from "./authFormHelpers";
@@ -21,11 +21,12 @@ import {
   TurnstileBlock,
 } from "./AuthFormSections";
 import {
-  checkEmailExists,
   checkSignupEligibility,
+  getEmailAccountStatus,
   hasRecentSignupCooldown,
   isValidEmail,
   normalizeEmail,
+  type EmailAccountStatus,
 } from "./authFormHelpers";
 import { isEmailVerified } from "@/lib/auth";
 import { useEmailVerification } from "./useEmailVerification";
@@ -68,7 +69,7 @@ export default function AuthForm({
     "auth" | "reset_password" | "reset_password_sent" | "verify_email"
   >("auth");
 
-  const emailExistsCacheRef = useRef<Map<string, boolean>>(new Map());
+  const emailStatusCacheRef = useRef<Map<string, EmailAccountStatus>>(new Map());
   const didCompleteSuccessRef = useRef(false);
   const turnstileRef = useRef<TurnstileFieldHandle | null>(null);
   const isVerificationLocked = view === "verify_email";
@@ -80,7 +81,7 @@ export default function AuthForm({
     },
     onPendingChange: onVerificationPendingChange,
   });
-  const verificationNext = verification.record?.next ?? next;
+  const verificationNext = verification.record?.next ?? sanitizeNextPath(next);
 
   useEffect(() => {
     if (mode === "login") {
@@ -120,9 +121,51 @@ export default function AuthForm({
     if (didCompleteSuccessRef.current) return;
     didCompleteSuccessRef.current = true;
     dispatchAuthSuccess();
-    router.push(destination);
+    router.push(sanitizeNextPath(destination));
     router.refresh();
     onAuthSuccess?.();
+  };
+
+  const beginVerification = (emailToUse: string) => {
+    const existingRecord =
+      verification.record?.email === emailToUse ? verification.record : null;
+    verification.startVerification({
+      email: emailToUse,
+      next,
+      createdAt: existingRecord ? existingRecord.createdAt : Date.now(),
+      emailSentAt: existingRecord ? existingRecord.emailSentAt : Date.now(),
+    });
+    setEmail(emailToUse);
+    setPassword("");
+    setView("verify_email");
+    setError("");
+  };
+
+  const resetToLoginForm = (emailToUse: string) => {
+    onModeChange("login");
+    setEmail(emailToUse);
+    setPassword("");
+    setSignupStep("password");
+    setView("auth");
+    setError("");
+  };
+
+  const resetToSignupEmailStep = () => {
+    onModeChange("signup");
+    setEmail("");
+    setPassword("");
+    setSignupStep("email");
+    setView("auth");
+    setError("");
+  };
+
+  const getCachedAccountStatus = async (emailToCheck: string) => {
+    const cached = emailStatusCacheRef.current.get(emailToCheck);
+    if (cached) return cached;
+
+    const status = await getEmailAccountStatus(emailToCheck);
+    emailStatusCacheRef.current.set(emailToCheck, status);
+    return status;
   };
 
   const showAuthFailure = (baseToast: ToastInput, authError: unknown) => {
@@ -171,39 +214,43 @@ export default function AuthForm({
         setError("Enter a valid email first.");
         return;
       }
-
-      try {
-        setIsCheckingEmail(true);
-        let exists = emailExistsCacheRef.current.get(normalizedEmail);
-        if (typeof exists !== "boolean") {
-          exists = await checkEmailExists(normalizedEmail);
-          emailExistsCacheRef.current.set(normalizedEmail, exists);
-        }
-
-        if (exists) {
-          onModeChange("login");
-          return;
-        }
-      } catch (checkError) {
-        console.error("/api/auth/email-exists lookup failed", checkError);
-        showToast({
-          ...toastMessages.accountCheckFailed,
-          body:
-            checkError instanceof Error
-              ? checkError.message
-              : toastMessages.accountCheckFailed.body,
-        });
-        return;
-      } finally {
-        setIsCheckingEmail(false);
-      }
-
-      setSignupStep("password");
-      return;
     }
 
-    setIsSubmitting(true);
     try {
+      if (mode === "signup" && signupStep === "email") {
+        setIsCheckingEmail(true);
+        try {
+          const status = await getCachedAccountStatus(normalizedEmail);
+
+          if (status === "verified") {
+            resetToLoginForm(normalizedEmail);
+            return;
+          }
+
+          if (status === "unverified") {
+            beginVerification(normalizedEmail);
+            return;
+          }
+        } catch (checkError) {
+          console.error("/api/auth/email-exists lookup failed", checkError);
+          showToast({
+            ...toastMessages.accountCheckFailed,
+            body:
+              checkError instanceof Error
+                ? checkError.message
+                : toastMessages.accountCheckFailed.body,
+          });
+          return;
+        } finally {
+          setIsCheckingEmail(false);
+        }
+
+        setSignupStep("password");
+        return;
+      }
+
+      setIsSubmitting(true);
+
       if (mode === "signup") {
         if (hasRecentSignupCooldown()) {
           showToast(toastMessages.signupBlockedCooldown);
@@ -240,21 +287,19 @@ export default function AuthForm({
         }
 
         if (data.session && isEmailVerified(data.session.user)) {
-          verification.clearVerification();
           writeSignupCooldown();
           completeSuccess();
           return;
         }
 
-        verification.startVerification({
-          email: normalizedEmail,
-          next,
-          createdAt: Date.now(),
-          emailSentAt: Date.now(),
-        });
-        setEmail(normalizedEmail);
-        setView("verify_email");
+        beginVerification(normalizedEmail);
         showToast(toastMessages.accountCreated);
+        return;
+      }
+
+      const loginStatus = await getCachedAccountStatus(normalizedEmail);
+      if (loginStatus === "unverified") {
+        beginVerification(normalizedEmail);
         return;
       }
 
@@ -264,25 +309,12 @@ export default function AuthForm({
       });
 
       if (isEmailNotConfirmedError(signInError)) {
-        const createdAt =
-          verification.record?.email === normalizedEmail &&
-          verification.record?.next === next
-            ? verification.record.createdAt
-            : Date.now();
-        verification.startVerification({
-          email: normalizedEmail,
-          next,
-          createdAt,
-          emailSentAt: null,
-        });
-        setEmail(normalizedEmail);
-        setView("verify_email");
+        beginVerification(normalizedEmail);
         setError("Confirm your email to continue.");
         return;
       }
 
       if (signInError) throw signInError;
-      verification.clearVerification();
       completeSuccess();
     } catch (authError) {
       showAuthFailure(
@@ -429,11 +461,12 @@ export default function AuthForm({
         }}
         onUseDifferentEmail={() => {
           verification.clearVerification();
-          setView("auth");
-          setPassword("");
-          setError("");
-          setSignupStep(mode === "signup" ? "email" : "password");
-          onModeChange(mode);
+          resetToSignupEmailStep();
+        }}
+        onCancel={() => {
+          const emailToKeep = verification.record?.email || normalizedEmail;
+          verification.clearVerification();
+          resetToLoginForm(emailToKeep);
         }}
       />
     );

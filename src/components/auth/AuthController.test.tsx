@@ -64,10 +64,11 @@ describe("AuthController", () => {
     );
 
     expect(await screen.findByTestId("auth-form")).toBeInTheDocument();
-    const closeButton = screen.getByRole("button", { name: "Close auth modal" });
     const backdrop = screen.getByRole("button", { name: "Close auth modal backdrop" });
 
-    await waitFor(() => expect(closeButton).toBeDisabled());
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Close auth modal" })).not.toBeInTheDocument(),
+    );
 
     fireEvent.keyDown(window, { key: "Escape" });
     fireEvent.click(backdrop);
@@ -76,7 +77,11 @@ describe("AuthController", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Clear verification pending" }));
 
-    await waitFor(() => expect(closeButton).toBeEnabled());
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Close auth modal" })).toBeEnabled(),
+    );
+
+    const closeButton = screen.getByRole("button", { name: "Close auth modal" });
 
     fireEvent.click(closeButton);
 

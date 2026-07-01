@@ -130,6 +130,24 @@ describe("useEmailVerification", () => {
     expect(result.current.resendCooldownSeconds).toBe(0);
   });
 
+  it("allows the troubleshooting checkbox to be unchecked again", () => {
+    const { result } = renderVerification();
+    const now = Date.now();
+
+    act(() => {
+      result.current.startVerification({
+        email: "person@example.com",
+        next: "/",
+        createdAt: now,
+        emailSentAt: null,
+      });
+      result.current.setTroubleshootingChecked(true);
+      result.current.setTroubleshootingChecked(false);
+    });
+
+    expect(result.current.troubleshootingChecked).toBe(false);
+  });
+
   it("keeps resend immediate when emailSentAt is null and uses the friendly fallback copy", async () => {
     const { result } = renderVerification();
     const now = Date.now();

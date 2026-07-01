@@ -6,6 +6,8 @@ type CheckEmailBody = {
   email?: string;
 };
 
+type EmailAccountStatus = "missing" | "unverified" | "verified";
+
 function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
 }
@@ -30,7 +32,7 @@ export async function POST(req: NextRequest) {
 
   const admin = createSupabaseAdminClient();
   if (!admin) {
-    return NextResponse.json({ exists: false });
+    return NextResponse.json({ error: "Could not check account status." }, { status: 500 });
   }
 
   let page = 1;
@@ -48,9 +50,11 @@ export async function POST(req: NextRequest) {
     }
 
     const users = data.users ?? [];
-    const found = users.some((user) => normalizeEmail(user.email ?? "") === email);
+    const found = users.find((user) => normalizeEmail(user.email ?? "") === email);
     if (found) {
-      return NextResponse.json({ exists: true });
+      const status: EmailAccountStatus =
+        found.email_confirmed_at || found.confirmed_at ? "verified" : "unverified";
+      return NextResponse.json({ status });
     }
 
     if (users.length < perPage) {
@@ -60,5 +64,5 @@ export async function POST(req: NextRequest) {
     page += 1;
   }
 
-  return NextResponse.json({ exists: false });
+  return NextResponse.json({ status: "missing" as EmailAccountStatus });
 }

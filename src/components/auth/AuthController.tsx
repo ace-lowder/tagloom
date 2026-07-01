@@ -108,15 +108,16 @@ export function AuthControllerProvider({ children }: AuthControllerProviderProps
               scale: { duration: 0.16, ease: "easeOut", delay: 0.1 },
             }}
           >
-            <button
-              type="button"
-              onClick={closeAuthModal}
-              aria-label="Close auth modal"
-              disabled={verificationLocked}
-              className="absolute right-3 top-3 rounded-md p-1.5 text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-700 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <X className="h-5 w-5" />
-            </button>
+            {!verificationLocked ? (
+              <button
+                type="button"
+                onClick={closeAuthModal}
+                aria-label="Close auth modal"
+                className="absolute right-3 top-3 rounded-md p-1.5 text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            ) : null}
             <AuthForm
               mode={mode}
               onModeChange={setMode}
