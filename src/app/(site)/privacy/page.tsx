@@ -4,7 +4,7 @@ import LegalPage from "@/components/legal/LegalPage";
 const lastUpdated = "April 28, 2026";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | Tagloom",
+  title: "Privacy Policy",
   description:
     "Learn how Tagloom collects, uses, and protects information for its Etsy tag generation service.",
 };

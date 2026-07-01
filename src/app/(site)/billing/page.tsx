@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import BillingPageClient from "@/components/billing/BillingPageClient";
 import {
@@ -7,6 +8,10 @@ import {
 import { getStripeClient } from "@/lib/stripe";
 import { isEmailVerified } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+export const metadata: Metadata = {
+  title: "Billing",
+};
 
 type BillingProfile = {
   subscription_tier: "monthly" | "yearly" | null;

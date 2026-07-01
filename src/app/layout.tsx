@@ -16,11 +16,14 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://tagloom.app"),
-  title: "Tagloom | Etsy Tag Generator for Existing Listings",
+  title: {
+    default: "Tagloom",
+    template: "Tagloom | %s",
+  },
   description:
     "Tagloom helps Etsy sellers with existing listings generate better-fit tags, improve visibility, and run repeatable listing test cycles.",
   openGraph: {
-    title: "Tagloom | Etsy Tag Generator for Existing Listings",
+    title: "Tagloom | Etsy Tag Generator",
     description:
       "Generate 13 Etsy-ready tags, copy them into Etsy, and keep improving listing visibility with buyer-intent keywords.",
     url: "/",
@@ -29,7 +32,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Tagloom | Etsy Tag Generator for Existing Listings",
+    title: "Tagloom | Etsy Tag Generator",
     description:
       "Generate better-fit Etsy tags for existing listings and improve visibility with practical test cycles.",
   },

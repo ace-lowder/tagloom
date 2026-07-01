@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import SupportArticlePage from "@/components/support/SupportArticlePage";
 import {
@@ -33,4 +34,22 @@ export default function SupportArticleRoute({ params }: SupportArticleRouteProps
       allArticles={listSupportArticles()}
     />
   );
+}
+
+export async function generateMetadata({
+  params,
+}: SupportArticleRouteProps): Promise<Metadata> {
+  const topic = getSupportTopicBySlug(params.topic);
+  if (!topic) {
+    notFound();
+  }
+
+  const article = getSupportArticleByTopicAndSlug(params.topic, params.slug);
+  if (!article) {
+    notFound();
+  }
+
+  return {
+    title: article.title,
+  };
 }

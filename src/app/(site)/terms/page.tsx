@@ -4,7 +4,7 @@ import LegalPage from "@/components/legal/LegalPage";
 const lastUpdated = "April 28, 2026";
 
 export const metadata: Metadata = {
-  title: "Terms of Service | Tagloom",
+  title: "Terms of Service",
   description:
     "Read the terms for using Tagloom's AI-powered Etsy listing tag generation service.",
 };
