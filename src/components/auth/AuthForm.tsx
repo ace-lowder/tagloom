@@ -26,7 +26,6 @@ import {
   hasRecentSignupCooldown,
   isValidEmail,
   normalizeEmail,
-  type EmailAccountStatus,
 } from "./authFormHelpers";
 import { isEmailVerified } from "@/lib/auth";
 import { useEmailVerification } from "./useEmailVerification";
@@ -69,7 +68,6 @@ export default function AuthForm({
     "auth" | "reset_password" | "reset_password_sent" | "verify_email"
   >("auth");
 
-  const emailStatusCacheRef = useRef<Map<string, EmailAccountStatus>>(new Map());
   const didCompleteSuccessRef = useRef(false);
   const turnstileRef = useRef<TurnstileFieldHandle | null>(null);
   const isVerificationLocked = view === "verify_email";
@@ -159,15 +157,6 @@ export default function AuthForm({
     setError("");
   };
 
-  const getCachedAccountStatus = async (emailToCheck: string) => {
-    const cached = emailStatusCacheRef.current.get(emailToCheck);
-    if (cached) return cached;
-
-    const status = await getEmailAccountStatus(emailToCheck);
-    emailStatusCacheRef.current.set(emailToCheck, status);
-    return status;
-  };
-
   const showAuthFailure = (baseToast: ToastInput, authError: unknown) => {
     showToast({
       ...baseToast,
@@ -220,7 +209,7 @@ export default function AuthForm({
       if (mode === "signup" && signupStep === "email") {
         setIsCheckingEmail(true);
         try {
-          const status = await getCachedAccountStatus(normalizedEmail);
+          const status = await getEmailAccountStatus(normalizedEmail);
 
           if (status === "verified") {
             resetToLoginForm(normalizedEmail);
@@ -297,7 +286,7 @@ export default function AuthForm({
         return;
       }
 
-      const loginStatus = await getCachedAccountStatus(normalizedEmail);
+      const loginStatus = await getEmailAccountStatus(normalizedEmail);
       if (loginStatus === "unverified") {
         beginVerification(normalizedEmail);
         return;

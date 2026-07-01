@@ -110,7 +110,7 @@ export default function EmailVerificationPanel({
               <button
                 type="button"
                 onClick={onCancel}
-                className="text-stone-500 transition-colors hover:text-stone-700"
+                className="text-stone-500 transition-colors hover:text-stone-900"
               >
                 Cancel
               </button>
@@ -119,18 +119,16 @@ export default function EmailVerificationPanel({
         </div>
       ) : (
         <div className="space-y-6">
-          <p className="text-sm leading-6 text-stone-700">
-            We sent a verification link to{" "}
+          <p
+            className={
+              resendState === "sent"
+                ? "text-sm font-medium leading-6 text-orange-600"
+                : "text-sm leading-6 text-stone-700"
+            }
+          >
+            {resendState === "sent" ? "We sent a fresh verification link to " : "We sent a verification link to "}
             <strong className="font-semibold text-stone-900">{displayEmail}</strong>. {nextPrompt}
           </p>
-
-          {resendState === "sent" ? (
-            <p className="text-sm font-medium leading-6 text-orange-600">
-              We sent a fresh verification link to{" "}
-              <strong className="font-semibold text-stone-900">{displayEmail}</strong>.{" "}
-              {nextPrompt}
-            </p>
-          ) : null}
 
           <button
             type="button"
@@ -164,7 +162,7 @@ export default function EmailVerificationPanel({
               <button
                 type="button"
                 onClick={onCancel}
-                className="text-stone-500 transition-colors hover:text-stone-700"
+                className="text-stone-500 transition-colors hover:text-stone-900"
               >
                 Cancel
               </button>

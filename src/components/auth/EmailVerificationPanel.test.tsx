@@ -143,6 +143,9 @@ describe("EmailVerificationPanel", () => {
     expect(
       screen.getByText(/We sent a fresh verification link to/i),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/We sent a verification link to/i),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Verify your email address" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Didn't get the email?" })).not.toBeInTheDocument();
   });

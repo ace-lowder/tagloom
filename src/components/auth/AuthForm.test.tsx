@@ -131,6 +131,36 @@ function setupAccountStatusFetch(status: "missing" | "unverified" | "verified") 
   });
 }
 
+function setupSequentialAccountStatusFetch(
+  statuses: Array<"missing" | "unverified" | "verified">,
+) {
+  const queue = [...statuses];
+  return vi.fn().mockImplementation((input: RequestInfo | URL) => {
+    const url =
+      typeof input === "string"
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : input.url;
+
+    if (url.includes("/api/auth/email-exists")) {
+      const nextStatus = queue.shift();
+      return mockJsonResponse({ status: nextStatus ?? statuses.at(-1) ?? "missing" });
+    }
+
+    if (url.includes("/api/auth/signup-eligibility")) {
+      return mockJsonResponse({ ok: true });
+    }
+
+    return mockJsonResponse({ error: "Unexpected fetch call." }, false, 500);
+  });
+}
+
+function countEmailStatusRequests(fetchMock: ReturnType<typeof vi.fn>) {
+  return fetchMock.mock.calls.filter(([input]) => String(input).includes("/api/auth/email-exists"))
+    .length;
+}
+
 async function moveSignupToPasswordStep() {
   fireEvent.change(screen.getByLabelText("Email"), {
     target: { value: "person@example.com" },
@@ -704,10 +734,36 @@ describe("AuthForm signup guard", () => {
     );
   });
 
-  it("routes an unverified signup email straight into verification without signUp", async () => {
-    vi.stubGlobal("fetch", setupAccountStatusFetch("unverified"));
+  it("rechecks status after Use a different email and reopens verification without another signup", async () => {
+    const fetchMock = setupSequentialAccountStatusFetch(["missing", "unverified"]);
+    vi.stubGlobal("fetch", fetchMock);
 
-    renderWithToasts(<AuthForm mode="signup" onModeChange={vi.fn()} />);
+    const Wrapper = () => {
+      const [mode, setMode] = React.useState<"login" | "signup">("signup");
+      return <AuthForm mode={mode} onModeChange={setMode} />;
+    };
+    renderWithToasts(<Wrapper />);
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "person@example.com" },
+    });
+    fireEvent.submit(
+      screen.getByRole("button", { name: "Continue with email" }).closest("form")!,
+    );
+
+    await screen.findByLabelText("Password");
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "hunter2-password" },
+    });
+    fireEvent.submit(screen.getByRole("button", { name: "Create account" }).closest("form")!);
+
+    await screen.findByRole("button", { name: "Use a different email" });
+    expect(signUpMock).toHaveBeenCalledTimes(1);
+    expect(countEmailStatusRequests(fetchMock)).toBe(1);
+    expect(turnstileGetTokenMock).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Use a different email" }));
+    expect(screen.getByPlaceholderText("you@example.com")).toHaveValue("");
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "person@example.com" },
@@ -717,23 +773,43 @@ describe("AuthForm signup guard", () => {
     );
 
     expect(await screen.findByText("Verify your email address")).toBeInTheDocument();
-    expect(
-      await screen.findByText(/Confirm your account to continue\./),
-    ).toBeInTheDocument();
-    expect(signUpMock).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText("Password")).not.toBeInTheDocument();
+    expect(signUpMock).toHaveBeenCalledTimes(1);
     expect(signInWithPasswordMock).not.toHaveBeenCalled();
-    expect(turnstileGetTokenMock).not.toHaveBeenCalled();
     expect(resendMock).not.toHaveBeenCalled();
+    expect(countEmailStatusRequests(fetchMock)).toBe(2);
   });
 
-  it("routes an unverified login straight into verification without signIn", async () => {
-    vi.stubGlobal("fetch", setupAccountStatusFetch("unverified"));
+  it("rechecks status after Cancel and reopens verification from login without signing in again", async () => {
+    const fetchMock = setupSequentialAccountStatusFetch(["missing", "unverified"]);
+    vi.stubGlobal("fetch", fetchMock);
 
-    renderWithToasts(<AuthForm mode="login" onModeChange={vi.fn()} />);
+    const Wrapper = () => {
+      const [mode, setMode] = React.useState<"login" | "signup">("signup");
+      return <AuthForm mode={mode} onModeChange={setMode} />;
+    };
+    renderWithToasts(<Wrapper />);
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "person@example.com" },
     });
+    fireEvent.submit(
+      screen.getByRole("button", { name: "Continue with email" }).closest("form")!,
+    );
+
+    await screen.findByLabelText("Password");
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "hunter2-password" },
+    });
+    fireEvent.submit(screen.getByRole("button", { name: "Create account" }).closest("form")!);
+
+    await screen.findByRole("button", { name: "Cancel" });
+    expect(signUpMock).toHaveBeenCalledTimes(1);
+    expect(countEmailStatusRequests(fetchMock)).toBe(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.getByLabelText("Email")).toHaveValue("person@example.com");
+
     fireEvent.change(screen.getByLabelText("Password"), {
       target: { value: "hunter2-password" },
     });
@@ -742,19 +818,7 @@ describe("AuthForm signup guard", () => {
     expect(await screen.findByText("Verify your email address")).toBeInTheDocument();
     expect(signInWithPasswordMock).not.toHaveBeenCalled();
     expect(resendMock).not.toHaveBeenCalled();
-    const storedRecord = JSON.parse(
-      window.localStorage.getItem("tagloom:email-verification:v2")!,
-    ) as {
-      email: string;
-      next: string;
-      createdAt: number;
-      emailSentAt: number | null;
-    };
-    expect(storedRecord).toMatchObject({
-      email: "person@example.com",
-      next: "/",
-    });
-    expect(Number.isFinite(storedRecord.createdAt)).toBe(true);
+    expect(countEmailStatusRequests(fetchMock)).toBe(2);
   });
 
   it("switches verified signup emails back to login and preserves the normalized email", async () => {
