@@ -369,7 +369,7 @@ function BottomCtaSection({ onGenerate }: BottomCtaSectionProps) {
         <motion.div
           animate={{ scale: [1, 1.05, 1], x: [0, 18, 0], y: [0, -10, 0] }}
           transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute right-[1%] top-[-1rem] h-[22rem] w-[24rem] rounded-full sm:right-[4%] sm:top-[-1rem] lg:right-[7%] lg:top-[-1.5rem] lg:h-[36rem] lg:w-[38rem]"
+          className="absolute right-[1%] top-[-1rem] h-[22rem] w-[24rem] rounded-full sm:right-[4%] sm:top-[-1rem] lg:right-[14%] lg:top-[-5rem] lg:h-[31rem] lg:w-[33rem]"
           style={{
             background:
               "radial-gradient(ellipse, rgba(168,85,247,0.28) 0%, transparent 68%)",
@@ -379,7 +379,7 @@ function BottomCtaSection({ onGenerate }: BottomCtaSectionProps) {
         <motion.div
           animate={{ scale: [1, 1.04, 1], x: [0, -14, 0], y: [0, 10, 0] }}
           transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-[-7rem] right-[-3%] h-[30rem] w-[34rem] rounded-full sm:bottom-[-8rem] sm:right-[1%] lg:bottom-[-10rem] lg:right-[4%] lg:h-[42rem] lg:w-[46rem]"
+          className="absolute bottom-[-7rem] right-[-3%] h-[30rem] w-[34rem] rounded-full sm:bottom-[-8rem] sm:right-[1%] lg:bottom-[-15rem] lg:right-[-5%] lg:h-[38rem] lg:w-[40rem]"
           style={{
             background:
               "radial-gradient(ellipse, rgba(249,80,52,0.24) 0%, rgba(249,115,22,0.12) 56%, transparent 84%)",
