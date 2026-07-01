@@ -54,7 +54,7 @@ export default function EmailVerificationPanel({
     resendCooldownSeconds > 0 || !troubleshootingChecked || isLocked || resendState === "sending";
 
   return (
-    <div className="space-y-6 text-center">
+    <div className="space-y-3 text-center">
       <h2 className="text-2xl font-semibold text-stone-900">
         {showResendView ? "Didn't get the email?" : "Verify your email address"}
       </h2>
@@ -68,20 +68,20 @@ export default function EmailVerificationPanel({
             </p>
           ) : null}
 
-          <p className="text-sm leading-6 text-stone-700">
+          <p className="text-left text-sm leading-6 text-stone-700">
             Double-check that{" "}
             <strong className="font-semibold text-stone-900">{displayEmail}</strong> is spelled
             correctly and check your spam or junk folder before trying again.
           </p>
 
-          <label className="flex items-start gap-3 text-left text-sm leading-6 text-stone-700">
+          <label className="flex items-start gap-3 text-left text-[13px] leading-5 text-stone-700">
             <input
               type="checkbox"
               checked={troubleshootingChecked}
               onChange={(event) => onTroubleshootingCheckedChange(event.target.checked)}
               className="mt-1 h-4 w-4 rounded border-stone-300 text-orange-600 focus:ring-orange-500"
             />
-            <span>I confirmed my email address and checked my spam folder</span>
+            <span>My email is correct and I checked spam</span>
           </label>
 
           <button
@@ -118,8 +118,8 @@ export default function EmailVerificationPanel({
           <p
             className={
               resendState === "sent"
-                ? "text-sm font-medium leading-6 text-orange-600"
-                : "text-sm leading-6 text-stone-700"
+                ? "text-left text-sm font-medium leading-6 text-orange-600"
+                : "text-left text-sm leading-6 text-stone-700"
             }
           >
             {resendState === "sent"

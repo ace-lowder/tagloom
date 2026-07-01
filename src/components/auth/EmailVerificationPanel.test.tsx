@@ -76,10 +76,15 @@ describe("EmailVerificationPanel", () => {
     expect(screen.getByRole("button", { name: "Use a different email" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("checkbox", {
+        name: "My email is correct and I checked spam",
+      }),
+    ).toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole("checkbox", {
-        name: /I confirmed my email address and checked my spam folder/i,
+        name: /My email is correct and I checked spam/i,
       }),
     );
 
