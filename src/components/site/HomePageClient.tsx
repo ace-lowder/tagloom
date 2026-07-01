@@ -98,7 +98,7 @@ function HeroSection({ onGenerate }: HeroSectionProps) {
         />
       </div>
 
-      <div className="relative mx-auto max-w-4xl">
+      <div className="relative z-10 mx-auto max-w-4xl">
         <motion.div
           initial="hidden"
           animate="visible"
@@ -357,13 +357,43 @@ function BottomCtaSection({ onGenerate }: BottomCtaSectionProps) {
     <section className="relative overflow-hidden px-5 py-20">
       <div className="pointer-events-none absolute inset-0" aria-hidden="true">
         <motion.div
-          animate={{ scale: [1, 1.07, 1], x: [0, 10, 0], y: [0, -7, 0] }}
-          transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -left-20 -top-20 h-[320px] w-[500px] rounded-full"
+          animate={{ scale: [1, 1.06, 1], x: [0, 12, 0], y: [0, -8, 0] }}
+          transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute left-[-1.5rem] top-[-2.5rem] h-[22rem] w-[24rem] rounded-full sm:left-[-2rem] sm:top-[-3rem] lg:left-[-4rem] lg:top-[-5rem] lg:h-[34rem] lg:w-[38rem]"
           style={{
             background:
               "radial-gradient(ellipse, rgba(251,146,60,0.42) 0%, transparent 65%)",
             filter: "blur(64px)",
+          }}
+        />
+        <motion.div
+          animate={{ scale: [1, 1.05, 1], x: [0, 18, 0], y: [0, -10, 0] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute right-[1%] top-[-1rem] h-[22rem] w-[24rem] rounded-full sm:right-[4%] sm:top-[-1rem] lg:right-[7%] lg:top-[-1.5rem] lg:h-[36rem] lg:w-[38rem]"
+          style={{
+            background:
+              "radial-gradient(ellipse, rgba(168,85,247,0.28) 0%, transparent 68%)",
+            filter: "blur(68px)",
+          }}
+        />
+        <motion.div
+          animate={{ scale: [1, 1.04, 1], x: [0, -14, 0], y: [0, 10, 0] }}
+          transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-[-7rem] right-[-3%] h-[30rem] w-[34rem] rounded-full sm:bottom-[-8rem] sm:right-[1%] lg:bottom-[-10rem] lg:right-[4%] lg:h-[42rem] lg:w-[46rem]"
+          style={{
+            background:
+              "radial-gradient(ellipse, rgba(249,80,52,0.24) 0%, rgba(249,115,22,0.12) 56%, transparent 84%)",
+            filter: "blur(72px)",
+          }}
+        />
+        <motion.div
+          animate={{ scale: [1, 1.08, 1], x: [0, -10, 0], y: [0, 8, 0] }}
+          transition={{ duration: 24, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-[-8rem] left-[-2%] h-[24rem] w-[28rem] rounded-full sm:bottom-[-9rem] sm:left-[1%] lg:bottom-[-11rem] lg:left-[4%] lg:h-[32rem] lg:w-[36rem]"
+          style={{
+            background:
+              "radial-gradient(ellipse, rgba(147,51,234,0.20) 0%, rgba(168,85,247,0.09) 58%, transparent 84%)",
+            filter: "blur(68px)",
           }}
         />
       </div>
