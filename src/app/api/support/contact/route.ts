@@ -290,7 +290,7 @@ function buildSupportEmailHtml(
     '      <td align="center" style="padding:0 16px;">',
     '        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="560" style="width:100%;max-width:560px;background:#ffffff;border:1px solid #eadfd3;border-radius:20px;border-collapse:separate;">',
     '          <tr><td style="padding:32px 32px 24px 32px;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">',
-    '            <div style="font-size:32px;line-height:1;font-weight:800;letter-spacing:-0.04em;color:#f97316;font-family:Arial,Helvetica,sans-serif;">tagloom</div>',
+    '            <img src="https://tagloom.app/tagloom-email-wordmark.png" width="140" alt="Tagloom" style="display:block;width:140px;max-width:100%;height:auto;border:0;outline:none;text-decoration:none;">',
     '            <div style="height:18px;line-height:18px;font-size:18px;">&nbsp;</div>',
     '            <div style="font-size:24px;line-height:1.2;font-weight:700;color:#111827;">New support message</div>',
     '            <div style="height:24px;line-height:24px;font-size:24px;">&nbsp;</div>',

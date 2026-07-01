@@ -196,11 +196,9 @@ describe("support contact route", () => {
         "User-Agent: vitest",
       ].join("\n"),
     );
-    expect(resendBody.html).toContain("tagloom");
-    expect(resendBody.html).toContain("New support message");
-    expect(resendBody.html).toContain("From");
-    expect(resendBody.html).toContain("Subject");
-    expect(resendBody.html).toContain("Message");
+    expect(resendBody.html).toContain(
+      '<img src="https://tagloom.app/tagloom-email-wordmark.png" width="140" alt="Tagloom" style="display:block;width:140px;max-width:100%;height:auto;border:0;outline:none;text-decoration:none;">',
+    );
     expect(resendBody.html).toContain("Received: 2026-06-30T12:34:56.000Z");
     expect(resendBody.html).toContain("IP: 203.0.113.10");
     expect(resendBody.html).toContain("User-Agent: vitest");
@@ -381,27 +379,39 @@ describe("support contact route", () => {
 
   it("escapes support email html payload values", async () => {
     const maliciousPayload = {
-      name: `Ava <script>alert("x")</script>`,
-      email: "ava@example.com",
+      name: `Ava <script>alert("name")</script>`,
+      email: "ava&ops@example.com",
       subject: `Help & "Support" <urgent>`,
-      message: "First line\nSecond line <b>bold</b> & more",
+      message: "First line\nSecond line <b>bold</b> & 'quoted'",
       turnstileToken: "turnstile-token",
     };
 
-    const response = await POST(makeRequest(maliciousPayload) as never);
+    const response = await POST(
+      makeRequest(maliciousPayload, {
+        "x-forwarded-for": '203.0.113.10<script>alert("ip")</script>',
+        "user-agent": `Agent <img src=x onerror="alert('ua')"> & test`,
+      }) as never,
+    );
 
     expect(response.status).toBe(200);
 
     const resendBody = getResendRequestBody();
-    expect(resendBody.reply_to).toBe("ava@example.com");
+    expect(resendBody.reply_to).toBe("ava&ops@example.com");
     expect(resendBody.html).toContain(
-      "Ava &lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt; &lt;ava@example.com&gt;",
+      "Ava &lt;script&gt;alert(&quot;name&quot;)&lt;/script&gt; &lt;ava&amp;ops@example.com&gt;",
     );
     expect(resendBody.html).toContain("Help &amp; &quot;Support&quot; &lt;urgent&gt;");
-    expect(resendBody.html).toContain("First line<br>Second line &lt;b&gt;bold&lt;/b&gt; &amp; more");
-    expect(resendBody.html).toContain("IP: 203.0.113.10");
-    expect(resendBody.html).toContain("User-Agent: vitest");
+    expect(resendBody.html).toContain(
+      "First line<br>Second line &lt;b&gt;bold&lt;/b&gt; &amp; &#39;quoted&#39;",
+    );
+    expect(resendBody.html).toContain(
+      "IP: 203.0.113.10&lt;script&gt;alert(&quot;ip&quot;)&lt;/script&gt;",
+    );
+    expect(resendBody.html).toContain(
+      "User-Agent: Agent &lt;img src=x onerror=&quot;alert(&#39;ua&#39;)&quot;&gt; &amp; test",
+    );
     expect(resendBody.html).not.toContain("<script>");
     expect(resendBody.html).not.toContain("<b>bold</b>");
+    expect(resendBody.html).not.toContain('<img src=x');
   });
 });
