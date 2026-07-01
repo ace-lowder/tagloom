@@ -123,8 +123,8 @@ export default function EmailVerificationPanel({
             }
           >
             {resendState === "sent"
-              ? "We sent a fresh verification link to "
-              : "We sent a verification link to "}
+              ? "We sent a fresh verification link to your email at "
+              : "We sent a verification link to your email at "}
             <strong className="font-semibold text-stone-900">{displayEmail}</strong>. {nextPrompt}
           </p>
 

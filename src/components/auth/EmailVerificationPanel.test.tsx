@@ -24,10 +24,10 @@ describe("EmailVerificationPanel", () => {
 
     expect(screen.getByRole("heading", { name: "Verify your email address" })).toBeInTheDocument();
     expect(
-      screen.getByText("person@example.com", { selector: "strong" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Confirm your account to claim your free tag generation\./),
+      screen.getByText((_, element) =>
+        element?.textContent ===
+        "We sent a verification link to your email at person@example.com. Confirm your account to claim your free tag generation.",
+      ),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Resend confirmation email" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
@@ -164,10 +164,16 @@ describe("EmailVerificationPanel", () => {
     );
 
     expect(
-      screen.getByText(/We sent a fresh verification link to/i),
+      screen.getByText((_, element) =>
+        element?.textContent ===
+        "We sent a fresh verification link to your email at person@example.com. Confirm your account to continue.",
+      ),
     ).toBeInTheDocument();
     expect(
-      screen.queryByText(/We sent a verification link to/i),
+      screen.queryByText((_, element) =>
+        element?.textContent ===
+        "We sent a verification link to your email at person@example.com. Confirm your account to continue.",
+      ),
     ).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Verify your email address" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Didn't get the email?" })).not.toBeInTheDocument();
