@@ -34,6 +34,8 @@ const validPayload = {
   turnstileToken: "turnstile-token",
 };
 
+const fixedTimestamp = "2026-06-30T12:34:56.000Z";
+
 const insertSingleMock = vi.fn();
 const updateEqMock = vi.fn();
 const fromMock = vi.fn();
@@ -56,6 +58,24 @@ async function readJson(response: Response) {
   return response.json() as Promise<{ ok: boolean; error?: string }>;
 }
 
+function getResendRequestBody() {
+  const call = vi.mocked(fetch).mock.calls[0];
+  const init = call?.[1] as { body?: string } | undefined;
+
+  if (!init?.body || typeof init.body !== "string") {
+    throw new Error("Expected Resend request body.");
+  }
+
+  return JSON.parse(init.body) as {
+    from: string;
+    to: string;
+    reply_to: string;
+    subject: string;
+    text: string;
+    html?: string;
+  };
+}
+
 describe("support contact route", () => {
   const envBackup = {
     resendApiKey: process.env.RESEND_API_KEY,
@@ -64,6 +84,8 @@ describe("support contact route", () => {
   };
 
   beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(fixedTimestamp));
     process.env.RESEND_API_KEY = "resend-test-key";
     process.env.SUPPORT_FROM_EMAIL = "Tagloom Support <support@example.com>";
     process.env.SUPPORT_TO_EMAIL = "help@example.com";
@@ -126,6 +148,7 @@ describe("support contact route", () => {
     process.env.SUPPORT_TO_EMAIL = envBackup.supportToEmail;
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   it("valid anonymous message persists pending, sends email, updates sent, and returns success", async () => {
@@ -153,6 +176,34 @@ describe("support contact route", () => {
     });
 
     expect(fetch).toHaveBeenCalledTimes(1);
+
+    const resendBody = getResendRequestBody();
+    expect(resendBody.reply_to).toBe(validPayload.email);
+    expect(resendBody.text).toBe(
+      [
+        "New Tagloom support message",
+        "",
+        `Received: ${fixedTimestamp}`,
+        "From: Etsy Seller <seller@example.com>",
+        "Reply-To: seller@example.com",
+        "Subject: Need help with tags",
+        "",
+        "Message:",
+        "Can you help me understand my generated tags?",
+        "",
+        "Request metadata:",
+        "IP: 203.0.113.10",
+        "User-Agent: vitest",
+      ].join("\n"),
+    );
+    expect(resendBody.html).toContain("tagloom");
+    expect(resendBody.html).toContain("New support message");
+    expect(resendBody.html).toContain("From");
+    expect(resendBody.html).toContain("Subject");
+    expect(resendBody.html).toContain("Message");
+    expect(resendBody.html).toContain("Received: 2026-06-30T12:34:56.000Z");
+    expect(resendBody.html).toContain("IP: 203.0.113.10");
+    expect(resendBody.html).toContain("User-Agent: vitest");
 
     expect(updateEqMock).toHaveBeenCalledTimes(1);
     expect(updateEqMock).toHaveBeenCalledWith("id", "support-msg-123");
@@ -326,5 +377,31 @@ describe("support contact route", () => {
         metadata: expect.objectContaining({ supportMessageId: "support-msg-123" }),
       }),
     );
+  });
+
+  it("escapes support email html payload values", async () => {
+    const maliciousPayload = {
+      name: `Ava <script>alert("x")</script>`,
+      email: "ava@example.com",
+      subject: `Help & "Support" <urgent>`,
+      message: "First line\nSecond line <b>bold</b> & more",
+      turnstileToken: "turnstile-token",
+    };
+
+    const response = await POST(makeRequest(maliciousPayload) as never);
+
+    expect(response.status).toBe(200);
+
+    const resendBody = getResendRequestBody();
+    expect(resendBody.reply_to).toBe("ava@example.com");
+    expect(resendBody.html).toContain(
+      "Ava &lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt; &lt;ava@example.com&gt;",
+    );
+    expect(resendBody.html).toContain("Help &amp; &quot;Support&quot; &lt;urgent&gt;");
+    expect(resendBody.html).toContain("First line<br>Second line &lt;b&gt;bold&lt;/b&gt; &amp; more");
+    expect(resendBody.html).toContain("IP: 203.0.113.10");
+    expect(resendBody.html).toContain("User-Agent: vitest");
+    expect(resendBody.html).not.toContain("<script>");
+    expect(resendBody.html).not.toContain("<b>bold</b>");
   });
 });

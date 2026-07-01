@@ -274,6 +274,68 @@ function buildSupportEmailText(
   ].join("\n");
 }
 
+function buildSupportEmailHtml(
+  payload: SanitizedPayload,
+  meta: { ip: string | null; userAgent: string | null; timestamp: string },
+) {
+  const escapedMessage = escapeHtml(payload.message).replace(/\n/g, "<br>");
+  const fromValue = payload.name
+    ? `${escapeHtml(payload.name)} &lt;${escapeHtml(payload.email)}&gt;`
+    : escapeHtml(payload.email);
+
+  return [
+    '<div style="margin:0;padding:0;background:#f7f5f2;width:100%;">',
+    '  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="width:100%;margin:0;padding:32px 0;background:#f7f5f2;">',
+    "    <tr>",
+    '      <td align="center" style="padding:0 16px;">',
+    '        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="560" style="width:100%;max-width:560px;background:#ffffff;border:1px solid #eadfd3;border-radius:20px;border-collapse:separate;">',
+    '          <tr><td style="padding:32px 32px 24px 32px;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">',
+    '            <div style="font-size:32px;line-height:1;font-weight:800;letter-spacing:-0.04em;color:#f97316;font-family:Arial,Helvetica,sans-serif;">tagloom</div>',
+    '            <div style="height:18px;line-height:18px;font-size:18px;">&nbsp;</div>',
+    '            <div style="font-size:24px;line-height:1.2;font-weight:700;color:#111827;">New support message</div>',
+    '            <div style="height:24px;line-height:24px;font-size:24px;">&nbsp;</div>',
+    '            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="width:100%;border-collapse:collapse;font-size:15px;line-height:1.6;color:#374151;">',
+    "              <tr>",
+    '                <td style="padding:0 0 12px 0;font-weight:700;color:#6b7280;width:92px;vertical-align:top;">From</td>',
+    `                <td style="padding:0 0 12px 0;color:#111827;">${fromValue}</td>`,
+    "              </tr>",
+    "              <tr>",
+    '                <td style="padding:0 0 12px 0;font-weight:700;color:#6b7280;vertical-align:top;">Subject</td>',
+    `                <td style="padding:0 0 12px 0;color:#111827;">${escapeHtml(payload.subject)}</td>`,
+    "              </tr>",
+    "              <tr>",
+    '                <td style="padding:0 0 12px 0;font-weight:700;color:#6b7280;vertical-align:top;">Message</td>',
+    '                <td style="padding:0 0 12px 0;">',
+    '                  <div style="border:1px solid #e7dfd6;border-radius:14px;background:#faf8f5;padding:16px;color:#111827;white-space:normal;word-break:break-word;">',
+    `                    ${escapedMessage}`,
+    "                  </div>",
+    "                </td>",
+    "              </tr>",
+    "            </table>",
+    '            <div style="height:20px;line-height:20px;font-size:20px;">&nbsp;</div>',
+    '            <div style="font-size:12px;line-height:1.6;color:#6b7280;">',
+    `              Received: ${escapeHtml(meta.timestamp)}<br>`,
+    `              IP: ${escapeHtml(meta.ip ?? "Unavailable")}<br>`,
+    `              User-Agent: ${escapeHtml(meta.userAgent ?? "Unavailable")}`,
+    "            </div>",
+    "          </td></tr>",
+    "        </table>",
+    "      </td>",
+    "    </tr>",
+    "  </table>",
+    "</div>",
+  ].join("");
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 async function sendSupportMessage(
   payload: SanitizedPayload,
   meta: { ip: string | null; userAgent: string | null },
@@ -296,6 +358,7 @@ async function sendSupportMessage(
       reply_to: payload.email,
       subject: `Tagloom support: ${payload.subject}`,
       text: buildSupportEmailText(payload, { ...meta, timestamp }),
+      html: buildSupportEmailHtml(payload, { ...meta, timestamp }),
     }),
     cache: "no-store",
   });
