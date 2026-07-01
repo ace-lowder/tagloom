@@ -1,5 +1,7 @@
 import { readFileSync } from "fs";
 import { join } from "path";
+import type { StaticImageData } from "next/image";
+import howToRankHigherHero from "../../public/blog-how-to-rank-higher-on-etsy-hero.png";
 
 export type BlogCategory = "SEO" | "Strategy" | "Tips" | "Research";
 
@@ -24,7 +26,7 @@ export type BlogPost = {
   date: string;
   category: BlogCategory;
   readTime: string;
-  heroImage?: string;
+  heroImage?: StaticImageData;
   bottomCta?: BlogBottomCta;
   contentHtml: string;
   sections: BlogSection[];
@@ -46,7 +48,7 @@ export const BLOG_POSTS: BlogPost[] = [
     date: "Jun 12, 2026",
     category: "SEO",
     readTime: "7 min read",
-    heroImage: "/blog-how-to-rank-higher-on-etsy-hero.png",
+    heroImage: howToRankHigherHero,
     sections: [
       { id: "how-etsy-search-works", level: 2, title: "How Etsy Search Works" },
       { id: "start-with-keywords", level: 2, title: "Start with Keywords" },

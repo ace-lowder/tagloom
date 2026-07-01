@@ -126,6 +126,7 @@ export default function BlogPostPage({ post }: BlogPostPageProps) {
                   fill
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, 720px"
+                  placeholder="blur"
                 />
               </div>
             ) : null}
