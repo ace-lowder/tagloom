@@ -4,7 +4,9 @@ import { describe, expect, it, vi } from "vitest";
 import EmailVerificationPanel from "./EmailVerificationPanel";
 
 describe("EmailVerificationPanel", () => {
-  it("renders the main verification copy with a bold email and action buttons", () => {
+  it("renders the main verification copy with the resend and cancel actions", () => {
+    const onCancel = vi.fn();
+
     render(
       <EmailVerificationPanel
         email="person@example.com"
@@ -15,7 +17,8 @@ describe("EmailVerificationPanel", () => {
         troubleshootingChecked={false}
         onTroubleshootingCheckedChange={vi.fn()}
         onResend={vi.fn()}
-        onVerified={vi.fn()}
+        onUseDifferentEmail={vi.fn()}
+        onCancel={onCancel}
       />,
     );
 
@@ -26,13 +29,20 @@ describe("EmailVerificationPanel", () => {
     expect(
       screen.getByText(/Confirm your account to claim your free tag generation\./),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "I've confirmed my email" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Resend confirmation email" })).toBeInTheDocument();
-    expect(screen.queryByText(/guest_generation=abc123/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "I\'ve confirmed my email" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Use a different email" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
-  it("switches into the resend view and keeps the checkbox controlled by the caller", () => {
+  it("switches into the resend view and keeps the caller-controlled checkbox and cooldown", () => {
     const onResend = vi.fn();
+    const onUseDifferentEmail = vi.fn();
+    const onCancel = vi.fn();
+
     const Wrapper = () => {
       const [checked, setChecked] = useState(false);
       return (
@@ -45,14 +55,13 @@ describe("EmailVerificationPanel", () => {
           troubleshootingChecked={checked}
           onTroubleshootingCheckedChange={setChecked}
           onResend={onResend}
-          onVerified={vi.fn()}
-          onUseDifferentEmail={vi.fn()}
-          onCancel={vi.fn()}
+          onUseDifferentEmail={onUseDifferentEmail}
+          onCancel={onCancel}
         />
       );
     };
 
-    const { rerender } = render(<Wrapper />);
+    render(<Wrapper />);
 
     fireEvent.click(screen.getByRole("button", { name: "Resend confirmation email" }));
 
@@ -64,6 +73,9 @@ describe("EmailVerificationPanel", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Resend in 12s" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Use a different email" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole("checkbox", {
@@ -72,10 +84,18 @@ describe("EmailVerificationPanel", () => {
     );
 
     expect(screen.getByRole("checkbox")).toBeChecked();
-    rerender(<Wrapper />);
-    expect(screen.getByRole("checkbox")).toBeChecked();
-    expect(screen.getByRole("button", { name: "Resend in 12s" })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+
+    expect(screen.getByRole("heading", { name: "Verify your email address" })).toBeInTheDocument();
     expect(onResend).not.toHaveBeenCalled();
+    expect(onUseDifferentEmail).not.toHaveBeenCalled();
+    expect(onCancel).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Resend confirmation email" }));
+
+    expect(screen.getByRole("button", { name: "Resend in 12s" })).toBeDisabled();
+    expect(screen.getByRole("checkbox")).toBeChecked();
   });
 
   it("enables resend when cooldown reaches zero and calls the navigation callbacks", () => {
@@ -91,7 +111,6 @@ describe("EmailVerificationPanel", () => {
         troubleshootingChecked={true}
         onTroubleshootingCheckedChange={vi.fn()}
         onResend={vi.fn()}
-        onVerified={vi.fn()}
         onUseDifferentEmail={onUseDifferentEmail}
         onCancel={onCancel}
       />,
@@ -110,7 +129,6 @@ describe("EmailVerificationPanel", () => {
         troubleshootingChecked={true}
         onTroubleshootingCheckedChange={vi.fn()}
         onResend={vi.fn()}
-        onVerified={vi.fn()}
         onUseDifferentEmail={onUseDifferentEmail}
         onCancel={onCancel}
       />,
@@ -119,10 +137,9 @@ describe("EmailVerificationPanel", () => {
     expect(screen.getByRole("button", { name: "Resend confirmation email" })).toBeEnabled();
 
     fireEvent.click(screen.getByRole("button", { name: "Use a different email" }));
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
     expect(onUseDifferentEmail).toHaveBeenCalledTimes(1);
-    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(onCancel).not.toHaveBeenCalled();
   });
 
   it("returns to the main view after a successful resend", () => {
@@ -136,7 +153,8 @@ describe("EmailVerificationPanel", () => {
         troubleshootingChecked={false}
         onTroubleshootingCheckedChange={vi.fn()}
         onResend={vi.fn()}
-        onVerified={vi.fn()}
+        onUseDifferentEmail={vi.fn()}
+        onCancel={vi.fn()}
       />,
     );
 

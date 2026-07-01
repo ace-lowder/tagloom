@@ -100,7 +100,11 @@ export function AuthControllerProvider({ children }: AuthControllerProviderProps
             transition={{ duration: 0.12, ease: "linear" }}
           />
           <motion.div
-            className="relative z-10 w-full max-w-sm rounded-2xl border border-stone-200 bg-white px-6 pb-6 pt-12 shadow-2xl sm:px-7 sm:pb-7 sm:pt-12"
+            className={
+              verificationLocked
+                ? "relative z-10 w-full max-w-sm rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl sm:p-7"
+                : "relative z-10 w-full max-w-sm rounded-2xl border border-stone-200 bg-white px-6 pb-6 pt-12 shadow-2xl sm:px-7 sm:pb-7 sm:pt-12"
+            }
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{

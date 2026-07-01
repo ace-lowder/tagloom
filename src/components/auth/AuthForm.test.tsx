@@ -757,11 +757,12 @@ describe("AuthForm signup guard", () => {
     });
     fireEvent.submit(screen.getByRole("button", { name: "Create account" }).closest("form")!);
 
-    await screen.findByRole("button", { name: "Use a different email" });
+    await screen.findByRole("button", { name: "Resend confirmation email" });
     expect(signUpMock).toHaveBeenCalledTimes(1);
     expect(countEmailStatusRequests(fetchMock)).toBe(1);
     expect(turnstileGetTokenMock).toHaveBeenCalledTimes(1);
 
+    fireEvent.click(screen.getByRole("button", { name: "Resend confirmation email" }));
     fireEvent.click(screen.getByRole("button", { name: "Use a different email" }));
     expect(screen.getByPlaceholderText("you@example.com")).toHaveValue("");
 

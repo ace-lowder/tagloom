@@ -297,8 +297,7 @@ describe("useEmailVerification", () => {
     getUserMock.mockResolvedValue({ data: { user: makeVerifiedUser() }, error: null });
 
     await act(async () => {
-      const manualVerified = await result.current.requestManualVerificationCheck();
-      expect(manualVerified).toBe(true);
+      window.dispatchEvent(new Event("focus"));
     });
 
     expect(onVerified).toHaveBeenCalledTimes(1);
@@ -338,8 +337,7 @@ describe("useEmailVerification", () => {
     getUserMock.mockResolvedValueOnce({ data: { user: makeVerifiedUser() }, error: null });
 
     await act(async () => {
-      const manualVerified = await result.current.requestManualVerificationCheck();
-      expect(manualVerified).toBe(true);
+      window.dispatchEvent(new Event("focus"));
     });
 
     expect(onVerified).toHaveBeenCalledTimes(2);
@@ -424,33 +422,6 @@ describe("useEmailVerification", () => {
     });
 
     await waitFor(() => expect(getUserMock).toHaveBeenCalledTimes(2));
-    expect(onVerified).toHaveBeenCalledTimes(1);
-  });
-
-  it("supports a manual verification check", async () => {
-    const onVerified = vi.fn();
-    const { result } = renderVerification(onVerified);
-    const now = Date.now();
-
-    act(() => {
-      result.current.startVerification({
-        email: "person@example.com",
-        next: "/",
-        createdAt: now,
-        emailSentAt: null,
-      });
-    });
-
-    await waitFor(() => expect(getUserMock).toHaveBeenCalledTimes(1));
-
-    getUserMock.mockResolvedValueOnce({ data: { user: makeVerifiedUser() }, error: null });
-    let manualVerified = false;
-    await act(async () => {
-      manualVerified = await result.current.requestManualVerificationCheck();
-    });
-
-    expect(manualVerified).toBe(true);
-    expect(getUserMock).toHaveBeenCalledTimes(2);
     expect(onVerified).toHaveBeenCalledTimes(1);
   });
 

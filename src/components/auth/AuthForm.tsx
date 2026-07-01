@@ -445,9 +445,6 @@ export default function AuthForm({
         onResend={() => {
           void verification.resendConfirmationEmail();
         }}
-        onVerified={() => {
-          void verification.requestManualVerificationCheck();
-        }}
         onUseDifferentEmail={() => {
           verification.clearVerification();
           resetToSignupEmailStep();

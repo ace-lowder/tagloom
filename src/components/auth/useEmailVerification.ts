@@ -134,11 +134,6 @@ export function useEmailVerification({
     [ensureRecord],
   );
 
-  const requestManualVerificationCheck = useCallback(async () => {
-    await checkVerification();
-    return Boolean(didCompleteRef.current);
-  }, [checkVerification]);
-
   const resendConfirmationEmail = useCallback(async () => {
     if (!supabase || !record) return;
 
@@ -254,7 +249,6 @@ export function useEmailVerification({
     setTroubleshootingChecked: acknowledgeTroubleshooting,
     startVerification,
     clearVerification,
-    requestManualVerificationCheck,
     resendConfirmationEmail,
     useDifferentEmail,
     isPending: pending,

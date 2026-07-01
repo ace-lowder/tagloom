@@ -11,7 +11,6 @@ type EmailVerificationPanelProps = {
   troubleshootingChecked: boolean;
   onTroubleshootingCheckedChange: (checked: boolean) => void;
   onResend: () => void;
-  onVerified: () => void;
   onUseDifferentEmail?: () => void;
   onCancel?: () => void;
   isLocked?: boolean;
@@ -26,7 +25,6 @@ export default function EmailVerificationPanel({
   troubleshootingChecked,
   onTroubleshootingCheckedChange,
   onResend,
-  onVerified,
   onUseDifferentEmail,
   onCancel,
   isLocked = false,
@@ -106,15 +104,13 @@ export default function EmailVerificationPanel({
               </button>
             ) : null}
 
-            {onCancel ? (
-              <button
-                type="button"
-                onClick={onCancel}
-                className="text-stone-500 transition-colors hover:text-stone-900"
-              >
-                Cancel
-              </button>
-            ) : null}
+            <button
+              type="button"
+              onClick={() => setShowResendView(false)}
+              className="text-stone-500 transition-colors hover:text-stone-900"
+            >
+              Back
+            </button>
           </div>
         </div>
       ) : (
@@ -126,18 +122,11 @@ export default function EmailVerificationPanel({
                 : "text-sm leading-6 text-stone-700"
             }
           >
-            {resendState === "sent" ? "We sent a fresh verification link to " : "We sent a verification link to "}
+            {resendState === "sent"
+              ? "We sent a fresh verification link to "
+              : "We sent a verification link to "}
             <strong className="font-semibold text-stone-900">{displayEmail}</strong>. {nextPrompt}
           </p>
-
-          <button
-            type="button"
-            onClick={onVerified}
-            disabled={isLocked}
-            className="w-full rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_3px_14px_rgba(249,115,22,0.3)] transition-all hover:from-orange-600 hover:to-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            I&apos;ve confirmed my email
-          </button>
 
           <div className="flex flex-col items-center gap-3 pt-1 text-xs font-medium">
             <button
@@ -147,16 +136,6 @@ export default function EmailVerificationPanel({
             >
               Resend confirmation email
             </button>
-
-            {onUseDifferentEmail ? (
-              <button
-                type="button"
-                onClick={onUseDifferentEmail}
-                className="text-orange-600 transition-colors hover:text-orange-700"
-              >
-                Use a different email
-              </button>
-            ) : null}
 
             {onCancel ? (
               <button
