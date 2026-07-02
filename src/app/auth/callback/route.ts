@@ -69,10 +69,5 @@ export async function GET(request: Request) {
     return NextResponse.redirect(popupCompleteUrl.toString());
   }
 
-  if (flow === "email_verification") {
-    verificationCompleteUrl.searchParams.set("status", "error");
-    return NextResponse.redirect(verificationCompleteUrl.toString());
-  }
-
   return NextResponse.redirect(finalRedirectUrl);
 }
