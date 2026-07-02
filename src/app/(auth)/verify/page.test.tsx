@@ -104,6 +104,7 @@ describe("/verify page", () => {
 
     render(<VerifyPage />);
 
+    expect(screen.queryByText("Verification issue")).not.toBeInTheDocument();
     expect(screen.getByText("This verification link is no longer valid")).toBeInTheDocument();
     expect(
       screen.getByText(

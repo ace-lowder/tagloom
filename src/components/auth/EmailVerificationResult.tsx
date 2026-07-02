@@ -12,6 +12,7 @@ type EmailVerificationResultProps = {
   onSecondary?: () => void;
   footer?: ReactNode;
   isActionLoading?: boolean;
+  showStatusLabel?: boolean;
 };
 
 export default function EmailVerificationResult({
@@ -24,25 +25,28 @@ export default function EmailVerificationResult({
   onSecondary,
   footer,
   isActionLoading = false,
+  showStatusLabel = true,
 }: EmailVerificationResultProps) {
   return (
     <div className="rounded-2xl border border-stone-200 bg-white px-6 py-6 shadow-sm">
       <div className="space-y-3 text-center">
-        <p
-          className={`text-xs font-semibold uppercase tracking-[0.22em] ${
-            status === "success"
-              ? "text-emerald-600"
+        {showStatusLabel ? (
+          <p
+            className={`text-xs font-semibold uppercase tracking-[0.22em] ${
+              status === "success"
+                ? "text-emerald-600"
+                : status === "error"
+                  ? "text-rose-600"
+                  : "text-orange-600"
+            }`}
+          >
+            {status === "success"
+              ? "Email verified"
               : status === "error"
-                ? "text-rose-600"
-                : "text-orange-600"
-          }`}
-        >
-          {status === "success"
-            ? "Email verified"
-            : status === "error"
-              ? "Verification issue"
-              : "Check your inbox"}
-        </p>
+                ? "Verification issue"
+                : "Check your inbox"}
+          </p>
+        ) : null}
         <h2 className="text-xl font-semibold text-stone-900">{title}</h2>
         <p className="text-sm leading-6 text-stone-600">{message}</p>
       </div>
@@ -76,4 +80,3 @@ export default function EmailVerificationResult({
     </div>
   );
 }
-

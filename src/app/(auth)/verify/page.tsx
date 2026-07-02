@@ -24,6 +24,7 @@ type VerifyPageFrameProps = {
   onAction: () => void;
   status: "success" | "error" | "pending";
   title: string;
+  showStatusLabel?: boolean;
 };
 
 function VerifyPageFrame({
@@ -33,6 +34,7 @@ function VerifyPageFrame({
   onAction,
   status,
   title,
+  showStatusLabel,
 }: VerifyPageFrameProps) {
   return (
     <main className="flex min-h-screen items-center justify-center px-5 py-10">
@@ -44,6 +46,7 @@ function VerifyPageFrame({
           actionLabel={actionLabel}
           onAction={onAction}
           footer={footer}
+          showStatusLabel={showStatusLabel}
         />
       </div>
     </main>
@@ -144,14 +147,15 @@ function VerifyPageContent() {
   if (status === "error") {
     return (
       <VerifyPageFrame
-        title="This verification link is no longer valid"
-        message="The link may have expired or may already have been used. Return to Log in and request a new confirmation email."
-        status="error"
-        actionLabel="Return to Log in"
-        onAction={() => router.replace(loginUrl)}
-      />
-    );
-  }
+      title="This verification link is no longer valid"
+      message="The link may have expired or may already have been used. Return to Log in and request a new confirmation email."
+      status="error"
+      actionLabel="Return to Log in"
+      onAction={() => router.replace(loginUrl)}
+      showStatusLabel={false}
+    />
+  );
+}
 
   return <VerifyPagePending />;
 }
