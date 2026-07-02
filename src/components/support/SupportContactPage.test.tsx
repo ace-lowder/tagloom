@@ -37,29 +37,16 @@ vi.mock("@/components/shared/SiteFooter", () => ({
 }));
 
 describe("SupportContactPage", () => {
-  const envBackup = {
-    turnstileSiteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
-    resendApiKey: process.env.RESEND_API_KEY,
-    supportFromEmail: process.env.SUPPORT_FROM_EMAIL,
-    supportToEmail: process.env.SUPPORT_TO_EMAIL,
-  };
-
   beforeEach(() => {
     showToastMock.mockReset();
     getTokenMock.mockReset();
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = "turnstile-site-key";
-    process.env.RESEND_API_KEY = "resend-test-key";
-    process.env.SUPPORT_FROM_EMAIL = "Tagloom Support <support@example.com>";
-    process.env.SUPPORT_TO_EMAIL = "help@example.com";
+    vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "turnstile-site-key");
   });
 
   afterEach(() => {
-    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = envBackup.turnstileSiteKey;
-    process.env.RESEND_API_KEY = envBackup.resendApiKey;
-    process.env.SUPPORT_FROM_EMAIL = envBackup.supportFromEmail;
-    process.env.SUPPORT_TO_EMAIL = envBackup.supportToEmail;
+    vi.unstubAllEnvs();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
