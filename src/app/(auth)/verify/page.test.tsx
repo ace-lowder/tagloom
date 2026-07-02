@@ -116,14 +116,17 @@ describe("/verify page", () => {
     expect(replaceMock).toHaveBeenCalledWith("/login?next=%2Fgenerator");
   });
 
-  it("shows the pending state when no verification result is present", () => {
+  it("renders the error state when no verification result is present", () => {
     currentSearchParams = new URLSearchParams("next=%2Fgenerator");
 
     render(<VerifyPage />);
 
-    expect(screen.getAllByText("Check your inbox")[0]).toBeInTheDocument();
+    expect(screen.queryByText("Check your inbox")).not.toBeInTheDocument();
+    expect(screen.getByText("This verification link is no longer valid")).toBeInTheDocument();
     expect(
-      screen.getByText("Open the email confirmation link to finish creating your account."),
+      screen.getByText(
+        "The link may have expired or may already have been used. Return to Log in and request a new confirmation email.",
+      ),
     ).toBeInTheDocument();
   });
 });

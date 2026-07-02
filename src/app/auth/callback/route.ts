@@ -9,6 +9,8 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
   const flow = requestUrl.searchParams.get("flow");
+  const tokenHash = requestUrl.searchParams.get("token_hash");
+  const tokenType = requestUrl.searchParams.get("type");
   const safeNext = sanitizeNextPath(requestUrl.searchParams.get("next"));
 
   let popupCompleteUrl: URL;
@@ -25,6 +27,26 @@ export async function GET(request: Request) {
   popupCompleteUrl.searchParams.set("next", safeNext);
   verificationCompleteUrl.searchParams.set("next", safeNext);
 
+  if (flow === "email_verification") {
+    if (!tokenHash || tokenType !== "signup") {
+      verificationCompleteUrl.searchParams.set("status", "error");
+      return NextResponse.redirect(verificationCompleteUrl.toString());
+    }
+
+    const supabase = createSupabaseServerClient();
+    if (supabase) {
+      const { error } = await supabase.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: "signup",
+      });
+      verificationCompleteUrl.searchParams.set("status", error ? "error" : "success");
+      return NextResponse.redirect(verificationCompleteUrl.toString());
+    }
+
+    verificationCompleteUrl.searchParams.set("status", "error");
+    return NextResponse.redirect(verificationCompleteUrl.toString());
+  }
+
   if (code) {
     const supabase = createSupabaseServerClient();
     if (supabase) {
@@ -37,10 +59,6 @@ export async function GET(request: Request) {
           popupCompleteUrl.searchParams.set("status", "success");
         }
         return NextResponse.redirect(popupCompleteUrl.toString());
-      }
-      if (flow === "email_verification") {
-        verificationCompleteUrl.searchParams.set("status", error ? "error" : "success");
-        return NextResponse.redirect(verificationCompleteUrl.toString());
       }
     }
   }

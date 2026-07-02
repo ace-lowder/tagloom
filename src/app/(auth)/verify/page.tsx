@@ -11,7 +11,7 @@ const AUTO_REDIRECT_SECONDS = 5;
 
 export default function VerifyPage() {
   return (
-    <Suspense fallback={<VerifyPagePending />}>
+    <Suspense fallback={null}>
       <VerifyPageContent />
     </Suspense>
   );
@@ -50,18 +50,6 @@ function VerifyPageFrame({
         />
       </div>
     </main>
-  );
-}
-
-function VerifyPagePending() {
-  return (
-    <VerifyPageFrame
-      title="Check your inbox"
-      message="Open the email confirmation link to finish creating your account."
-      status="pending"
-      actionLabel="Return to Log in"
-      onAction={() => {}}
-    />
   );
 }
 
@@ -144,9 +132,8 @@ function VerifyPageContent() {
     );
   }
 
-  if (status === "error") {
-    return (
-      <VerifyPageFrame
+  return (
+    <VerifyPageFrame
       title="This verification link is no longer valid"
       message="The link may have expired or may already have been used. Return to Log in and request a new confirmation email."
       status="error"
@@ -155,7 +142,4 @@ function VerifyPageContent() {
       showStatusLabel={false}
     />
   );
-}
-
-  return <VerifyPagePending />;
 }
