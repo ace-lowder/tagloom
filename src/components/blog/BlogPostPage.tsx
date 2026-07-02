@@ -103,9 +103,6 @@ export default function BlogPostPage({ post }: BlogPostPageProps) {
           <main className="min-w-0 max-w-2xl flex-1">
             <div id={BLOG_OVERVIEW_ID} />
             <div className="mb-8">
-              <span className="mb-3 block text-xs font-semibold uppercase tracking-wide text-orange-600">
-                {post.category}
-              </span>
               <h1 className="mb-4 text-3xl font-bold leading-tight text-stone-900 sm:text-4xl">
                 {post.title}
               </h1>
@@ -134,11 +131,6 @@ export default function BlogPostPage({ post }: BlogPostPageProps) {
             <div className="prose-content prose-blog" dangerouslySetInnerHTML={{ __html: post.contentHtml }} />
 
             <section className="mt-12 rounded-2xl border border-orange-200 bg-gradient-to-br from-orange-50 to-white p-6 sm:p-7">
-              {cta.eyebrow ? (
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-orange-600">
-                  {cta.eyebrow}
-                </p>
-              ) : null}
               <h2 className="mb-2 text-2xl font-bold leading-tight text-stone-900 sm:text-[1.75rem]">
                 {cta.heading}
               </h2>

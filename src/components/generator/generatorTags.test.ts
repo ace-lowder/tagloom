@@ -30,7 +30,7 @@ describe("getUsageHintText", () => {
 
   it("returns free hint", () => {
     expect(getUsageHintText("1 free generation", null)).toBe(
-      "New accounts get 1 free generation. You can purchase more generations in the pricing section.",
+      "New accounts get 1 free generation. You can purchase more generations in the plans section.",
     );
   });
 

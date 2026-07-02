@@ -68,18 +68,18 @@ export default function SiteNav({ currentUser }: SiteNavProps) {
     router.push(`/#${sectionId}`);
   };
 
-  const goToPricing = () => {
+  const goToPlans = () => {
     closeAllMenus();
 
     if (pathname === "/") {
-      const el = document.getElementById("pricing");
+      const el = document.getElementById("plans");
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "start" });
         return;
       }
     }
 
-    router.push("/#pricing");
+    router.push("/#plans");
   };
 
   const goToBilling = () => {
@@ -166,7 +166,7 @@ export default function SiteNav({ currentUser }: SiteNavProps) {
   const displayEmail = currentUser?.email || "Account";
   const avatarInitials = getAvatarInitials(currentUser?.email ?? null);
 
-  const primaryAction = buildPrimaryAction(accountType, goToPricing, goToBilling);
+  const primaryAction = buildPrimaryAction(accountType, goToPlans, goToBilling);
 
   const hasProfileMenu = Boolean(
     (currentUser && accountType && primaryAction) || isAuthResolving,

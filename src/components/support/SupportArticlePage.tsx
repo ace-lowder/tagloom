@@ -25,7 +25,7 @@ type SupportArticlePageProps = {
 
 export default function SupportArticlePage({
   article,
-  topicName,
+  topicName: _topicName,
   allTopics,
   allArticles,
 }: SupportArticlePageProps) {
@@ -190,9 +190,6 @@ export default function SupportArticlePage({
         <div className="flex gap-10">
           <main className="min-w-0 flex-1">
             <div className="mb-6 rounded-2xl border border-stone-100 bg-white p-8">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-orange-600">
-                {topicName}
-              </p>
               <h1 className="mb-8 text-2xl font-bold leading-snug text-stone-900 sm:text-3xl">
                 {article.title}
               </h1>

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowRight, ChevronDown, Tag } from "lucide-react";
+import { ArrowRight, ChevronDown } from "lucide-react";
 
 import PricingCards from "@/components/pricing/PricingCards";
 import { usePricingActions } from "@/components/pricing/usePricingActions";
@@ -38,7 +38,6 @@ const fadeInUp = {
 const stagger = { visible: { transition: { staggerChildren: 0.1 } } };
 
 export const heroCopy = {
-  pill: "Etsy tag generator for sellers",
   headlineStart: "Generate Etsy tags that",
   headlineEmphasis: "help shoppers find your listings",
   body: "Etsy tags are keywords shoppers search for. Better tags can help your listings show up in more searches. Paste your listing, generate tags, and copy them into Etsy.",
@@ -105,13 +104,6 @@ function HeroSection({ onGenerate }: HeroSectionProps) {
           variants={stagger}
           className="text-center"
         >
-          <motion.div
-            variants={fadeInUp}
-            className="mb-6 inline-flex items-center gap-2 rounded-full bg-orange-100 px-4 py-1.5 text-sm font-medium text-orange-700"
-          >
-            <Tag className="h-3.5 w-3.5" />
-            {heroCopy.pill}
-          </motion.div>
           <motion.h1
             variants={fadeInUp}
             className="mb-3 text-4xl font-bold leading-[1.06] text-stone-900 sm:text-5xl"
@@ -228,7 +220,7 @@ function PricingSection({ pricingState }: PricingSectionProps) {
     });
 
   return (
-    <section id="pricing" className="bg-stone-50 px-5 py-24">
+    <section id="plans" className="bg-stone-50 px-5 py-24">
       <div className="mx-auto max-w-5xl">
         <motion.div
           initial="hidden"
@@ -241,7 +233,7 @@ function PricingSection({ pricingState }: PricingSectionProps) {
             variants={fadeInUp}
             className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600"
           >
-            Pricing
+            Plans
           </motion.p>
           <motion.h2
             variants={fadeInUp}

@@ -12,7 +12,6 @@ export const metadata: Metadata = {
 export default function TermsPage() {
   return (
     <LegalPage
-      eyebrow="Terms"
       title="Terms of Service"
       description="These terms explain the rules for using Tagloom. By using the service, you agree to use it responsibly and review all output before applying it to your listings."
       lastUpdated={lastUpdated}

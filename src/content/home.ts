@@ -165,7 +165,7 @@ export const faqs: FAQEntry[] = [
         type: "text",
         text: "If you want more tag generations, saved tag history, or unlimited generations, take a look at our ",
       },
-      { type: "link", label: "pricing", href: "#pricing" },
+      { type: "link", label: "plans", href: "#plans" },
       {
         type: "text",
         text: " and choose a plan that fits your Etsy needs. Starter is great for sellers with a few listings, while Monthly and Yearly are better for sellers who want to optimize tags across their shop.",

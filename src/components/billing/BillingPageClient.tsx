@@ -167,7 +167,6 @@ export default function BillingPageClient({
 
         <section id="billing-pricing">
           <div className="mb-8 text-center">
-            <p className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600">Billing</p>
             <h1 className="mb-3 text-3xl font-bold text-stone-900 sm:text-4xl">Manage your plan</h1>
             <p className="mx-auto max-w-lg text-stone-500">
               View your current plan or change it anytime.

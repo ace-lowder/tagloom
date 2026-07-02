@@ -79,7 +79,7 @@ export function GeneratorHeader({
                           onClick={onGoToPricing}
                           className="font-medium text-orange-700 hover:text-orange-800 hover:underline"
                         >
-                          pricing section
+                          plans section
                         </button>
                         .
                       </p>

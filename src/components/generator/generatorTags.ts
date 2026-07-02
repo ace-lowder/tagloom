@@ -35,7 +35,7 @@ export function getUsageHintText(
     return "Starter generations are prepaid and decrease as you generate.";
   }
   if (normalized.includes("free")) {
-    return "New accounts get 1 free generation. You can purchase more generations in the pricing section.";
+    return "New accounts get 1 free generation. You can purchase more generations in the plans section.";
   }
 
   return null;

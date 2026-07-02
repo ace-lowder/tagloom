@@ -67,21 +67,6 @@ export default function SupportHubPage({ topics, articles }: SupportHubPageProps
       <section className="border-b border-stone-100 bg-white px-5 pb-16 pt-28">
         <div className="mx-auto max-w-2xl text-center">
           <motion.div initial="hidden" animate="visible" variants={stagger}>
-            <motion.p
-              variants={fadeInUp}
-              className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600"
-            >
-              <button
-                type="button"
-                onClick={() => {
-                  setSearch("");
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-                className="transition-colors hover:text-orange-700"
-              >
-                Help Center
-              </button>
-            </motion.p>
             <motion.h1
               variants={fadeInUp}
               className="mb-4 text-4xl font-bold text-stone-900 sm:text-5xl"

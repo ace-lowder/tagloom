@@ -7,7 +7,6 @@ type LegalSection = {
 };
 
 type LegalPageProps = {
-  eyebrow: string;
   title: string;
   description: string;
   lastUpdated: string;
@@ -15,7 +14,6 @@ type LegalPageProps = {
 };
 
 export default function LegalPage({
-  eyebrow,
   title,
   description,
   lastUpdated,
@@ -25,9 +23,6 @@ export default function LegalPage({
     <div className="min-h-screen bg-stone-50 font-sans">
       <section className="border-b border-stone-100 bg-white px-5 pb-12 pt-28">
         <div className="mx-auto max-w-3xl">
-          <p className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600">
-            {eyebrow}
-          </p>
           <h1 className="mb-4 text-4xl font-bold text-stone-900 sm:text-5xl">
             {title}
           </h1>

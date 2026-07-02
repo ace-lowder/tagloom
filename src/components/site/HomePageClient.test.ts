@@ -119,7 +119,7 @@ describe("HomePageClient funnel", () => {
     expect(NAV_LINKS.map((link) => link.label)).toEqual([
       "Home",
       "About",
-      "Pricing",
+      "Plans",
       "Blog",
       "Support",
       "FAQ",
@@ -148,6 +148,7 @@ describe("HomePageClient funnel", () => {
       "lg:max-w-5xl",
       "lg:text-center",
     );
+    expect(screen.queryByText("Etsy tag generator for sellers")).not.toBeInTheDocument();
     expect(
       screen.getByText(/Better tags can help your listings show up in more searches\./),
     ).toBeInTheDocument();
@@ -234,7 +235,7 @@ describe("HomePageClient funnel", () => {
     fireEvent.click(screen.getByRole("button", { name: "How much does Tagloom cost?" }));
     expect(screen.getByText(/Your first tag generation is free/)).toBeInTheDocument();
     expect(screen.getByText(/All you need to do is create a new account/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "pricing" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "plans" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "How do I get help if something goes wrong?" }));
     expect(screen.getByText(/support team can help find a solution/)).toBeInTheDocument();

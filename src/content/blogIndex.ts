@@ -1,5 +1,4 @@
 export const BLOG_INDEX_INTRO = {
-  eyebrow: "Blog",
   heading: "Etsy selling tips you can use today",
   body: "Short posts to help you improve your Etsy listings one focused update at a time.",
 };

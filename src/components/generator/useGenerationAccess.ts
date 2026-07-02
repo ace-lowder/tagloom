@@ -159,14 +159,14 @@ export function useGenerationAccess({
 
     const onHome = window.location.pathname === "/";
     if (onHome) {
-      const pricingEl = document.getElementById("pricing");
-      if (pricingEl) {
-        pricingEl.scrollIntoView({ behavior: "smooth", block: "start" });
+      const plansEl = document.getElementById("plans");
+      if (plansEl) {
+        plansEl.scrollIntoView({ behavior: "smooth", block: "start" });
         return;
       }
     }
 
-    window.location.href = "/#pricing";
+    window.location.href = "/#plans";
   }, [markUserInteraction, playSheen]);
 
   useEffect(() => {

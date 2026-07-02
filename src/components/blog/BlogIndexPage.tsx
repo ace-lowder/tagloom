@@ -54,12 +54,6 @@ function BlogHero({ featured }: BlogHeroProps) {
     <section className="border-b border-stone-100 bg-white px-5 pb-16 pt-28">
       <div className="mx-auto max-w-5xl">
         <motion.div initial="hidden" animate="visible" variants={stagger}>
-          <motion.p
-            variants={fadeInUp}
-            className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600"
-          >
-            {BLOG_INDEX_INTRO.eyebrow}
-          </motion.p>
           <motion.h1
             variants={fadeInUp}
             className="mb-3 text-4xl font-bold text-stone-900 sm:text-5xl"

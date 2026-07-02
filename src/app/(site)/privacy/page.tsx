@@ -12,7 +12,6 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <LegalPage
-      eyebrow="Privacy"
       title="Privacy Policy"
       description="This policy explains what Tagloom collects, how we use it, and the choices you have when using our AI tag generation service."
       lastUpdated={lastUpdated}
