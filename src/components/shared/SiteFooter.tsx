@@ -3,17 +3,22 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import BrandMark from "@/components/brand/BrandMark";
+import { cn } from "@/lib/utils";
 
 function dispatchSupportReset() {
   window.dispatchEvent(new CustomEvent("tagloom:support-reset"));
 }
 
-export default function SiteFooter() {
+type SiteFooterProps = {
+  flushTop?: boolean;
+};
+
+export default function SiteFooter({ flushTop = false }: SiteFooterProps) {
   const pathname = usePathname();
   const router = useRouter();
 
   return (
-    <footer className="mt-8 border-t border-stone-200 bg-white px-5 py-6">
+    <footer className={cn("border-t border-stone-200 bg-white px-5 py-6", !flushTop && "mt-8")}>
       <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-5 sm:grid-cols-[1fr_auto_1fr]">
         <BrandMark
           href="/"

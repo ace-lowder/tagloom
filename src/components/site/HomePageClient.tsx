@@ -74,7 +74,7 @@ export default function HomePageClient({ pricingState }: HomePageClientProps) {
       <PricingSection pricingState={pricingState} />
       <FaqSection faqs={faqs} onGeneratorCta={triggerGeneratorFlow} />
       <BottomCtaSection onGenerate={triggerGeneratorFlow} />
-      <SiteFooter />
+      <SiteFooter flushTop />
     </div>
   );
 }
