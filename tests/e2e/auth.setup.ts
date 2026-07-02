@@ -10,7 +10,6 @@ test("signs in seeded account and saves storage state", async ({ page }) => {
   }
 
   await page.goto("/login?next=/");
-  await page.getByRole("button", { name: "Log in" }).click();
   await expect(page.getByLabel("Email")).toBeVisible();
   await expect(page.getByLabel("Password")).toBeVisible();
 

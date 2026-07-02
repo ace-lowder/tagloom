@@ -14,12 +14,15 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/components/auth/AuthForm", () => ({
   __esModule: true,
   default: function MockAuthForm({
+    mode,
     onVerificationPendingChange,
   }: {
+    mode: string;
     onVerificationPendingChange?: (pending: boolean) => void;
   }) {
     return (
       <div data-testid="auth-form">
+        <div data-testid="auth-mode">{mode}</div>
         <button
           type="button"
           onClick={() => onVerificationPendingChange?.(true)}
@@ -41,6 +44,7 @@ describe("login page", () => {
   it("locks the back button when AuthForm reports that verification is pending", () => {
     render(<LoginPage />);
 
+    expect(screen.getByTestId("auth-mode")).toHaveTextContent("login");
     const backButton = screen.getByRole("button", { name: "Back" });
     expect(backButton).toBeEnabled();
 

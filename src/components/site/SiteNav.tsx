@@ -211,6 +211,7 @@ export default function SiteNav({ currentUser }: SiteNavProps) {
               type="button"
               onClick={() =>
                 openAuthModal({
+                  mode: "login",
                   source: "navbar",
                   next: pathname || "/",
                 })
@@ -267,6 +268,7 @@ export default function SiteNav({ currentUser }: SiteNavProps) {
                 onOpenAuthModal={() => {
                   setMobileOpen(false);
                   openAuthModal({
+                    mode: "login",
                     source: "navbar_mobile",
                     next: pathname || "/",
                   });

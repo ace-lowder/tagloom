@@ -18,7 +18,7 @@ function resolveSafeNext(rawNext: string | null) {
 export default function LoginPage() {
   const router = useRouter();
   const [next, setNext] = useState("/");
-  const [mode, setMode] = useState<AuthMode>("signup");
+  const [mode, setMode] = useState<AuthMode>("login");
   const [verificationPending, setVerificationPending] = useState(false);
 
   useEffect(() => {
