@@ -229,12 +229,6 @@ function PricingSection({ pricingState }: PricingSectionProps) {
           variants={stagger}
           className="mb-14 text-center"
         >
-          <motion.p
-            variants={fadeInUp}
-            className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600"
-          >
-            Plans
-          </motion.p>
           <motion.h2
             variants={fadeInUp}
             className="mb-3 text-3xl font-bold text-stone-900 sm:text-4xl"
@@ -302,12 +296,6 @@ function FaqSection({
           variants={stagger}
           className="mb-14 text-center"
         >
-          <motion.p
-            variants={fadeInUp}
-            className="mb-2 text-sm font-medium uppercase tracking-wide text-orange-600"
-          >
-            FAQ
-          </motion.p>
           <motion.h2
             variants={fadeInUp}
             className="text-3xl font-bold text-stone-900 sm:text-4xl"

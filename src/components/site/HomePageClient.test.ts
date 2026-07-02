@@ -152,6 +152,7 @@ describe("HomePageClient funnel", () => {
     expect(
       screen.getByText(/Better tags can help your listings show up in more searches\./),
     ).toBeInTheDocument();
+    expect(screen.queryByText("Plans", { selector: "p" })).not.toBeInTheDocument();
     expect(
       screen.getByText(
         /We built Tagloom to help sellers connect their products with the shoppers already looking for them\./,
@@ -236,6 +237,7 @@ describe("HomePageClient funnel", () => {
     expect(screen.getByText(/Your first tag generation is free/)).toBeInTheDocument();
     expect(screen.getByText(/All you need to do is create a new account/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "plans" })).toBeInTheDocument();
+    expect(screen.queryByText("FAQ", { selector: "p" })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "How do I get help if something goes wrong?" }));
     expect(screen.getByText(/support team can help find a solution/)).toBeInTheDocument();
