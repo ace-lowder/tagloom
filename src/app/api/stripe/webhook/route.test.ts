@@ -1,8 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { syncBillingProjectionForUser } from "@/lib/stripeBillingSync";
 import { POST } from "./route";
 
 const constructEventMock = vi.fn();
+const retrieveSubscriptionMock = vi.fn();
 const fromMock = vi.fn();
 const profileUpdatePayloads: unknown[] = [];
 const stripeEventInsertPayloads: unknown[] = [];
@@ -32,6 +33,9 @@ vi.mock("@/lib/stripe", () => ({
     webhooks: {
       constructEvent: constructEventMock,
     },
+    subscriptions: {
+      retrieve: retrieveSubscriptionMock,
+    },
   }),
 }));
 
@@ -51,6 +55,48 @@ function makeRequest() {
     method: "POST",
     body: JSON.stringify({ id: "evt_test" }),
   });
+}
+
+function makeSubscription({
+  id,
+  customer,
+  metadata = {},
+  priceId = "price_monthly",
+  status = "active",
+  schedule = null,
+}: {
+  id: string;
+  customer: string | null;
+  metadata?: Record<string, string>;
+  priceId?: string;
+  status?: string;
+  schedule?: string | null;
+}) {
+  return {
+    id,
+    object: "subscription",
+    customer,
+    metadata,
+    schedule,
+    status,
+    items: {
+      data: [
+        {
+          id: `${id}_item`,
+          quantity: 1,
+          price: { id: priceId },
+        },
+      ],
+    },
+  } as never;
+}
+
+function makeInvoice(subscriptionId: string) {
+  return {
+    id: `in_${subscriptionId}`,
+    object: "invoice",
+    subscription: subscriptionId,
+  } as never;
 }
 
 function mockSupabaseTables(existingCredits: number) {
@@ -102,6 +148,7 @@ describe("Stripe webhook route", () => {
   beforeEach(() => {
     vi.stubEnv("STRIPE_WEBHOOK_SECRET", "whsec_test");
     constructEventMock.mockReset();
+    retrieveSubscriptionMock.mockReset();
     fromMock.mockReset();
     vi.mocked(syncBillingProjectionForUser).mockReset();
     profileUpdatePayloads.length = 0;
@@ -111,6 +158,11 @@ describe("Stripe webhook route", () => {
     existingStripeEvent.data = null;
     existingStripeEvent.error = null;
     mockSupabaseTables(2);
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
   });
 
   it("grants 5 starter credits for a paid single-use checkout", async () => {
@@ -300,6 +352,212 @@ describe("Stripe webhook route", () => {
       }),
     ]);
     expect(stripeEventUpdatePayloads[0]).toHaveProperty("processed_at");
+  });
+
+  it("stores customer, consumes discount, retrieves the subscription, and syncs the monthly lifecycle checkout", async () => {
+    const subscription = makeSubscription({
+      id: "sub_monthly",
+      customer: "cus_monthly",
+      metadata: {
+        user_id: "user_123",
+        purchase_type: "monthly",
+        starter_upgrade_discount_applied: "true",
+      },
+      priceId: "price_monthly",
+    });
+    constructEventMock.mockReturnValue({
+      id: "evt_monthly_checkout",
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          id: "cs_monthly_checkout",
+          customer: "cus_monthly",
+          subscription: "sub_monthly",
+          metadata: {
+            user_id: "user_123",
+            purchase_type: "monthly",
+            starter_upgrade_discount_applied: "true",
+          },
+          payment_status: "paid",
+        },
+      },
+    });
+    retrieveSubscriptionMock.mockResolvedValueOnce(subscription);
+
+    const response = await POST(makeRequest());
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ received: true });
+    expect(profileUpdatePayloads).toContainEqual({
+      stripe_customer_id: "cus_monthly",
+    });
+    expect(profileUpdatePayloads).toContainEqual({
+      starter_upgrade_discount_available: false,
+    });
+    expect(retrieveSubscriptionMock).toHaveBeenCalledWith("sub_monthly");
+    expect(syncBillingProjectionForUser).toHaveBeenCalledWith({
+      userId: "user_123",
+      customerId: "cus_monthly",
+      subscription,
+    });
+    expect(stripeEventUpdatePayloads).toEqual([
+      expect.objectContaining({
+        status: "processed",
+        error: null,
+      }),
+    ]);
+  });
+
+  it.each([
+    "customer.subscription.created",
+    "customer.subscription.updated",
+    "customer.subscription.resumed",
+    "customer.subscription.paused",
+  ] as const)(
+    "syncs and processes %s events",
+    async (type) => {
+      const subscription = makeSubscription({
+        id: `sub_${type.replaceAll(".", "_")}`,
+        customer: "cus_sub",
+        metadata: {
+          user_id: "user_123",
+        },
+        priceId: "price_monthly",
+      });
+      constructEventMock.mockReturnValue({
+        id: `evt_${type.replaceAll(".", "_")}`,
+        type,
+        data: {
+          object: subscription,
+        },
+      });
+
+      const response = await POST(makeRequest());
+
+      expect(response.status).toBe(200);
+      await expect(response.json()).resolves.toEqual({ received: true });
+      expect(syncBillingProjectionForUser).toHaveBeenCalledWith({
+        userId: "user_123",
+        customerId: "cus_sub",
+        subscription,
+      });
+      expect(stripeEventUpdatePayloads).toEqual([
+        expect.objectContaining({
+          status: "processed",
+          error: null,
+        }),
+      ]);
+    },
+  );
+
+  it("syncs deleted subscriptions with a null subscription payload", async () => {
+    const subscription = makeSubscription({
+      id: "sub_deleted",
+      customer: "cus_deleted",
+      metadata: {
+        user_id: "user_123",
+      },
+      priceId: "price_yearly",
+    });
+    constructEventMock.mockReturnValue({
+      id: "evt_deleted",
+      type: "customer.subscription.deleted",
+      data: {
+        object: subscription,
+      },
+    });
+
+    const response = await POST(makeRequest());
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ received: true });
+    expect(syncBillingProjectionForUser).toHaveBeenCalledWith({
+      userId: "user_123",
+      customerId: "cus_deleted",
+      subscription: null,
+    });
+    expect(stripeEventUpdatePayloads).toEqual([
+      expect.objectContaining({
+        status: "processed",
+        error: null,
+      }),
+    ]);
+  });
+
+  it.each(["invoice.paid", "invoice.payment_failed"] as const)(
+    "retrieves the subscription and syncs it for %s",
+    async (type) => {
+      const subscription = makeSubscription({
+        id: "sub_invoice",
+        customer: "cus_invoice",
+        metadata: {
+          user_id: "user_123",
+        },
+        priceId: "price_yearly",
+      });
+      constructEventMock.mockReturnValue({
+        id: `evt_${type.replaceAll(".", "_")}`,
+        type,
+        data: {
+          object: makeInvoice("sub_invoice"),
+        },
+      });
+      retrieveSubscriptionMock.mockResolvedValueOnce(subscription);
+
+      const response = await POST(makeRequest());
+
+      expect(response.status).toBe(200);
+      await expect(response.json()).resolves.toEqual({ received: true });
+      expect(retrieveSubscriptionMock).toHaveBeenCalledWith("sub_invoice");
+      expect(syncBillingProjectionForUser).toHaveBeenCalledWith({
+        userId: "user_123",
+        customerId: "cus_invoice",
+        subscription,
+      });
+      expect(stripeEventUpdatePayloads).toEqual([
+        expect.objectContaining({
+          status: "processed",
+          error: null,
+        }),
+      ]);
+    },
+  );
+
+  it("marks webhook handling as failed when billing projection sync rejects", async () => {
+    const subscription = makeSubscription({
+      id: "sub_failing",
+      customer: "cus_failing",
+      metadata: {
+        user_id: "user_123",
+      },
+      priceId: "price_monthly",
+    });
+    constructEventMock.mockReturnValue({
+      id: "evt_failing",
+      type: "customer.subscription.updated",
+      data: {
+        object: subscription,
+      },
+    });
+    vi.mocked(syncBillingProjectionForUser).mockRejectedValueOnce(
+      new Error("billing projection sync failed"),
+    );
+
+    const response = await POST(makeRequest());
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({ error: "Webhook handling failed." });
+    expect(stripeEventUpdatePayloads).toEqual([
+      expect.objectContaining({
+        status: "failed",
+        error: "billing projection sync failed",
+      }),
+    ]);
+    expect(stripeEventUpdatePayloads).not.toContainEqual(
+      expect.objectContaining({
+        status: "processed",
+      }),
+    );
   });
 
   it("returns 500 when claiming a new Stripe event fails unexpectedly", async () => {
