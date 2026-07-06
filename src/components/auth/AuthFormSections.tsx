@@ -18,17 +18,11 @@ type AuthErrorBannerProps = {
   error: string;
 };
 
-type LoginFieldsProps = {
+type EmailAuthFieldsProps = {
+  mode: AuthMode;
+  authStep: "email" | "password";
   email: string;
   password: string;
-  onEmailChange: (value: string) => void;
-  onPasswordChange: (value: string) => void;
-};
-
-type SignupFieldsProps = {
-  email: string;
-  password: string;
-  signupStep: "email" | "password";
   onEmailChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
 };
@@ -80,12 +74,14 @@ export function AuthErrorBanner({ error }: AuthErrorBannerProps) {
   return <FieldMessage tone="error">{error}</FieldMessage>;
 }
 
-export function LoginFields({
+export function EmailAuthFields({
+  mode,
+  authStep,
   email,
   password,
   onEmailChange,
   onPasswordChange,
-}: LoginFieldsProps) {
+}: EmailAuthFieldsProps) {
   return (
     <>
       <div>
@@ -100,44 +96,7 @@ export function LoginFields({
         />
       </div>
 
-      <div>
-        <FieldLabel htmlFor="password">Password</FieldLabel>
-        <TextInput
-          id="password"
-          type="password"
-          required
-          minLength={6}
-          value={password}
-          onChange={(event) => onPasswordChange(event.target.value)}
-          placeholder="Enter your password"
-        />
-      </div>
-    </>
-  );
-}
-
-export function SignupFields({
-  email,
-  password,
-  signupStep,
-  onEmailChange,
-  onPasswordChange,
-}: SignupFieldsProps) {
-  return (
-    <>
-      <div>
-        <FieldLabel htmlFor="email">Email</FieldLabel>
-        <TextInput
-          id="email"
-          type="email"
-          required
-          value={email}
-          onChange={(event) => onEmailChange(event.target.value)}
-          placeholder="you@example.com"
-        />
-      </div>
-
-      {signupStep === "password" ? (
+      {authStep === "password" ? (
         <div>
           <FieldLabel htmlFor="password">Password</FieldLabel>
           <TextInput
@@ -147,7 +106,7 @@ export function SignupFields({
             minLength={6}
             value={password}
             onChange={(event) => onPasswordChange(event.target.value)}
-            placeholder="At least 6 characters"
+            placeholder={mode === "login" ? "Enter your password" : "At least 6 characters"}
           />
         </div>
       ) : null}

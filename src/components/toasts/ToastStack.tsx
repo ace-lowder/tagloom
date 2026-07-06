@@ -117,7 +117,7 @@ export function ToastStack({
   return (
     <div
       aria-live="polite"
-      className="pointer-events-none fixed inset-x-3 bottom-3 z-50 sm:inset-x-auto sm:right-5 sm:w-96 sm:max-w-[calc(100vw-2.5rem)]"
+      className="pointer-events-none fixed inset-x-3 bottom-3 z-[200] sm:inset-x-auto sm:right-5 sm:w-96 sm:max-w-[calc(100vw-2.5rem)]"
     >
       {toasts.map((toast) => {
         const offset = toast.status.startsWith("exiting")

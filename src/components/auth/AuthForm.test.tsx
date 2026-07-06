@@ -161,9 +161,9 @@ function countEmailStatusRequests(fetchMock: ReturnType<typeof vi.fn>) {
     .length;
 }
 
-async function moveSignupToPasswordStep() {
+async function moveEmailAuthToPasswordStep(email = "person@example.com") {
   fireEvent.change(screen.getByLabelText("Email"), {
-    target: { value: "person@example.com" },
+    target: { value: email },
   });
   fireEvent.submit(screen.getByRole("button", { name: "Continue with email" }).closest("form")!);
 
@@ -208,22 +208,26 @@ describe("AuthForm signup guard", () => {
     });
   });
 
-  it("uses a clearer login password placeholder", () => {
+  it("starts login mode on the email step", () => {
     renderWithToasts(<AuthForm mode="login" onModeChange={vi.fn()} />);
 
-    expect(screen.getByPlaceholderText("Enter your password")).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText("At least 6 characters")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Email")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Continue with email" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText("Password")).not.toBeInTheDocument();
   });
 
   it("keeps the signup password placeholder unchanged", async () => {
     renderWithToasts(<AuthForm mode="signup" onModeChange={vi.fn()} />);
 
-    await moveSignupToPasswordStep();
+    await moveEmailAuthToPasswordStep();
 
     expect(screen.getByPlaceholderText("At least 6 characters")).toBeInTheDocument();
   });
 
   it("dispatches auth success only once when verification completes twice before cleanup", async () => {
+    vi.stubGlobal("fetch", setupAccountStatusFetch("verified"));
     signInWithPasswordMock.mockResolvedValueOnce({
       error: Object.assign(new Error("email_not_confirmed"), {
         code: "email_not_confirmed",
@@ -243,6 +247,11 @@ describe("AuthForm signup guard", () => {
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "person@example.com" },
     });
+    fireEvent.submit(
+      screen.getByRole("button", { name: "Continue with email" }).closest("form")!,
+    );
+
+    await screen.findByLabelText("Password");
     fireEvent.change(screen.getByLabelText("Password"), {
       target: { value: "hunter2-password" },
     });
@@ -286,7 +295,7 @@ describe("AuthForm signup guard", () => {
       />,
     );
 
-    await moveSignupToPasswordStep();
+    await moveEmailAuthToPasswordStep();
     fireEvent.change(screen.getByLabelText("Password"), {
       target: { value: "hunter2-password" },
     });
@@ -311,7 +320,7 @@ describe("AuthForm signup guard", () => {
 
     renderWithToasts(<AuthForm mode="signup" onModeChange={vi.fn()} />);
 
-    await moveSignupToPasswordStep();
+    await moveEmailAuthToPasswordStep();
     fireEvent.change(screen.getByLabelText("Password"), {
       target: { value: "hunter2-password" },
     });
@@ -366,7 +375,7 @@ describe("AuthForm signup guard", () => {
 
     renderWithToasts(<AuthForm mode="signup" onModeChange={vi.fn()} />);
 
-    await moveSignupToPasswordStep();
+    await moveEmailAuthToPasswordStep();
     fireEvent.change(screen.getByLabelText("Password"), {
       target: { value: "hunter2-password" },
     });
@@ -398,7 +407,7 @@ describe("AuthForm signup guard", () => {
 
     renderWithToasts(<AuthForm mode="signup" onModeChange={vi.fn()} />);
 
-    await moveSignupToPasswordStep();
+    await moveEmailAuthToPasswordStep();
     fireEvent.change(screen.getByLabelText("Password"), {
       target: { value: "hunter2-password" },
     });
@@ -415,14 +424,12 @@ describe("AuthForm signup guard", () => {
   });
 
   it("does not call signup eligibility during login", async () => {
-    const fetchMock = setupFetchMock();
+    const fetchMock = setupAccountStatusFetch("verified");
     vi.stubGlobal("fetch", fetchMock);
 
     renderWithToasts(<AuthForm mode="login" onModeChange={vi.fn()} />);
 
-    fireEvent.change(screen.getByLabelText("Email"), {
-      target: { value: "person@example.com" },
-    });
+    await moveEmailAuthToPasswordStep();
     fireEvent.change(screen.getByLabelText("Password"), {
       target: { value: "hunter2-password" },
     });
@@ -656,7 +663,7 @@ describe("AuthForm signup guard", () => {
 
     renderWithToasts(<AuthForm mode="signup" onModeChange={vi.fn()} />);
 
-    await moveSignupToPasswordStep();
+    await moveEmailAuthToPasswordStep();
     fireEvent.change(screen.getByLabelText("Password"), {
       target: { value: "hunter2-password" },
     });
@@ -675,7 +682,7 @@ describe("AuthForm signup guard", () => {
 
     renderWithToasts(<AuthForm mode="signup" onModeChange={vi.fn()} />);
 
-    await moveSignupToPasswordStep();
+    await moveEmailAuthToPasswordStep();
     fireEvent.change(screen.getByLabelText("Password"), {
       target: { value: "hunter2-password" },
     });
@@ -695,7 +702,7 @@ describe("AuthForm signup guard", () => {
 
     renderWithToasts(<AuthForm mode="signup" onModeChange={vi.fn()} />);
 
-    await moveSignupToPasswordStep();
+    await moveEmailAuthToPasswordStep();
     fireEvent.change(screen.getByLabelText("Password"), {
       target: { value: "hunter2-password" },
     });
@@ -739,7 +746,7 @@ describe("AuthForm signup guard", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const Wrapper = () => {
-      const [mode, setMode] = React.useState<"login" | "signup">("signup");
+      const [mode, setMode] = React.useState<"login" | "signup">("login");
       return <AuthForm mode={mode} onModeChange={setMode} />;
     };
     renderWithToasts(<Wrapper />);
@@ -786,7 +793,7 @@ describe("AuthForm signup guard", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const Wrapper = () => {
-      const [mode, setMode] = React.useState<"login" | "signup">("signup");
+      const [mode, setMode] = React.useState<"login" | "signup">("login");
       return <AuthForm mode={mode} onModeChange={setMode} />;
     };
     renderWithToasts(<Wrapper />);
@@ -845,6 +852,7 @@ describe("AuthForm signup guard", () => {
   });
 
   it("does not switch to verification when the login error code is unrelated", async () => {
+    vi.stubGlobal("fetch", setupAccountStatusFetch("verified"));
     signInWithPasswordMock.mockResolvedValueOnce({
       error: Object.assign(new Error("email_not_confirmed"), {
         code: "rate_limited",
@@ -856,6 +864,10 @@ describe("AuthForm signup guard", () => {
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "person@example.com" },
     });
+    fireEvent.submit(
+      screen.getByRole("button", { name: "Continue with email" }).closest("form")!,
+    );
+    await screen.findByLabelText("Password");
     fireEvent.change(screen.getByLabelText("Password"), {
       target: { value: "hunter2-password" },
     });
@@ -864,6 +876,37 @@ describe("AuthForm signup guard", () => {
     expect(await screen.findByText("Login failed")).toBeInTheDocument();
     expect(await screen.findByText("email_not_confirmed")).toBeInTheDocument();
     expect(screen.queryByText("Verify your email address")).not.toBeInTheDocument();
+  });
+
+  it("shows invalid credentials inline without a toast", async () => {
+    vi.stubGlobal("fetch", setupAccountStatusFetch("verified"));
+    signInWithPasswordMock.mockResolvedValueOnce({
+      error: Object.assign(new Error("Invalid login details"), {
+        code: "invalid_credentials",
+      }),
+    });
+
+    renderWithToasts(<AuthForm mode="login" onModeChange={vi.fn()} />);
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "person@example.com" },
+    });
+    fireEvent.submit(
+      screen.getByRole("button", { name: "Continue with email" }).closest("form")!,
+    );
+    await screen.findByLabelText("Password");
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "hunter2-password" },
+    });
+    fireEvent.submit(screen.getByRole("button", { name: "Log in" }).closest("form")!);
+
+    const inlineError = await screen.findByText("Invalid login details");
+    expect(inlineError).toBeInTheDocument();
+    expect(screen.queryByText("Login failed")).not.toBeInTheDocument();
+    expect(screen.queryByText("Invalid login details.")).not.toBeInTheDocument();
+    expect(
+      inlineError.parentElement?.nextElementSibling,
+    ).toContainElement(screen.getByRole("button", { name: "Log in" }));
   });
 
 });

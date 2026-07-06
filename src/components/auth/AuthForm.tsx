@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 import { dispatchAuthSuccess, sanitizeNextPath } from "@/lib/authModal";
 import { buildAuthCallbackUrl } from "@/lib/authRedirect";
@@ -14,10 +15,9 @@ import {
   AuthErrorBanner,
   AuthModeTabs,
   AuthSubmitButton,
+  EmailAuthFields,
   GoogleAuthButton,
-  LoginFields,
   ResetPasswordFields,
-  SignupFields,
   TurnstileBlock,
 } from "./AuthFormSections";
 import {
@@ -58,9 +58,7 @@ export default function AuthForm({
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [signupStep, setSignupStep] = useState<"email" | "password">(
-    mode === "signup" ? "email" : "password",
-  );
+  const [authStep, setAuthStep] = useState<"email" | "password">("email");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [error, setError] = useState("");
@@ -80,17 +78,6 @@ export default function AuthForm({
     onPendingChange: onVerificationPendingChange,
   });
   const verificationNext = verification.record?.next ?? sanitizeNextPath(next);
-
-  useEffect(() => {
-    if (mode === "login") {
-      setSignupStep("password");
-      return;
-    }
-
-    if (!password) {
-      setSignupStep("email");
-    }
-  }, [mode, password]);
 
   useEffect(() => {
     if (verification.record) {
@@ -143,16 +130,16 @@ export default function AuthForm({
     onModeChange("login");
     setEmail(emailToUse);
     setPassword("");
-    setSignupStep("password");
+    setAuthStep("password");
     setView("auth");
     setError("");
   };
 
-  const resetToSignupEmailStep = () => {
+  const resetToSignupForm = (emailToUse: string) => {
     onModeChange("signup");
-    setEmail("");
+    setEmail(emailToUse);
     setPassword("");
-    setSignupStep("email");
+    setAuthStep("password");
     setView("auth");
     setError("");
   };
@@ -198,46 +185,43 @@ export default function AuthForm({
       return;
     }
 
-    if (mode === "signup" && signupStep === "email") {
+    if (authStep === "email") {
       if (!emailIsValid) {
         setError("Enter a valid email first.");
         return;
       }
+
+      setIsCheckingEmail(true);
+      try {
+        const status = await getEmailAccountStatus(normalizedEmail);
+
+        if (status === "verified") {
+          resetToLoginForm(normalizedEmail);
+          return;
+        }
+
+        if (status === "unverified") {
+          beginVerification(normalizedEmail);
+          return;
+        }
+
+        resetToSignupForm(normalizedEmail);
+      } catch (checkError) {
+        console.error("/api/auth/email-exists lookup failed", checkError);
+        showToast({
+          ...toastMessages.accountCheckFailed,
+          body:
+            checkError instanceof Error
+              ? checkError.message
+              : toastMessages.accountCheckFailed.body,
+        });
+      } finally {
+        setIsCheckingEmail(false);
+      }
+      return;
     }
 
     try {
-      if (mode === "signup" && signupStep === "email") {
-        setIsCheckingEmail(true);
-        try {
-          const status = await getEmailAccountStatus(normalizedEmail);
-
-          if (status === "verified") {
-            resetToLoginForm(normalizedEmail);
-            return;
-          }
-
-          if (status === "unverified") {
-            beginVerification(normalizedEmail);
-            return;
-          }
-        } catch (checkError) {
-          console.error("/api/auth/email-exists lookup failed", checkError);
-          showToast({
-            ...toastMessages.accountCheckFailed,
-            body:
-              checkError instanceof Error
-                ? checkError.message
-                : toastMessages.accountCheckFailed.body,
-          });
-          return;
-        } finally {
-          setIsCheckingEmail(false);
-        }
-
-        setSignupStep("password");
-        return;
-      }
-
       setIsSubmitting(true);
 
       if (mode === "signup") {
@@ -293,9 +277,14 @@ export default function AuthForm({
       }
 
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
+        email: normalizedEmail,
         password,
       });
+
+      if (isInvalidCredentialsError(signInError)) {
+        setError("Invalid login details");
+        return;
+      }
 
       if (isEmailNotConfirmedError(signInError)) {
         beginVerification(normalizedEmail);
@@ -346,11 +335,11 @@ export default function AuthForm({
   };
 
   const submitLabel =
-    mode === "signup"
-      ? signupStep === "email"
-        ? "Continue with email"
-        : "Create account"
-      : "Log in";
+    authStep === "email"
+      ? "Continue with email"
+      : mode === "signup"
+        ? "Create account"
+        : "Log in";
 
   const onResetPassword = async () => {
     setError("");
@@ -447,7 +436,12 @@ export default function AuthForm({
         }}
         onUseDifferentEmail={() => {
           verification.clearVerification();
-          resetToSignupEmailStep();
+          onModeChange("signup");
+          setEmail("");
+          setPassword("");
+          setAuthStep("email");
+          setView("auth");
+          setError("");
         }}
         onCancel={() => {
           const emailToKeep = verification.record?.email || normalizedEmail;
@@ -478,22 +472,24 @@ export default function AuthForm({
 
         <TurnstileBlock mode={mode} turnstileRef={turnstileRef} onError={setError} />
 
-        {mode === "signup" ? (
-          <SignupFields
-            email={email}
-            password={password}
-            signupStep={signupStep}
-            onEmailChange={setEmail}
-            onPasswordChange={setPassword}
-          />
-        ) : (
-          <LoginFields
-            email={email}
-            password={password}
-            onEmailChange={setEmail}
-            onPasswordChange={setPassword}
-          />
-        )}
+        <EmailAuthFields
+          mode={mode}
+          authStep={authStep}
+          email={email}
+          password={password}
+          onEmailChange={(value) => {
+            setError("");
+            setEmail(value);
+          }}
+          onPasswordChange={(value) => {
+            setError("");
+            setPassword(value);
+          }}
+        />
+
+        <div className="text-center">
+          <AuthErrorBanner error={error} />
+        </div>
 
         <AuthSubmitButton
           submitLabel={submitLabel}
@@ -501,10 +497,6 @@ export default function AuthForm({
           isCheckingEmail={isCheckingEmail}
         />
       </form>
-
-      <div className="mt-2 text-center">
-        <AuthErrorBanner error={error} />
-      </div>
 
       <div className="mt-5 flex flex-col items-center gap-3 text-xs">
         {mode === "login" ? (
@@ -523,8 +515,14 @@ export default function AuthForm({
         <AuthModeTabs
           mode={mode}
           onModeToggle={() => {
+            flushSync(() => {
+              setEmail("");
+              setPassword("");
+              setAuthStep("email");
+              setView("auth");
+              setError("");
+            });
             onModeChange(mode === "signup" ? "login" : "signup");
-            setError("");
           }}
         />
       </div>
@@ -534,6 +532,10 @@ export default function AuthForm({
 
 function isEmailNotConfirmedError(error: unknown) {
   return (error as { code?: string } | null)?.code === "email_not_confirmed";
+}
+
+function isInvalidCredentialsError(error: unknown) {
+  return (error as { code?: string } | null)?.code === "invalid_credentials";
 }
 
 function isSignupDeliveryBusyError(error: unknown) {
