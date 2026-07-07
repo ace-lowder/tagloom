@@ -226,6 +226,80 @@ describe("AuthForm signup guard", () => {
     expect(screen.getByPlaceholderText("At least 6 characters")).toBeInTheDocument();
   });
 
+  it("routes a missing login email to signup and keeps the normalized email", async () => {
+    const fetchMock = setupAccountStatusFetch("missing");
+    vi.stubGlobal("fetch", fetchMock);
+    const Wrapper = () => {
+      const [mode, setMode] = React.useState<"login" | "signup">("login");
+      return <AuthForm mode={mode} onModeChange={setMode} />;
+    };
+    renderWithToasts(<Wrapper />);
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "  Person@Example.com " },
+    });
+    fireEvent.submit(
+      screen.getByRole("button", { name: "Continue with email" }).closest("form")!,
+    );
+
+    expect(await screen.findByRole("button", { name: "Create account" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Email")).toHaveValue("person@example.com");
+    expect(screen.getByPlaceholderText("At least 6 characters")).toBeInTheDocument();
+    expect(countEmailStatusRequests(fetchMock)).toBe(1);
+  });
+
+  it("returns to a blank email-first form after toggling from signup", async () => {
+    const fetchMock = setupAccountStatusFetch("missing");
+    vi.stubGlobal("fetch", fetchMock);
+    const Wrapper = () => {
+      const [mode, setMode] = React.useState<"login" | "signup">("login");
+      return <AuthForm mode={mode} onModeChange={setMode} />;
+    };
+    renderWithToasts(<Wrapper />);
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "person@example.com" },
+    });
+    fireEvent.submit(
+      screen.getByRole("button", { name: "Continue with email" }).closest("form")!,
+    );
+
+    await screen.findByRole("button", { name: "Create account" });
+    fireEvent.click(screen.getByRole("button", { name: "Log in" }));
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Continue with email" })).toBeInTheDocument());
+    expect(screen.queryByLabelText("Password")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Email")).toHaveValue("");
+    expect(countEmailStatusRequests(fetchMock)).toBe(1);
+  });
+
+  it("returns to a blank email-first form after toggling from login", async () => {
+    const fetchMock = setupAccountStatusFetch("verified");
+    vi.stubGlobal("fetch", fetchMock);
+    const Wrapper = () => {
+      const [mode, setMode] = React.useState<"login" | "signup">("login");
+      return <AuthForm mode={mode} onModeChange={setMode} />;
+    };
+    renderWithToasts(<Wrapper />);
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "person@example.com" },
+    });
+    fireEvent.submit(
+      screen.getByRole("button", { name: "Continue with email" }).closest("form")!,
+    );
+
+    await screen.findByRole("button", { name: "Log in" });
+    expect(screen.getByLabelText("Password")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Create one" }));
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Continue with email" })).toBeInTheDocument());
+    expect(screen.queryByLabelText("Password")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Email")).toHaveValue("");
+    expect(countEmailStatusRequests(fetchMock)).toBe(1);
+  });
+
   it("dispatches auth success only once when verification completes twice before cleanup", async () => {
     vi.stubGlobal("fetch", setupAccountStatusFetch("verified"));
     signInWithPasswordMock.mockResolvedValueOnce({
@@ -907,6 +981,11 @@ describe("AuthForm signup guard", () => {
     expect(
       inlineError.parentElement?.nextElementSibling,
     ).toContainElement(screen.getByRole("button", { name: "Log in" }));
+
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "hunter2-password-2" },
+    });
+    expect(screen.queryByText("Invalid login details")).not.toBeInTheDocument();
   });
 
 });

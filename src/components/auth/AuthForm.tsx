@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 import { dispatchAuthSuccess, sanitizeNextPath } from "@/lib/authModal";
 import { buildAuthCallbackUrl } from "@/lib/authRedirect";
@@ -142,6 +141,15 @@ export default function AuthForm({
     setAuthStep("password");
     setView("auth");
     setError("");
+  };
+
+  const resetEmailAuth = (nextMode: AuthFormMode) => {
+    setEmail("");
+    setPassword("");
+    setAuthStep("email");
+    setView("auth");
+    setError("");
+    onModeChange(nextMode);
   };
 
   const showAuthFailure = (baseToast: ToastInput, authError: unknown) => {
@@ -487,9 +495,11 @@ export default function AuthForm({
           }}
         />
 
-        <div className="text-center">
-          <AuthErrorBanner error={error} />
-        </div>
+        {error ? (
+          <div className="text-center">
+            <AuthErrorBanner error={error} />
+          </div>
+        ) : null}
 
         <AuthSubmitButton
           submitLabel={submitLabel}
@@ -515,14 +525,7 @@ export default function AuthForm({
         <AuthModeTabs
           mode={mode}
           onModeToggle={() => {
-            flushSync(() => {
-              setEmail("");
-              setPassword("");
-              setAuthStep("email");
-              setView("auth");
-              setError("");
-            });
-            onModeChange(mode === "signup" ? "login" : "signup");
+            resetEmailAuth(mode === "signup" ? "login" : "signup");
           }}
         />
       </div>
