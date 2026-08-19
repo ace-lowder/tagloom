@@ -1,4 +1,4 @@
--- Tagloom fresh-project Supabase setup
+-- UpdateTags fresh-project Supabase setup
 -- Run this in your Supabase SQL editor.
 
 create table if not exists public.profiles (

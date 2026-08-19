@@ -1,5 +1,5 @@
 {
-  "name": "tagloom",
+  "name": "updatetags",
   "version": "1.0.0",
   "description": "Generate 13 Etsy-ready tags from a listing in under 60 seconds. `Next.js | TypeScript | Vercel`",
   "scripts": {

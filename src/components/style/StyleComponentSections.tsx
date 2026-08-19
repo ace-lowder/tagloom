@@ -225,7 +225,7 @@ export function GenerationHistorySection() {
                 <Sparkles className="h-3.5 w-3.5" />
               </span>
               <span className="text-sm font-semibold text-stone-700">
-                Tagloom Generator
+                UpdateTags Generator
               </span>
             </div>
             <button

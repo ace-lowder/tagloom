@@ -47,7 +47,7 @@ vi.mock("@/lib/errorLogging", () => ({
 }));
 
 function makeRequest() {
-  return new Request("https://tagloom.test/api/generate", {
+  return new Request("https://updatetags.test/api/generate", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

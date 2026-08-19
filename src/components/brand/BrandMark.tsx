@@ -15,18 +15,18 @@ export default function BrandMark({ href = "/", size = "nav", className = "" }: 
     <Link href={href} className={`brand-link inline-flex items-center gap-2 ${className}`.trim()}>
       <Image
         src="/logo.png"
-        alt="tagloom"
+        alt="updatetags"
         width={64}
         height={64}
         className={`brand-logo ${logoClasses} rounded-lg object-contain`}
         priority={size === "nav"}
       />
       <span
-        className={`brand-text ${textClasses} font-semibold lowercase leading-none`}
+        className={`brand-text ${textClasses} font-semibold leading-none`}
         style={{ fontFamily: "var(--font-outfit)" }}
       >
-        <span className="text-stone-700">tag</span>
-        <span className="text-orange-600">loom</span>
+        <span className="text-stone-700">Update</span>
+        <span className="text-orange-600">Tags</span>
       </span>
     </Link>
   );

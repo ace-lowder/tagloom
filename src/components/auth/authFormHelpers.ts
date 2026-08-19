@@ -31,7 +31,7 @@ export async function getEmailAccountStatus(email: string) {
   throw new Error("Could not check account.");
 }
 
-export const SIGNUP_COOLDOWN_KEY = "tagloom:signup-cooldown:v1";
+export const SIGNUP_COOLDOWN_KEY = "updatetags:signup-cooldown:v1";
 export const SIGNUP_COOLDOWN_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function hasRecentSignupCooldown() {

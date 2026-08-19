@@ -29,7 +29,7 @@ function makeGetRequest(url: string) {
 }
 
 function makePatchRequest(body: unknown) {
-  return new Request("https://tagloom.test/api/generations/history", {
+  return new Request("https://updatetags.test/api/generations/history", {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -123,7 +123,7 @@ describe("generation history route", () => {
     adminFromMock.mockReturnValue(feedbackQuery);
 
     const response = await GET(
-      makeGetRequest("https://tagloom.test/api/generations/history") as never,
+      makeGetRequest("https://updatetags.test/api/generations/history") as never,
     );
 
     expect(response.status).toBe(200);
@@ -169,7 +169,7 @@ describe("generation history route", () => {
 
     const response = await GET(
       makeGetRequest(
-        "https://tagloom.test/api/generations/history?includeArchived=true&limit=100",
+        "https://updatetags.test/api/generations/history?includeArchived=true&limit=100",
       ) as never,
     );
 
@@ -197,7 +197,7 @@ describe("generation history route", () => {
     serverFromMock.mockReturnValueOnce(query).mockReturnValueOnce(countQuery);
 
     const response = await GET(
-      makeGetRequest("https://tagloom.test/api/generations/history") as never,
+      makeGetRequest("https://updatetags.test/api/generations/history") as never,
     );
 
     expect(response.status).toBe(500);
@@ -223,7 +223,7 @@ describe("generation history route", () => {
     serverFromMock.mockReturnValueOnce(query).mockReturnValueOnce(countQuery);
 
     const response = await GET(
-      makeGetRequest("https://tagloom.test/api/generations/history") as never,
+      makeGetRequest("https://updatetags.test/api/generations/history") as never,
     );
 
     expect(response.status).toBe(500);
@@ -346,7 +346,7 @@ describe("generation history route", () => {
     });
 
     const response = await GET(
-      makeGetRequest("https://tagloom.test/api/generations/history") as never,
+      makeGetRequest("https://updatetags.test/api/generations/history") as never,
     );
 
     expect(response.status).toBe(403);
@@ -362,7 +362,7 @@ describe("generation history route", () => {
     });
 
     const response = await GET(
-      makeGetRequest("https://tagloom.test/api/generations/history") as never,
+      makeGetRequest("https://updatetags.test/api/generations/history") as never,
     );
 
     expect(response.status).toBe(401);

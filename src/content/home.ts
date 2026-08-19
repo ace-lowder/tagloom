@@ -15,24 +15,24 @@ export type AboutSectionCopy = {
 
 export const aboutSectionCopy: AboutSectionCopy = {
   heading: "Turn your Etsy listing into searchable tags",
-  body: "Showing up in Etsy search keeps getting harder. We built Tagloom to help sellers connect their products with the shoppers already looking for them. Etsy tags are the keywords shoppers use when searching for products like yours, and Tagloom helps turn your existing listing into tags you can copy into Etsy and keep testing over time.",
+  body: "Showing up in Etsy search keeps getting harder. We built UpdateTags to help sellers connect their products with the shoppers already looking for them. Etsy tags are the keywords shoppers use when searching for products like yours, and UpdateTags helps turn your existing listing into tags you can copy into Etsy and keep testing over time.",
   cta: "Learn more",
 };
 
 export const faqs: FAQEntry[] = [
   {
-    question: "What is Tagloom?",
+    question: "What is UpdateTags?",
     answer: [
       {
         type: "text",
-        text: "Tagloom is an Etsy tag generator for sellers looking to improve their existing listings. One of the hardest parts of Etsy is getting your products in front of the right shoppers. Tags are one way Etsy understands your product and matches it with shopper searches.",
+        text: "UpdateTags is an Etsy tag generator for sellers looking to improve their existing listings. One of the hardest parts of Etsy is getting your products in front of the right shoppers. Tags are one way Etsy understands your product and matches it with shopper searches.",
       },
       { type: "break" },
       {
         type: "text",
-        text: "When your tags are too broad, missing details, or aimed at the wrong audience, your listing can get buried under countless others. Tagloom uses your title and description to suggest tags that are optimized for your product and niche. Just copy and paste your product details into the ",
+        text: "When your tags are too broad, missing details, or aimed at the wrong audience, your listing can get buried under countless others. UpdateTags uses your title and description to suggest tags that are optimized for your product and niche. Just copy and paste your product details into the ",
       },
-      { type: "link", label: "Tagloom generator", href: "#generator" },
+      { type: "link", label: "UpdateTags generator", href: "#generator" },
       {
         type: "text",
         text: " and upgrade your Etsy listings today.",
@@ -56,7 +56,7 @@ export const faqs: FAQEntry[] = [
         type: "text",
         text: ", or paste your listing into the ",
       },
-      { type: "link", label: "Tagloom generator", href: "#generator" },
+      { type: "link", label: "UpdateTags generator", href: "#generator" },
       {
         type: "text",
         text: " to get tag ideas for your own product.",
@@ -75,7 +75,7 @@ export const faqs: FAQEntry[] = [
         type: "text",
         text: "That means more chances for views, favorites, and orders, especially if your product is already strong. ",
       },
-      { type: "link", label: "Tagloom", href: "#generator" },
+      { type: "link", label: "UpdateTags", href: "#generator" },
       {
         type: "text",
         text: " generates tag ideas that are optimized for your product and niche. Once your tags are updated, you can use the guides on our ",
@@ -88,13 +88,13 @@ export const faqs: FAQEntry[] = [
     ],
   },
   {
-    question: "How do I use Tagloom with my Etsy listing?",
+    question: "How do I use UpdateTags with my Etsy listing?",
     answer: [
       {
         type: "text",
-        text: "Using Tagloom is as easy as copying and pasting from Etsy. Take your product title and description from Etsy, paste them into the ",
+        text: "Using UpdateTags is as easy as copying and pasting from Etsy. Take your product title and description from Etsy, paste them into the ",
       },
-      { type: "link", label: "Tagloom generator", href: "#generator" },
+      { type: "link", label: "UpdateTags generator", href: "#generator" },
       {
         type: "text",
         text: ", and we'll generate optimized tags for your product. Once your tags are generated, edit your listing in Etsy and copy over the tags you want to use. It only takes a few moments to update any listing in your shop.",
@@ -108,7 +108,7 @@ export const faqs: FAQEntry[] = [
         type: "text",
         text: "Once you copy your new tags into an Etsy listing, you should keep an eye on your listing. Watch for signs like more views, favorites, or orders, and compare that with how the listing was doing before. If the listing still is not getting the views you expect, come back to ",
       },
-      { type: "link", label: "Tagloom", href: "#generator" },
+      { type: "link", label: "UpdateTags", href: "#generator" },
       {
         type: "text",
         text: " and generate another set of tag ideas. You can also use the guides on our ",
@@ -132,7 +132,7 @@ export const faqs: FAQEntry[] = [
         type: "text",
         text: " to improve the rest of your listing, then use the ",
       },
-      { type: "link", label: "Tagloom generator", href: "#generator" },
+      { type: "link", label: "UpdateTags generator", href: "#generator" },
       {
         type: "text",
         text: " to refresh your tags. Continue this process of updating and monitoring your product until you start earning the sales you expect.",
@@ -144,9 +144,9 @@ export const faqs: FAQEntry[] = [
     answer: [
       {
         type: "text",
-        text: "Yes, and it is a great way to learn what works. Tagloom saves your past tag ideas so you can come back and compare what you’ve tried before. Just click the history toggle button on the top right of the ",
+        text: "Yes, and it is a great way to learn what works. UpdateTags saves your past tag ideas so you can come back and compare what you’ve tried before. Just click the history toggle button on the top right of the ",
       },
-      { type: "link", label: "Tagloom generator", href: "#generator" },
+      { type: "link", label: "UpdateTags generator", href: "#generator" },
       {
         type: "text",
         text: " to see your past generations. Over time, we recommend comparing your listing’s views, favorites, and sales across different tag sets.",
@@ -154,7 +154,7 @@ export const faqs: FAQEntry[] = [
     ],
   },
   {
-    question: "How much does Tagloom cost?",
+    question: "How much does UpdateTags cost?",
     answer: [
       {
         type: "text",

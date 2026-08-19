@@ -22,5 +22,5 @@ test("signs in seeded account and saves storage state", async ({ page }) => {
   await expect(page.getByRole("button", { name: /Manage Plan|View Plans/ })).toBeVisible();
 
   await mkdir(".auth", { recursive: true });
-  await page.context().storageState({ path: ".auth/tagloom.json" });
+  await page.context().storageState({ path: ".auth/updatetags.json" });
 });

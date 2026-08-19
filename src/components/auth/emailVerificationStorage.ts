@@ -2,8 +2,8 @@
 
 import { sanitizeNextPath } from "@/lib/authModal";
 
-const EMAIL_VERIFICATION_STORAGE_KEY = "tagloom:email-verification:v2";
-const LEGACY_EMAIL_VERIFICATION_STORAGE_KEY = "tagloom:email-verification:v1";
+const EMAIL_VERIFICATION_STORAGE_KEY = "updatetags:email-verification:v2";
+const LEGACY_EMAIL_VERIFICATION_STORAGE_KEY = "updatetags:email-verification:v1";
 const EMAIL_VERIFICATION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type PendingEmailVerification = {

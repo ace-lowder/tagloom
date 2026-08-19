@@ -85,7 +85,7 @@ export const DEFAULT_DEMO_TIMINGS: DemoTimings = {
   cyclePauseMs: 500,
 };
 
-export const CONTEXT_STORAGE_PREFIX = "tagloom:genctx:";
+export const CONTEXT_STORAGE_PREFIX = "updatetags:genctx:";
 export const TITLE_MAX = 140;
 export const DESCRIPTION_MAX = 6000;
 export const DEFAULT_TITLE_PLACEHOLDER =
@@ -93,6 +93,6 @@ export const DEFAULT_TITLE_PLACEHOLDER =
 export const USAGE_HINT_CLOSE_DELAY_MS = 500;
 export const CTA_SCROLL_CORRECTION_DELAY_MS = 380;
 export const HISTORY_PAGE_SIZE = 100;
-export const HISTORY_CACHE_KEY = "tagloom:history:v2";
+export const HISTORY_CACHE_KEY = "updatetags:history:v2";
 export const GENERATED_TAG_CHIP_CLASSNAME =
   "cursor-default rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm text-stone-700 shadow-sm";

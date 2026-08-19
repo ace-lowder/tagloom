@@ -35,7 +35,7 @@ describe("production environment audit", () => {
     });
 
     expect(formatProductionEnvAudit(audit)).toContain(
-      "Tagloom production environment audit",
+      "UpdateTags production environment audit",
     );
     expect(formatProductionEnvAudit(audit)).toContain(
       "Missing required production variables:",

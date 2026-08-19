@@ -51,7 +51,7 @@ vi.mock("@/lib/stripeBillingSync", () => ({
 }));
 
 function makeRequest() {
-  return new Request("https://tagloom.test/api/stripe/webhook", {
+  return new Request("https://updatetags.test/api/stripe/webhook", {
     method: "POST",
     body: JSON.stringify({ id: "evt_test" }),
   });

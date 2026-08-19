@@ -35,7 +35,7 @@ const EXPECTED_PRICES: ExpectedPrice[] = [
   {
     label: "Starter",
     envKey: "STRIPE_SINGLE_USE_PRICE_ID",
-    productName: "Tagloom Single",
+    productName: "UpdateTags Single",
     amount: 700,
     currency: "usd",
     type: "one_time",
@@ -44,7 +44,7 @@ const EXPECTED_PRICES: ExpectedPrice[] = [
   {
     label: "Monthly",
     envKey: "STRIPE_MONTHLY_PRICE_ID",
-    productName: "Tagloom Monthly",
+    productName: "UpdateTags Monthly",
     amount: 1900,
     currency: "usd",
     type: "recurring",
@@ -53,7 +53,7 @@ const EXPECTED_PRICES: ExpectedPrice[] = [
   {
     label: "Yearly",
     envKey: "STRIPE_YEARLY_PRICE_ID",
-    productName: "Tagloom Yearly",
+    productName: "UpdateTags Yearly",
     amount: 14900,
     currency: "usd",
     type: "recurring",

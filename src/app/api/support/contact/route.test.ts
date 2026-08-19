@@ -42,7 +42,7 @@ const fromMock = vi.fn();
 const getUserMock = vi.fn();
 
 function makeRequest(payload: unknown, headers: Record<string, string> = {}) {
-  return new Request("https://tagloom.test/api/support/contact", {
+  return new Request("https://updatetags.test/api/support/contact", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -87,7 +87,7 @@ describe("support contact route", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(fixedTimestamp));
     process.env.RESEND_API_KEY = "resend-test-key";
-    process.env.SUPPORT_FROM_EMAIL = "Tagloom Support <support@example.com>";
+    process.env.SUPPORT_FROM_EMAIL = "UpdateTags Support <support@example.com>";
     process.env.SUPPORT_TO_EMAIL = "help@example.com";
 
     vi.mocked(applyApiProtection).mockResolvedValue({});
@@ -181,7 +181,7 @@ describe("support contact route", () => {
     expect(resendBody.reply_to).toBe(validPayload.email);
     expect(resendBody.text).toBe(
       [
-        "New Tagloom support message",
+        "New UpdateTags support message",
         "",
         `Received: ${fixedTimestamp}`,
         "From: Etsy Seller <seller@example.com>",
@@ -197,7 +197,7 @@ describe("support contact route", () => {
       ].join("\n"),
     );
     expect(resendBody.html).toContain(
-      '<img src="https://tagloom.app/tagloom-email-wordmark.png" width="140" alt="Tagloom" style="display:block;width:140px;max-width:100%;height:auto;border:0;outline:none;text-decoration:none;">',
+      '<img src="https://updatetags.com/updatetags-email-wordmark.png" width="140" alt="UpdateTags" style="display:block;width:140px;max-width:100%;height:auto;border:0;outline:none;text-decoration:none;">',
     );
     expect(resendBody.html).toContain("Received: 2026-06-30T12:34:56.000Z");
     expect(resendBody.html).toContain("IP: 203.0.113.10");

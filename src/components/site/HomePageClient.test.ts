@@ -155,26 +155,26 @@ describe("HomePageClient funnel", () => {
     expect(screen.queryByText("Plans", { selector: "p" })).not.toBeInTheDocument();
     expect(
       screen.getByText(
-        /We built Tagloom to help sellers connect their products with the shoppers already looking for them\./,
+        /We built UpdateTags to help sellers connect their products with the shoppers already looking for them\./,
       ),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        /Tagloom helps turn your existing listing into tags you can copy into Etsy and keep testing over time\./,
+        /UpdateTags helps turn your existing listing into tags you can copy into Etsy and keep testing over time\./,
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText("ABOUT")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Frequently asked questions" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "What is Tagloom?" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "What is UpdateTags?" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "How do I get help if something goes wrong?" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "What is Tagloom?" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "What is UpdateTags?" })).toHaveAttribute(
       "aria-expanded",
       "false",
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "What is Tagloom?" }));
+    fireEvent.click(screen.getByRole("button", { name: "What is UpdateTags?" }));
 
-    expect(screen.getByRole("button", { name: "What is Tagloom?" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "What is UpdateTags?" })).toHaveAttribute(
       "aria-expanded",
       "true",
     );
@@ -185,7 +185,7 @@ describe("HomePageClient funnel", () => {
       screen.getByText(/suggest tags that are optimized for your product and niche/),
     ).toBeInTheDocument();
     expect(screen.getByText(/upgrade your Etsy listings today/)).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Tagloom generator" })[0]).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "UpdateTags generator" })[0]).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "What are Etsy tags?" }));
 
@@ -209,12 +209,12 @@ describe("HomePageClient funnel", () => {
       screen.getByText(/match your listing with shoppers looking for products like yours/),
     ).toBeInTheDocument();
     expect(screen.getByText(/more chances for views, favorites, and orders/)).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Tagloom" })[0]).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "UpdateTags" })[0]).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "blog" })[0]).toBeInTheDocument();
     expect(screen.getByText(/help convert those new customers into sales/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "How do I use Tagloom with my Etsy listing?" }));
-    expect(screen.getByText(/Using Tagloom is as easy as copying and pasting from Etsy/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "How do I use UpdateTags with my Etsy listing?" }));
+    expect(screen.getByText(/Using UpdateTags is as easy as copying and pasting from Etsy/)).toBeInTheDocument();
     expect(screen.getByText(/copy over the tags you want to use/)).toBeInTheDocument();
 
     fireEvent.click(
@@ -233,7 +233,7 @@ describe("HomePageClient funnel", () => {
     expect(screen.getByText(/great way to learn what works/)).toBeInTheDocument();
     expect(screen.getByText(/history toggle button on the top right/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "How much does Tagloom cost?" }));
+    fireEvent.click(screen.getByRole("button", { name: "How much does UpdateTags cost?" }));
     expect(screen.getByText(/Your first tag generation is free/)).toBeInTheDocument();
     expect(screen.getByText(/All you need to do is create a new account/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "plans" })).toBeInTheDocument();
@@ -247,8 +247,8 @@ describe("HomePageClient funnel", () => {
   it("reuses the generator CTA for faq generator links", () => {
     renderHome();
 
-    fireEvent.click(screen.getByRole("button", { name: "What is Tagloom?" }));
-    fireEvent.click(screen.getAllByRole("button", { name: "Tagloom generator" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "What is UpdateTags?" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "UpdateTags generator" })[0]);
 
     expect(mockRefs.dispatchGeneratorCta).toHaveBeenCalledWith(
       { requestReset: true },
@@ -266,7 +266,7 @@ describe("HomePageClient funnel", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Paste your listing into Tagloom, generate search tags, and copy your favorites into Etsy.",
+        "Paste your listing into UpdateTags, generate search tags, and copy your favorites into Etsy.",
       ),
     ).toBeInTheDocument();
     expect(
@@ -283,14 +283,14 @@ describe("HomePageClient funnel", () => {
 
   it("uses the rewritten FAQ order", () => {
     expect(faqs.map((item) => item.question)).toEqual([
-      "What is Tagloom?",
+      "What is UpdateTags?",
       "What are Etsy tags?",
       "Can better Etsy tags help me get more sales?",
-      "How do I use Tagloom with my Etsy listing?",
+      "How do I use UpdateTags with my Etsy listing?",
       "What should I do after I copy my tags into Etsy?",
       "How often should I update my tags?",
       "Can I save and compare past tags?",
-      "How much does Tagloom cost?",
+      "How much does UpdateTags cost?",
       "How do I get help if something goes wrong?",
     ]);
   });

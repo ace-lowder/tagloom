@@ -24,7 +24,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     name: "Starter",
     price: "7",
     period: "one-time",
-    description: "For trying Tagloom on a few listings.",
+    description: "For trying UpdateTags on a few listings.",
     features: [
       "5 tag generations",
       "Use across multiple listings",

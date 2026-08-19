@@ -13,7 +13,7 @@ import {
 } from "./emailVerificationStorage";
 import { writeSignupCooldown } from "./authFormHelpers";
 
-const EMAIL_VERIFIED_BROADCAST_MESSAGE = "tagloom-auth";
+const EMAIL_VERIFIED_BROADCAST_MESSAGE = "updatetags-auth";
 const EMAIL_VERIFIED_MESSAGE_TYPE = "email_verified";
 const RESEND_COOLDOWN_MS = 30_000;
 const VERIFICATION_POLL_MS = 10_000;

@@ -36,7 +36,7 @@ vi.mock("@/lib/errorLogging", () => ({
 
 describe("billing portal route", () => {
   beforeEach(() => {
-    vi.stubEnv("STRIPE_BILLING_RETURN_URL", "https://tagloom.test/billing-return");
+    vi.stubEnv("STRIPE_BILLING_RETURN_URL", "https://updatetags.test/billing-return");
 
     getUserMock.mockReset();
     portalSessionCreateMock.mockReset();
@@ -77,7 +77,7 @@ describe("billing portal route", () => {
     });
 
     const response = await POST(
-      new Request("https://tagloom.test/api/billing/portal", {
+      new Request("https://updatetags.test/api/billing/portal", {
         method: "POST",
       }),
     );
@@ -95,7 +95,7 @@ describe("billing portal route", () => {
     });
 
     const response = await POST(
-      new Request("https://tagloom.test/api/billing/portal", { method: "POST" }),
+      new Request("https://updatetags.test/api/billing/portal", { method: "POST" }),
     );
 
     expect(response.status).toBe(401);
@@ -108,7 +108,7 @@ describe("billing portal route", () => {
     });
 
     const response = await POST(
-      new Request("https://tagloom.test/api/billing/portal", {
+      new Request("https://updatetags.test/api/billing/portal", {
         method: "POST",
       }),
     );
@@ -120,7 +120,7 @@ describe("billing portal route", () => {
     expect(portalSessionCreateMock).toHaveBeenCalledTimes(1);
     expect(portalSessionCreateMock).toHaveBeenCalledWith({
       customer: "cus_123",
-      return_url: "https://tagloom.test/billing-return",
+      return_url: "https://updatetags.test/billing-return",
     });
   });
 });

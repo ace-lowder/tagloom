@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import EmailVerificationResult from "@/components/auth/EmailVerificationResult";
 import { dispatchAuthSuccess, sanitizeNextPath } from "@/lib/authModal";
 
-const VERIFIED_BROADCAST_CHANNEL = "tagloom-auth";
+const VERIFIED_BROADCAST_CHANNEL = "updatetags-auth";
 const VERIFIED_BROADCAST_MESSAGE = "email_verified";
 const AUTO_REDIRECT_SECONDS = 5;
 

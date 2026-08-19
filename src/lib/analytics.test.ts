@@ -22,7 +22,7 @@ describe("buildGoogleAnalyticsPagePath", () => {
 
 describe("sendGoogleAnalyticsPageView", () => {
   beforeEach(() => {
-    document.title = "Tagloom Analytics Test";
+    document.title = "UpdateTags Analytics Test";
     window.history.replaceState({}, "", "http://localhost:3000/");
     window.dataLayer = undefined;
     window.gtag = undefined;
@@ -37,7 +37,7 @@ describe("sendGoogleAnalyticsPageView", () => {
     expect(gtagMock).toHaveBeenCalledWith("event", "page_view", {
       page_path: "/blog",
       page_location: "http://localhost:3000/blog",
-      page_title: "Tagloom Analytics Test",
+      page_title: "UpdateTags Analytics Test",
     });
   });
 
@@ -55,7 +55,7 @@ describe("sendGoogleAnalyticsPageView", () => {
         page_path: "/blog?utm_source=youtube&utm_medium=paid&utm_campaign=launch_test_1",
         page_location:
           "http://localhost:3000/blog?utm_source=youtube&utm_medium=paid&utm_campaign=launch_test_1",
-        page_title: "Tagloom Analytics Test",
+        page_title: "UpdateTags Analytics Test",
       },
     ]);
   });

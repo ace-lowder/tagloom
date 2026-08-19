@@ -60,7 +60,7 @@ export default function LegalPage({
                 href="/support/contact"
                 className="font-medium text-orange-600 hover:underline"
               >
-                Tagloom support
+                UpdateTags support
               </Link>
               .
             </p>

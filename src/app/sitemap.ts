@@ -3,7 +3,7 @@ import { listBlogPosts } from "@/content/blog";
 import { listSupportArticles, listSupportTopics } from "@/content/support";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://tagloom.app";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://updatetags.com";
   const blogPosts = listBlogPosts();
 
   const entries: MetadataRoute.Sitemap = [

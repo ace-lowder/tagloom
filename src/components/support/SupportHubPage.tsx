@@ -50,8 +50,8 @@ export default function SupportHubPage({ topics, articles }: SupportHubPageProps
       setSearch("");
     };
 
-    window.addEventListener("tagloom:support-reset", resetSupport);
-    return () => window.removeEventListener("tagloom:support-reset", resetSupport);
+    window.addEventListener("updatetags:support-reset", resetSupport);
+    return () => window.removeEventListener("updatetags:support-reset", resetSupport);
   }, []);
 
   const filteredArticles = useMemo(
@@ -71,7 +71,7 @@ export default function SupportHubPage({ topics, articles }: SupportHubPageProps
               variants={fadeInUp}
               className="mb-4 text-4xl font-bold text-stone-900 sm:text-5xl"
             >
-              Tagloom Support Center
+              UpdateTags Support Center
             </motion.h1>
             <motion.p variants={fadeInUp} className="mb-6 text-stone-600">
               Learn the same core workflow here: paste an existing listing, generate better-fit tags, copy into Etsy, and keep improving over time.

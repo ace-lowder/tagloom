@@ -29,7 +29,7 @@ describe("Generator CTA event", () => {
     renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
     act(() => {
-      window.dispatchEvent(new CustomEvent("tagloom:generator-cta"));
+      window.dispatchEvent(new CustomEvent("updatetags:generator-cta"));
     });
 
     expect(screen.getByText("Listing Description")).toBeInTheDocument();

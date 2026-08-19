@@ -10,3 +10,4 @@ supabase/.temp/
 !.env.example
 *.local
 .vercel/
+tsconfig.tsbuildinfo

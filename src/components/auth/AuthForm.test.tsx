@@ -358,7 +358,7 @@ describe("AuthForm signup guard", () => {
 
   it("blocks final signup submit from localStorage cooldown", async () => {
     window.localStorage.setItem(
-      "tagloom:signup-cooldown:v1",
+      "updatetags:signup-cooldown:v1",
       String(Date.now()),
     );
 
@@ -463,7 +463,7 @@ describe("AuthForm signup guard", () => {
 
   it("shows the busy confirmation copy for a rate-limited signup and keeps guest generation intact", async () => {
     window.localStorage.setItem(
-      "tagloom:guest-generation:v1",
+      "updatetags:guest-generation:v1",
       JSON.stringify({
         kind: "guest_generation",
         id: "guest-123",
@@ -493,8 +493,8 @@ describe("AuthForm signup guard", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText("Verify your email address")).not.toBeInTheDocument();
-    expect(window.localStorage.getItem("tagloom:signup-cooldown:v1")).toBeNull();
-    expect(window.localStorage.getItem("tagloom:guest-generation:v1")).toContain("guest-123");
+    expect(window.localStorage.getItem("updatetags:signup-cooldown:v1")).toBeNull();
+    expect(window.localStorage.getItem("updatetags:guest-generation:v1")).toContain("guest-123");
   });
 
   it("does not call signup eligibility during login", async () => {
@@ -744,7 +744,7 @@ describe("AuthForm signup guard", () => {
     fireEvent.submit(screen.getByRole("button", { name: "Create account" }).closest("form")!);
 
     await waitFor(() =>
-      expect(window.localStorage.getItem("tagloom:signup-cooldown:v1")).toMatch(/^\d+$/),
+      expect(window.localStorage.getItem("updatetags:signup-cooldown:v1")).toMatch(/^\d+$/),
     );
   });
 
@@ -765,7 +765,7 @@ describe("AuthForm signup guard", () => {
     expect(await screen.findByText("Signup failed")).toBeInTheDocument();
     expect(await screen.findByText("Signup failed.")).toBeInTheDocument();
     expect(screen.queryByText("Login failed")).not.toBeInTheDocument();
-    expect(window.localStorage.getItem("tagloom:signup-cooldown:v1")).toBeNull();
+    expect(window.localStorage.getItem("updatetags:signup-cooldown:v1")).toBeNull();
   });
 
   it("keeps a no-session signup in the verification flow and uses the email verification callback", async () => {
@@ -792,7 +792,7 @@ describe("AuthForm signup guard", () => {
       await screen.findByText(/Confirm your account to continue\./),
     ).toBeInTheDocument();
     const storedRecord = JSON.parse(
-      window.localStorage.getItem("tagloom:email-verification:v2")!,
+      window.localStorage.getItem("updatetags:email-verification:v2")!,
     ) as {
       email: string;
       next: string;
