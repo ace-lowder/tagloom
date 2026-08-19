@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { describe, expect, it } from "vitest";
-import { middleware } from "./middleware";
+import { middleware } from "./src/middleware";
 
 describe("legacy domain redirect", () => {
   it("preserves the path and query string for tagloom.app", () => {
