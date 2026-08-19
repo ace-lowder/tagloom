@@ -1,14 +1,14 @@
-# Tagloom
+# UpdateTags
 
-Tagloom is a Next.js app that generates 13 Etsy-ready tags with saved history, paid plans, and quality safeguards.
+UpdateTags is a Next.js app that generates 13 Etsy-ready tags with saved history, paid plans, and quality safeguards.
 
 ## Run locally
 
 You need Git, Node.js 22, npm, and test accounts for Supabase, OpenAI, Stripe, Upstash, Cloudflare Turnstile, and Resend.
 
 ```bash
-git clone https://github.com/ace-lowder/tagloom.git
-cd tagloom
+git clone https://github.com/ace-lowder/updatetags.git
+cd updatetags
 nvm install
 nvm use
 npm ci
@@ -39,9 +39,9 @@ For optional Google sign-in, use the provider callback URL shown by Supabase: `h
 
 Create these active test prices and copy their IDs into `.env.local`:
 
-- `Tagloom Single`: $7 one-time
-- `Tagloom Monthly`: $19 monthly
-- `Tagloom Yearly`: $149 yearly
+- `UpdateTags Single`: $7 one-time
+- `UpdateTags Monthly`: $19 monthly
+- `UpdateTags Yearly`: $149 yearly
 
 Enable the customer portal, then run the Stripe webhook listener in a second terminal:
 

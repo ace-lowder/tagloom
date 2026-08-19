@@ -6,14 +6,14 @@ const lastUpdated = "April 28, 2026";
 export const metadata: Metadata = {
   title: "Privacy Policy",
   description:
-    "Learn how Tagloom collects, uses, and protects information for its Etsy tag generation service.",
+    "Learn how UpdateTags collects, uses, and protects information for its Etsy tag generation service.",
 };
 
 export default function PrivacyPage() {
   return (
     <LegalPage
       title="Privacy Policy"
-      description="This policy explains what Tagloom collects, how we use it, and the choices you have when using our AI tag generation service."
+      description="This policy explains what UpdateTags collects, how we use it, and the choices you have when using our AI tag generation service."
       lastUpdated={lastUpdated}
       sections={[
         {
@@ -27,40 +27,40 @@ export default function PrivacyPage() {
           title: "How we use information",
           body: [
             "We use information to create and secure accounts, provide tag generation, manage usage and billing, respond to support requests, detect abuse, debug issues, improve reliability, and communicate with you about the service.",
-            "We do not sell your personal information. We may use aggregated or de-identified information to understand product usage and improve Tagloom.",
+            "We do not sell your personal information. We may use aggregated or de-identified information to understand product usage and improve UpdateTags.",
           ],
         },
         {
           title: "Service providers",
           body: [
-            "Tagloom relies on service providers to run the product. Supabase provides authentication and database services. Stripe handles payments, subscriptions, invoices, and billing portal access. Resend or an email provider delivers support contact messages. OpenAI processes listing information to generate tag suggestions, and Tagloom may replace or add AI providers as the product changes.",
-            "These providers process information only as needed to provide their services to Tagloom, subject to their own terms and privacy practices.",
+            "UpdateTags relies on service providers to run the product. Supabase provides authentication and database services. Stripe handles payments, subscriptions, invoices, and billing portal access. Resend or an email provider delivers support contact messages. OpenAI processes listing information to generate tag suggestions, and UpdateTags may replace or add AI providers as the product changes.",
+            "These providers process information only as needed to provide their services to UpdateTags, subject to their own terms and privacy practices.",
           ],
         },
         {
           title: "Payments",
           body: [
-            "Payments are processed by Stripe. Tagloom does not store full card numbers. Stripe may collect payment details, billing information, fraud-prevention signals, and transaction records as needed to process purchases and subscriptions.",
+            "Payments are processed by Stripe. UpdateTags does not store full card numbers. Stripe may collect payment details, billing information, fraud-prevention signals, and transaction records as needed to process purchases and subscriptions.",
           ],
         },
         {
           title: "AI generation inputs",
           body: [
-            "When you ask Tagloom to generate tags, the listing title, description, or other text you enter may be sent to OpenAI so the service can produce tag suggestions. Tagloom may replace or add AI providers as the product changes.",
+            "When you ask UpdateTags to generate tags, the listing title, description, or other text you enter may be sent to OpenAI so the service can produce tag suggestions. UpdateTags may replace or add AI providers as the product changes.",
             "Do not submit sensitive personal information or confidential business information that is not needed for tag generation. AI output can be incomplete, inaccurate, duplicated, or unsuitable for your listing, so you should review all suggestions before using them.",
           ],
         },
         {
           title: "Cookies, sessions, and security",
           body: [
-            "Tagloom uses cookies, authentication sessions, and similar technologies for authentication, session management, saved state, security checks, rate limiting, and product functionality.",
+            "UpdateTags uses cookies, authentication sessions, and similar technologies for authentication, session management, saved state, security checks, rate limiting, and product functionality.",
             "We use tools such as Turnstile, rate limits, request logs, and security checks to protect the service from spam, abuse, automated attacks, and operational issues.",
           ],
         },
         {
           title: "Disclosures",
           body: [
-            "We may disclose information if required by law, to protect Tagloom or users, to enforce our terms, to investigate abuse or security issues, or as part of a merger, acquisition, financing, reorganization, or sale of assets.",
+            "We may disclose information if required by law, to protect UpdateTags or users, to enforce our terms, to investigate abuse or security issues, or as part of a merger, acquisition, financing, reorganization, or sale of assets.",
           ],
         },
         {

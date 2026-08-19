@@ -32,7 +32,7 @@ export function GeneratorHeader({
         )}
       </div>
       <span className="text-sm font-semibold text-stone-700">
-        {historyMode === "history" ? "Generation History" : "Tagloom Generator"}
+        {historyMode === "history" ? "Generation History" : "UpdateTags Generator"}
       </span>
       {usageLabel ? (
         <motion.div

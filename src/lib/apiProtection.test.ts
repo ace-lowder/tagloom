@@ -9,7 +9,7 @@ const DEFAULT_RULE: RateLimitRule = {
 };
 
 function makeRequest(headers: Record<string, string> = {}) {
-  return new Request("https://tagloom.test/api/test", {
+  return new Request("https://updatetags.test/api/test", {
     method: "POST",
     headers,
   });

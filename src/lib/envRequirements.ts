@@ -214,7 +214,7 @@ export function formatProductionEnvAudit(
   audit: ReturnType<typeof auditProductionEnvironment>,
 ) {
   const lines = [
-    "Tagloom production environment audit",
+    "UpdateTags production environment audit",
     `Required: ${audit.requiredCount - audit.missingRequired.length}/${audit.requiredCount} configured`,
     `Recommended: ${audit.recommendedCount - audit.missingRecommended.length}/${audit.recommendedCount} configured`,
   ];

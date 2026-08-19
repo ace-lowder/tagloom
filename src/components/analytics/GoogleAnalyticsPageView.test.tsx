@@ -14,7 +14,7 @@ describe("GoogleAnalyticsPageView", () => {
   beforeEach(() => {
     usePathnameMock.mockReset();
     useSearchParamsMock.mockReset();
-    document.title = "Tagloom Test Page";
+    document.title = "UpdateTags Test Page";
     window.history.replaceState({}, "", "http://localhost:3000/");
   });
 
@@ -30,7 +30,7 @@ describe("GoogleAnalyticsPageView", () => {
     expect(gtagMock).toHaveBeenCalledWith("event", "page_view", {
       page_path: "/blog",
       page_location: "http://localhost:3000/blog",
-      page_title: "Tagloom Test Page",
+      page_title: "UpdateTags Test Page",
     });
   });
 
@@ -51,7 +51,7 @@ describe("GoogleAnalyticsPageView", () => {
       page_path: "/blog?utm_source=youtube&utm_medium=paid&utm_campaign=local_test",
       page_location:
         "http://localhost:3000/blog?utm_source=youtube&utm_medium=paid&utm_campaign=local_test",
-      page_title: "Tagloom Test Page",
+      page_title: "UpdateTags Test Page",
     });
   });
 
@@ -72,7 +72,7 @@ describe("GoogleAnalyticsPageView", () => {
       {
         page_path: "/",
         page_location: "http://localhost:3000/",
-        page_title: "Tagloom Test Page",
+        page_title: "UpdateTags Test Page",
       },
     ]);
   });

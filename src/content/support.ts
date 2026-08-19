@@ -160,7 +160,7 @@ export const SUPPORT_ARTICLES: SupportArticle[] = [
   {
     slug: "how-tag-generation-works",
     topic: "tag-generation",
-    title: "How Tagloom tag generation works",
+    title: "How UpdateTags tag generation works",
     contentHtml: readContentHtml("support", "how-tag-generation-works"),
     relatedSlugs: [
       "improve-tag-output-quality",

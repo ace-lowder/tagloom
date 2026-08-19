@@ -6,7 +6,7 @@ import BrandMark from "@/components/brand/BrandMark";
 import { cn } from "@/lib/utils";
 
 function dispatchSupportReset() {
-  window.dispatchEvent(new CustomEvent("tagloom:support-reset"));
+  window.dispatchEvent(new CustomEvent("updatetags:support-reset"));
 }
 
 type SiteFooterProps = {
@@ -62,7 +62,7 @@ export default function SiteFooter({ flushTop = false }: SiteFooterProps) {
         </div>
 
         <p className="justify-self-center text-xs text-stone-400 sm:justify-self-end">
-          © 2026 Tagloom. All rights reserved.
+          © 2026 UpdateTags. All rights reserved.
         </p>
       </div>
     </footer>

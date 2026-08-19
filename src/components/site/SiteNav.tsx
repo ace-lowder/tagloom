@@ -285,7 +285,7 @@ export default function SiteNav({ currentUser }: SiteNavProps) {
 // === Helpers ===
 
 function dispatchSupportReset() {
-  window.dispatchEvent(new CustomEvent("tagloom:support-reset"));
+  window.dispatchEvent(new CustomEvent("updatetags:support-reset"));
 }
 
 function resolveAccountType(currentUser: CurrentUser): AccountType {

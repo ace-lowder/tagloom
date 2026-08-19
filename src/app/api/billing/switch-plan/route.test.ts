@@ -98,7 +98,7 @@ describe("billing switch plan route", () => {
     });
 
     const response = await POST(
-      new Request("https://tagloom.test/api/billing/switch-plan", {
+      new Request("https://updatetags.test/api/billing/switch-plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ targetTier: "yearly" }),
@@ -118,7 +118,7 @@ describe("billing switch plan route", () => {
     });
 
     const response = await POST(
-      new Request("https://tagloom.test/api/billing/switch-plan", {
+      new Request("https://updatetags.test/api/billing/switch-plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ targetTier: "yearly" }),
@@ -147,7 +147,7 @@ describe("billing switch plan route", () => {
     canonicalSubscriptionMock.mockResolvedValueOnce(canonical as never);
 
     const response = await POST(
-      new Request("https://tagloom.test/api/billing/switch-plan", {
+      new Request("https://updatetags.test/api/billing/switch-plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ targetTier: "yearly" }),
@@ -192,7 +192,7 @@ describe("billing switch plan route", () => {
     scheduleCreateMock.mockResolvedValueOnce({ id: "sched_new" });
 
     const response = await POST(
-      new Request("https://tagloom.test/api/billing/switch-plan", {
+      new Request("https://updatetags.test/api/billing/switch-plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ targetTier: "monthly" }),

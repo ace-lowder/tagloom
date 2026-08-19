@@ -46,13 +46,13 @@ vi.mock("@/lib/stripeBillingSync", () => ({
 
 function makeRequest(body: unknown) {
   return Object.assign(
-    new Request("https://tagloom.test/api/checkout/session", {
+    new Request("https://updatetags.test/api/checkout/session", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     }),
     {
-      nextUrl: new URL("https://tagloom.test/api/checkout/session"),
+      nextUrl: new URL("https://updatetags.test/api/checkout/session"),
     },
   );
 }
@@ -62,8 +62,8 @@ describe("checkout session route", () => {
     vi.stubEnv("STRIPE_SINGLE_USE_PRICE_ID", "price_single_use");
     vi.stubEnv("STRIPE_MONTHLY_PRICE_ID", "price_monthly");
     vi.stubEnv("STRIPE_YEARLY_PRICE_ID", "price_yearly");
-    vi.stubEnv("STRIPE_SUCCESS_URL", "https://tagloom.test/billing");
-    vi.stubEnv("STRIPE_CANCEL_URL", "https://tagloom.test/billing");
+    vi.stubEnv("STRIPE_SUCCESS_URL", "https://updatetags.test/billing");
+    vi.stubEnv("STRIPE_CANCEL_URL", "https://updatetags.test/billing");
     vi.stubEnv("NODE_ENV", "test");
 
     getUserMock.mockReset();
@@ -160,8 +160,8 @@ describe("checkout session route", () => {
     const params = stripeSessionCreateMock.mock.calls[0]?.[0] as Record<string, unknown>;
     expect(params).toMatchObject({
       mode: "payment",
-      success_url: "https://tagloom.test/billing?checkout=success&gen_ctx=gen_ctx_123",
-      cancel_url: "https://tagloom.test/billing?checkout=cancel&gen_ctx=gen_ctx_123",
+      success_url: "https://updatetags.test/billing?checkout=success&gen_ctx=gen_ctx_123",
+      cancel_url: "https://updatetags.test/billing?checkout=cancel&gen_ctx=gen_ctx_123",
       customer_email: "seller@example.com",
       line_items: [{ price: "price_single_use", quantity: 1 }],
       metadata: {
@@ -204,8 +204,8 @@ describe("checkout session route", () => {
       const params = stripeSessionCreateMock.mock.calls[0]?.[0] as Record<string, unknown>;
       expect(params).toMatchObject({
         mode: "subscription",
-        success_url: "https://tagloom.test/billing?checkout=success&gen_ctx=gen_ctx_456",
-        cancel_url: "https://tagloom.test/billing?checkout=cancel&gen_ctx=gen_ctx_456",
+        success_url: "https://updatetags.test/billing?checkout=success&gen_ctx=gen_ctx_456",
+        cancel_url: "https://updatetags.test/billing?checkout=cancel&gen_ctx=gen_ctx_456",
         customer_email: "seller@example.com",
         line_items: [{ price: expectedPriceId, quantity: 1 }],
         metadata: {

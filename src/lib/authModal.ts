@@ -1,5 +1,5 @@
-export const AUTH_POPUP_MESSAGE_SOURCE = "tagloom-auth-popup";
-export const AUTH_SUCCESS_EVENT = "tagloom:auth-success";
+export const AUTH_POPUP_MESSAGE_SOURCE = "updatetags-auth-popup";
+export const AUTH_SUCCESS_EVENT = "updatetags:auth-success";
 
 export type AuthMode = "login" | "signup";
 

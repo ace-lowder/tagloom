@@ -22,7 +22,7 @@ vi.mock("@/lib/errorLogging", () => ({
 }));
 
 function makeRequest(body: unknown) {
-  return new Request("https://tagloom.test/api/feedback/generation", {
+  return new Request("https://updatetags.test/api/feedback/generation", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

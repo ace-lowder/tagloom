@@ -13,7 +13,7 @@ type PopupCompletePageProps = {
 
 export default function PopupCompletePage({ searchParams }: PopupCompletePageProps) {
   useEffect(() => {
-    const status = searchParams.status === "success" ? "tagloom:auth-success" : "tagloom:auth-error";
+    const status = searchParams.status === "success" ? "updatetags:auth-success" : "updatetags:auth-error";
     const message = searchParams.message || undefined;
 
     if (window.opener) {

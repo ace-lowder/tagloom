@@ -221,7 +221,7 @@ describe("Generator generation history mode", () => {
 
   it("ignores cached history mode and always hydrates in generator mode", async () => {
     window.localStorage.setItem(
-      "tagloom:history:v2",
+      "updatetags:history:v2",
       JSON.stringify({
         activeGeneratedItems: [historyItem()],
         selectedGeneratedId: "hist_1",
@@ -236,7 +236,7 @@ describe("Generator generation history mode", () => {
     mockHistoryFetch([historyItem()]);
     renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
-    expect(screen.getByText("Tagloom Generator")).toBeInTheDocument();
+    expect(screen.getByText("UpdateTags Generator")).toBeInTheDocument();
     expect(screen.queryByText("Generation History")).not.toBeInTheDocument();
   });
 

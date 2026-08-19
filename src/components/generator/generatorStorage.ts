@@ -9,7 +9,7 @@ import type {
   PendingContext,
 } from "./generatorTypes";
 
-const PENDING_GUEST_GENERATION_KEY = "tagloom:guest-generation:v1";
+const PENDING_GUEST_GENERATION_KEY = "updatetags:guest-generation:v1";
 const PENDING_GUEST_GENERATION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 // === Helpers ===

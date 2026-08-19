@@ -1,5 +1,5 @@
-export const GENERATOR_CTA_EVENT = "tagloom:generator-cta";
-const PENDING_GENERATOR_CTA_KEY = "tagloom:pending-generator-cta";
+export const GENERATOR_CTA_EVENT = "updatetags:generator-cta";
+const PENDING_GENERATOR_CTA_KEY = "updatetags:pending-generator-cta";
 export const GENERATOR_CTA_SCROLL_SETTLE_MS = 900;
 
 type GeneratorCtaDetail = {

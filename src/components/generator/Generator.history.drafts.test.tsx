@@ -97,7 +97,7 @@ describe("Generator generation history mode", () => {
 
   it("keeps description hidden on cached draft hydration until first focus, then animates reveal", async () => {
     window.localStorage.setItem(
-      "tagloom:history:v2",
+      "updatetags:history:v2",
       JSON.stringify({
         generatedItems: [],
         selectedGeneratedId: null,

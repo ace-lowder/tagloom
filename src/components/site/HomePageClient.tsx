@@ -407,7 +407,7 @@ function BottomCtaSection({ onGenerate }: BottomCtaSectionProps) {
               variants={fadeInUp}
               className="mx-auto mb-8 max-w-lg leading-relaxed text-stone-600"
             >
-              Paste your listing into Tagloom, generate search tags, and copy
+              Paste your listing into UpdateTags, generate search tags, and copy
               your favorites into Etsy.
             </motion.p>
             <motion.div variants={fadeInUp} className="inline-flex">

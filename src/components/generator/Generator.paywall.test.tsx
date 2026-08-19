@@ -64,7 +64,7 @@ describe("Generator auth unlock flow", () => {
   }
 
   function getStoredGuestGenerationId() {
-    const raw = window.localStorage.getItem("tagloom:guest-generation:v1");
+    const raw = window.localStorage.getItem("updatetags:guest-generation:v1");
     if (!raw) return null;
     try {
       const parsed = JSON.parse(raw) as { id?: string } | null;
@@ -117,7 +117,7 @@ describe("Generator auth unlock flow", () => {
 
     act(() => {
       setHistoryAuthenticated(true);
-      window.dispatchEvent(new CustomEvent("tagloom:auth-success"));
+      window.dispatchEvent(new CustomEvent("updatetags:auth-success"));
     });
 
     await screen.findByText("Your listing is ready. Review it, then use your free generation.");
@@ -180,7 +180,7 @@ describe("Generator auth unlock flow", () => {
     firstRender.unmount();
     act(() => {
       setHistoryAuthenticated(true);
-      window.dispatchEvent(new CustomEvent("tagloom:auth-success"));
+      window.dispatchEvent(new CustomEvent("updatetags:auth-success"));
     });
 
     renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
@@ -285,7 +285,7 @@ describe("Generator auth unlock flow", () => {
 
     act(() => {
       setHistoryAuthenticated(true);
-      window.dispatchEvent(new CustomEvent("tagloom:auth-success"));
+      window.dispatchEvent(new CustomEvent("updatetags:auth-success"));
     });
 
     await waitFor(() =>
@@ -371,7 +371,7 @@ describe("Generator auth unlock flow", () => {
 
     act(() => {
       setHistoryAuthenticated(true);
-      window.dispatchEvent(new CustomEvent("tagloom:auth-success"));
+      window.dispatchEvent(new CustomEvent("updatetags:auth-success"));
     });
 
     await screen.findByText("Your listing is ready. Review it, then use your free generation.");
@@ -413,7 +413,7 @@ describe("Generator auth unlock flow", () => {
     await screen.findByText("You have no remaining generation credits.");
 
     act(() => {
-      window.dispatchEvent(new CustomEvent("tagloom:auth-success"));
+      window.dispatchEvent(new CustomEvent("updatetags:auth-success"));
     });
 
     await act(async () => {
@@ -517,7 +517,7 @@ describe("Generator auth unlock flow", () => {
     await screen.findByText("Create an account or log in to unlock this generation for FREE");
     act(() => {
       historyAuthenticated = true;
-      window.dispatchEvent(new CustomEvent("tagloom:auth-success"));
+      window.dispatchEvent(new CustomEvent("updatetags:auth-success"));
     });
 
     const unlockButton = await screen.findByRole("button", {
@@ -535,7 +535,7 @@ describe("Generator auth unlock flow", () => {
 
     await waitFor(() => expect(screen.getByText(realTags[0])).toBeInTheDocument());
     expect(countGenerateCalls(fetchMock)).toBe(2);
-    expect(window.localStorage.getItem("tagloom:guest-generation:v1")).toBeNull();
+    expect(window.localStorage.getItem("updatetags:guest-generation:v1")).toBeNull();
     expect(window.location.search).not.toContain("guest_generation");
   });
 
@@ -611,7 +611,7 @@ describe("Generator auth unlock flow", () => {
 
     act(() => {
       historyAuthenticated = true;
-      window.dispatchEvent(new CustomEvent("tagloom:auth-success"));
+      window.dispatchEvent(new CustomEvent("updatetags:auth-success"));
     });
 
     await act(async () => {

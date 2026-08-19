@@ -271,7 +271,7 @@ describe("useEmailVerification", () => {
       }),
     );
     expect(onPendingChange).toHaveBeenCalledWith(false);
-    expect(window.localStorage.getItem("tagloom:signup-cooldown:v1")).toMatch(/^\d+$/);
+    expect(window.localStorage.getItem("updatetags:signup-cooldown:v1")).toMatch(/^\d+$/);
     expect(loadPendingEmailVerification()).toBeNull();
     expect(result.current.record).toBeNull();
   });
@@ -303,7 +303,7 @@ describe("useEmailVerification", () => {
     expect(onVerified).toHaveBeenCalledTimes(1);
     expect(postMessageMock).toHaveBeenCalledTimes(1);
     expect(loadPendingEmailVerification()).toBeNull();
-    expect(window.localStorage.getItem("tagloom:signup-cooldown:v1")).toMatch(/^\d+$/);
+    expect(window.localStorage.getItem("updatetags:signup-cooldown:v1")).toMatch(/^\d+$/);
 
     Object.defineProperty(document, "visibilityState", {
       configurable: true,
@@ -472,8 +472,8 @@ describe("useEmailVerification", () => {
 
     await waitFor(() => expect(broadcastInstances).toHaveLength(2));
     expect(broadcastInstances.map((channel) => channel.name)).toEqual([
-      "tagloom-auth",
-      "tagloom-auth",
+      "updatetags-auth",
+      "updatetags-auth",
     ]);
 
     first.unmount();
