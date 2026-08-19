@@ -236,7 +236,7 @@ describe("Generator generation history mode", () => {
     mockHistoryFetch([historyItem()]);
     renderWithToasts(<Generator demoConfig={{ timings: TEST_TIMINGS }} />);
 
-    expect(screen.getByText("UpdateTags Generator")).toBeInTheDocument();
+    expect(screen.getByText("Tag Generator")).toBeInTheDocument();
     expect(screen.queryByText("Generation History")).not.toBeInTheDocument();
   });
 

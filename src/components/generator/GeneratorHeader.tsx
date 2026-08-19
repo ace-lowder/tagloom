@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { Clock, Info, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -24,15 +25,21 @@ export function GeneratorHeader({
 }: GeneratorHeaderProps) {
   return (
     <div className="mb-6 flex shrink-0 items-center gap-2">
-      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/30">
-        {historyMode === "history" ? (
+      {historyMode === "history" ? (
+        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/30">
           <Clock className="h-3.5 w-3.5 text-white" />
-        ) : (
-          <Sparkles className="h-3.5 w-3.5 text-white" />
-        )}
-      </div>
+        </div>
+      ) : (
+        <Image
+          src="/logo.png"
+          alt=""
+          width={28}
+          height={28}
+          className="h-7 w-7 object-contain"
+        />
+      )}
       <span className="text-sm font-semibold text-stone-700">
-        {historyMode === "history" ? "Generation History" : "UpdateTags Generator"}
+        {historyMode === "history" ? "Generation History" : "Tag Generator"}
       </span>
       {usageLabel ? (
         <motion.div
